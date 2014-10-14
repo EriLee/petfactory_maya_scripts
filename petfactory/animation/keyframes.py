@@ -253,7 +253,7 @@ def build_nuke_nodes(anim_dict):
 
     # get info
     frame_start = anim_dict.get('info').get('frame_start')
-    frame_end = anim_dict.get('info').get('frame_end')
+    #frame_end = anim_dict.get('info').get('frame_end')
     
     # get the nulls and camera dicts
     null_list = anim_dict.get("null")
@@ -282,7 +282,6 @@ def build_nuke_nodes(anim_dict):
     return str
     
 
-
 # get scene and keyframe data
 def build_anim_dict(sel_list, frame_start, frame_end):
     
@@ -291,7 +290,12 @@ def build_anim_dict(sel_list, frame_start, frame_end):
     cam_attr = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'focal_length', 'h_aperture', 'v_aperture', 'far_clip', 'near_clip']
     
     # gather scene info
-    info_dict = {'frame_start':frame_start, 'frame_end':frame_end}
+    info_dict = {}
+    
+    time_format = {'game':15, 'film':24, 'pal':25, 'ntsc':30, 'show':48, 'palf':50, 'ntscf':60}
+    info_dict['fps'] = time_format.get(pm.currentUnit(q=True, time=True))
+    info_dict['frame_start'] = frame_start
+    info_dict['frame_end'] = frame_end
     info_dict['width'] = pm.getAttr('defaultResolution.width')
     info_dict['height'] = pm.getAttr('defaultResolution.height')
     info_dict['device_aspect_ratio'] = pm.getAttr('defaultResolution.deviceAspectRatio')
@@ -385,7 +389,7 @@ def build_anim_dict(sel_list, frame_start, frame_end):
             translate = matrix.translation(1)
             rotation = matrix.rotation()
             scale = matrix.scale(1)
-
+            
             shape = obj.getShape()
             if shape:
                 is_camera = isinstance(pm.PyNode(shape), pm.nodetypes.Camera)
@@ -423,7 +427,7 @@ def build_anim_dict(sel_list, frame_start, frame_end):
                 null_index += 1                
                         
     return ret_dict
-                
+
 
 def remove_static_attr(data_dict):
     
