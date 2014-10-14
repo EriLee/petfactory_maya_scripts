@@ -523,6 +523,10 @@ def write_data(sel_list, frame_start, frame_end, file_format='json'):
     if do_remove_static_attr:
         remove_static_attr(data_dict)
 
+    # scale attrs
+    if True:
+        scale_translate(data_dict, 2)
+
     if file_format is 'ma':
         # uses the imported "maya_exporter" module to write a maya ascii scene
         anim_data = build_maya_ascii(data_dict)
