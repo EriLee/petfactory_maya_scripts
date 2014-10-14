@@ -476,6 +476,27 @@ def remove_static_attr(data_dict):
                                 #attr_dict[attr] = [round(value_list[0])]
                                 attr_dict[attr] = [value_list[0]]
 
+def scale_translate(info_dict, scale):
+    
+    def do_scale(attr_list):
+        '''loop through and scale up the attrs'''
+        for i, val in enumerate(attr_list):
+                attr_list[i] = val * scale
+                    
+    def get_attr_dicts(node_dict_list):
+        '''get to the attr dicts'''
+        for node_dict in node_dict_list:
+            
+            for node, attr_dict in node_dict.iteritems():
+                
+                do_scale(attr_dict.get('tx'))
+                do_scale(attr_dict.get('ty'))
+                do_scale(attr_dict.get('tz'))
+                
+    
+    get_attr_dicts(info_dict.get('null'))
+    get_attr_dicts(info_dict.get('camera'))
+
     
 def write_data(sel_list, frame_start, frame_end, file_format='json'):
     
