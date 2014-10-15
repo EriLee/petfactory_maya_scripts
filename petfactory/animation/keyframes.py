@@ -40,6 +40,8 @@ def build_maya_ascii(data_dict):
     attr_to_animate_list = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz', 'focalLength']
 
     info = data_dict.get('info')
+    #fps = info['fps']
+    time_format = info['time_format']
     frame_start = info['frame_start']
     frame_end = info['frame_end']
     w = info['width']
@@ -53,7 +55,7 @@ def build_maya_ascii(data_dict):
     s = '//Maya ASCII {0} scene\n\n'.format(maya_version)
     #s += '//petfactory.se\n'
     s += 'requires maya "{0}";\n'.format(maya_version)
-    s += 'currentUnit -l centimeter -a degree -t pal;\n\n'
+    s += 'currentUnit -l centimeter -a degree -t {0};\n\n'.format(time_format)
     s += 'select -ne :defaultResolution;\n\tsetAttr ".w" {0};\n\tsetAttr ".h" {1};\n\tsetAttr ".pa" {2};\n\tsetAttr ".dar" {3};\n\n'.format(w, h, pa, dar)
     
     # the data_dict is a dict with "camera" and "null" as keys holding lists 
@@ -292,8 +294,10 @@ def build_anim_dict(sel_list, frame_start, frame_end):
     # gather scene info
     info_dict = {}
     
-    time_format = {'game':15, 'film':24, 'pal':25, 'ntsc':30, 'show':48, 'palf':50, 'ntscf':60}
-    info_dict['fps'] = time_format.get(pm.currentUnit(q=True, time=True))
+    time_format_dict = {'game':15, 'film':24, 'pal':25, 'ntsc':30, 'show':48, 'palf':50, 'ntscf':60}
+    time_format = pm.currentUnit(q=True, time=True)
+    info_dict['time_format'] = time_format
+    info_dict['fps'] = time_format_dict.get(time_format)
     info_dict['frame_start'] = frame_start
     info_dict['frame_end'] = frame_end
     info_dict['width'] = pm.getAttr('defaultResolution.width')
@@ -525,7 +529,7 @@ def write_data(sel_list, frame_start, frame_end, file_format='json'):
 
     # scale attrs
     if True:
-        scale_translate(data_dict, 2)
+        scale_translate(data_dict, 1)
 
     if file_format is 'ma':
         # uses the imported "maya_exporter" module to write a maya ascii scene
