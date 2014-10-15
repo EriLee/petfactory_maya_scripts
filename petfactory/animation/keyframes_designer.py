@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'keyframes.ui'
+# Form implementation generated from reading ui file 'keyframes_designer.ui'
 #
-# Created: Wed Oct 15 21:12:27 2014
+# Created: Wed Oct 15 22:06:52 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -58,6 +58,9 @@ class Ui_Form(object):
         self.start_time_DSB.setMinimumSize(QtCore.QSize(100, 0))
         self.start_time_DSB.setMaximumSize(QtCore.QSize(100, 16777215))
         self.start_time_DSB.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+        self.start_time_DSB.setDecimals(0)
+        self.start_time_DSB.setMinimum(-1000000.0)
+        self.start_time_DSB.setMaximum(1000000.0)
         self.start_time_DSB.setObjectName("start_time_DSB")
         self.start_time_HL.addWidget(self.start_time_DSB)
         spacerItem1 = QtGui.QSpacerItem(100, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
@@ -77,6 +80,9 @@ class Ui_Form(object):
         self.end_time_DSB.setMinimumSize(QtCore.QSize(100, 0))
         self.end_time_DSB.setMaximumSize(QtCore.QSize(100, 16777215))
         self.end_time_DSB.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+        self.end_time_DSB.setDecimals(0)
+        self.end_time_DSB.setMinimum(-1000000.0)
+        self.end_time_DSB.setMaximum(1000000.0)
         self.end_time_DSB.setObjectName("end_time_DSB")
         self.end_time_HL.addWidget(self.end_time_DSB)
         spacerItem2 = QtGui.QSpacerItem(100, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
@@ -115,10 +121,13 @@ class Ui_Form(object):
         self.scale_L.setObjectName("scale_L")
         self.scale_HL.addWidget(self.scale_L)
         self.scale_DSB = QtGui.QDoubleSpinBox(self.groupBox)
-        self.scale_DSB.setEnabled(False)
+        self.scale_DSB.setEnabled(True)
         self.scale_DSB.setMinimumSize(QtCore.QSize(100, 0))
         self.scale_DSB.setMaximumSize(QtCore.QSize(100, 16777215))
         self.scale_DSB.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+        self.scale_DSB.setDecimals(1)
+        self.scale_DSB.setMinimum(-10000000.0)
+        self.scale_DSB.setMaximum(10000000.0)
         self.scale_DSB.setObjectName("scale_DSB")
         self.scale_HL.addWidget(self.scale_DSB)
         spacerItem4 = QtGui.QSpacerItem(100, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
