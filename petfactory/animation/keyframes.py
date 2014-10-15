@@ -41,7 +41,9 @@ def build_maya_ascii(data_dict):
 
     info = data_dict.get('info')
     #fps = info['fps']
-    time_format = info['time_format']
+    time_unit = info['time_unit']
+    linear_unit = info['linear_unit']
+    angle_unit = info['angle_unit']
     frame_start = info['frame_start']
     frame_end = info['frame_end']
     w = info['width']
@@ -55,7 +57,7 @@ def build_maya_ascii(data_dict):
     s = '//Maya ASCII {0} scene\n\n'.format(maya_version)
     #s += '//petfactory.se\n'
     s += 'requires maya "{0}";\n'.format(maya_version)
-    s += 'currentUnit -l centimeter -a degree -t {0};\n\n'.format(time_format)
+    s += 'currentUnit -l {0} -a {1} -t {2};\n\n'.format(linear_unit, angle_unit, time_unit)
     s += 'select -ne :defaultResolution;\n\tsetAttr ".w" {0};\n\tsetAttr ".h" {1};\n\tsetAttr ".pa" {2};\n\tsetAttr ".dar" {3};\n\n'.format(w, h, pa, dar)
     
     # the data_dict is a dict with "camera" and "null" as keys holding lists 
@@ -295,9 +297,13 @@ def build_anim_dict(sel_list, frame_start, frame_end):
     info_dict = {}
     
     time_format_dict = {'game':15, 'film':24, 'pal':25, 'ntsc':30, 'show':48, 'palf':50, 'ntscf':60}
-    time_format = pm.currentUnit(q=True, time=True)
-    info_dict['time_format'] = time_format
-    info_dict['fps'] = time_format_dict.get(time_format)
+    time_unit = pm.currentUnit(q=True, time=True)
+    linear_unit = pm.currentUnit(q=True, linear=True)
+    angle_unit = pm.currentUnit(q=True, angle=True)
+    info_dict['time_unit'] = time_unit
+    info_dict['linear_unit'] = linear_unit
+    info_dict['angle_unit'] = angle_unit
+    info_dict['fps'] = time_format_dict.get(time_unit)
     info_dict['frame_start'] = frame_start
     info_dict['frame_end'] = frame_end
     info_dict['width'] = pm.getAttr('defaultResolution.width')
