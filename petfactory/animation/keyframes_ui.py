@@ -196,7 +196,9 @@ class ControlMainWindow(QtGui.QDialog):
         self.ui.export_BTN.clicked.connect(self.click_export)
         
         file_formats = ['Maya / AE (.ma)', 'Nuke (.nk)', 'Nuke (copy to clipboard)', 'Data (.json)']
-        self.ui.file_format_CB.addItems(file_formats) 
+        self.ui.file_format_CB.addItems(file_formats)
+
+        self.ui.scale_DSB.setValue(1.0)
         
 
     def click_radiobutton(self):
@@ -213,6 +215,12 @@ class ControlMainWindow(QtGui.QDialog):
 
     def click_export(self):
         
+        sel = pm.ls(sl=True)
+
+        if len(sel) < 1:
+            pm.warning('Select transform(s) and camera(s)')
+            return
+
         if self.use_time_slider:
             start_time = pm.playbackOptions(q=True, minTime=True) 
             end_time = pm.playbackOptions(q=True, maxTime=True) 
@@ -231,15 +239,13 @@ class ControlMainWindow(QtGui.QDialog):
             file_format = 'nk_copy'
         elif file_format_index is 3:
             file_format = 'json'
-            
-        #print(file_format, start_time, end_time)
-        sel = pm.ls(sl=True)
 
-        if len(sel) < 1:
-            pm.warning('Select transform(s) and camera(s)')
-            return
+        scale = self.ui.scale_DSB.value()
 
-        keyframes.write_data(sel, int(round(start_time)), int(round(end_time)), file_format)
+        if scale == 1.0:
+        	scale = None
+
+        keyframes.write_data(sel, int(round(start_time)), int(round(end_time)), file_format, scale)
         
 
 def show():

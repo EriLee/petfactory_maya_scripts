@@ -324,10 +324,10 @@ def build_anim_dict(sel_list, frame_start, frame_end):
         
         # make sure the obj is a transform
         if not isinstance(pm.PyNode(sel), pm.nodetypes.Transform):
-            print('is a NOT {0}'.format(sel))
+            #print('is a NOT {0}'.format(sel))
             continue
         else:
-            print('is a {0}'.format(sel))
+            #print('is a {0}'.format(sel))
             obj_list.append(sel)
 
         shape_node = sel.getShape()
@@ -508,7 +508,7 @@ def scale_translate(info_dict, scale):
     get_attr_dicts(info_dict.get('camera'))
 
     
-def write_data(sel_list, frame_start, frame_end, file_format='json'):
+def write_data(sel_list, frame_start, frame_end, file_format='json', scale=None):
     
     #use_shortest_unique_name = True
     do_remove_static_attr = True
@@ -533,9 +533,9 @@ def write_data(sel_list, frame_start, frame_end, file_format='json'):
     if do_remove_static_attr:
         remove_static_attr(data_dict)
 
-    # scale attrs
-    if True:
-        scale_translate(data_dict, 1)
+    # scale the translate attrs
+    if scale is not None:
+        scale_translate(data_dict, scale)
 
     if file_format is 'ma':
         # uses the imported "maya_exporter" module to write a maya ascii scene
