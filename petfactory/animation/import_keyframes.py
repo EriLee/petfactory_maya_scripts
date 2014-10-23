@@ -3,7 +3,7 @@ import json
 
 # read the json
 read_data = None
-with open('/Users/johan/Desktop/cam_data.json', 'r') as f:
+with open('/Users/johan/Desktop/null_data.json', 'r') as f:
     read_data = f.read()
 
 
