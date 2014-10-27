@@ -6,7 +6,7 @@ import math
 
 # read the json
 data = None
-with open('/Users/johan/Desktop/_data_v09.json', 'r') as f:
+with open('/Users/johan/Desktop/_data_v12.json', 'r') as f:
     data = f.read()
 
 #print(data)
@@ -14,8 +14,12 @@ with open('/Users/johan/Desktop/_data_v09.json', 'r') as f:
 json_data = json.loads(data)
 null_list = json_data.get('nulls')
 cam_list = json_data.get('cameras')
+info = json_data.get('info')
+start_frame = info.get('start_frame')
 
-rotate_orders = {'xyz':0, 'yzx':1, 'zxy':2, 'xzy':3, 'yxz':4, 'zyx':5} 
+rotate_orders = {'xyz':0, 'yzx':1, 'zxy':2, 'xzy':3, 'yxz':4, 'zyx':5}
+
+scene_scale = .1
 
   
 def set_keyframes_from_matrix_lists(node_list, node_type):
@@ -67,38 +71,21 @@ def set_keyframes_from_matrix_lists(node_list, node_type):
                 node.rz.set(rz*-1)
                 
                 # we negate the y and z translation the match after effects
-                node.tx.set(translation.x)
-                node.ty.set(translation.y*-1)
-                node.tz.set(translation.z*-1)
+                node.tx.set(translation.x*scene_scale)
+                node.ty.set(translation.y*-scene_scale)
+                node.tz.set(translation.z*-scene_scale)
                 
                 # set some keyframes
-                pm.setKeyframe(node, attribute=['translate', 'rotate'], t=index)
+                pm.setKeyframe(node, attribute=['translate', 'rotate'], t=start_frame+index)
                 
 
                 if node_type is 'camera':
                     
                     cam_shape.focalLength.set(focal_length_list[index])
-                    pm.setKeyframe(cam_shape, attribute='focalLength', t=index)
+                    pm.setKeyframe(cam_shape, attribute='focalLength', t=start_frame+index)
 
             
             
 set_keyframes_from_matrix_lists(null_list, 'null')
 set_keyframes_from_matrix_lists(cam_list, 'camera')
 
-'''
-m = null_list[0].get('Null 1').get('matrix')[24]
-om_matrix = om.MMatrix([m[0][0], m[0][1], m[0][2], 0, m[1][0], m[1][1], m[1][2], 0, m[2][0], m[2][1], m[2][2], 0, m[3][0], m[3][1], m[3][2], 1])
-t_matrix = om.MTransformationMatrix(om_matrix)
-t_matrix.asMatrix()
-
-eur = t_matrix.rotation()
-
-euler_angles = eur.reorder(5)
-
-print([ (180/math.pi)*a for a in [euler_angles[0], euler_angles[1], euler_angles[2]]])
-'''
-
-    
-
-                 
-        
