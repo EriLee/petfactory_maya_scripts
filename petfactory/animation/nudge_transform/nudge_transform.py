@@ -3,6 +3,7 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -30,8 +31,12 @@ class Ui_Form(object):
         self.label_2 = QtGui.QLabel(Form)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_2.addWidget(self.label_2)
-        self.amount_spinbox = QtGui.QSpinBox(Form)
+        self.amount_spinbox = QtGui.QDoubleSpinBox(Form)
         self.amount_spinbox.setMinimumSize(QtCore.QSize(100, 0))
+        self.amount_spinbox.setDecimals(6)
+        self.amount_spinbox.setMinimum(-1000.0)
+        self.amount_spinbox.setMaximum(1000.0)
+        self.amount_spinbox.setSingleStep(0.1)
         self.amount_spinbox.setObjectName("amount_spinbox")
         self.horizontalLayout_2.addWidget(self.amount_spinbox)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
@@ -39,16 +44,16 @@ class Ui_Form(object):
         self.verticalLayout.addLayout(self.horizontalLayout_2)
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.nudge_pos_btn = QtGui.QPushButton(Form)
-        self.nudge_pos_btn.setMinimumSize(QtCore.QSize(100, 100))
-        self.nudge_pos_btn.setMaximumSize(QtCore.QSize(100, 100))
-        self.nudge_pos_btn.setObjectName("nudge_pos_btn")
-        self.horizontalLayout_3.addWidget(self.nudge_pos_btn)
         self.nudge_neg_btn = QtGui.QPushButton(Form)
         self.nudge_neg_btn.setMinimumSize(QtCore.QSize(100, 100))
         self.nudge_neg_btn.setMaximumSize(QtCore.QSize(100, 100))
         self.nudge_neg_btn.setObjectName("nudge_neg_btn")
         self.horizontalLayout_3.addWidget(self.nudge_neg_btn)
+        self.nudge_pos_btn = QtGui.QPushButton(Form)
+        self.nudge_pos_btn.setMinimumSize(QtCore.QSize(100, 100))
+        self.nudge_pos_btn.setMaximumSize(QtCore.QSize(100, 100))
+        self.nudge_pos_btn.setObjectName("nudge_pos_btn")
+        self.horizontalLayout_3.addWidget(self.nudge_pos_btn)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
         spacerItem1 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem1)
@@ -57,16 +62,14 @@ class Ui_Form(object):
         QtCore.QMetaObject.connectSlotsByName(Form)
 
     def retranslateUi(self, Form):
-        Form.setWindowTitle(QtGui.QApplication.translate("Form", "Form", None, QtGui.QApplication.UnicodeUTF8))
+        Form.setWindowTitle(QtGui.QApplication.translate("Form", "Nudge Transform", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("Form", "Axis", None, QtGui.QApplication.UnicodeUTF8))
         self.x_axis_radiobutton.setText(QtGui.QApplication.translate("Form", "X", None, QtGui.QApplication.UnicodeUTF8))
         self.y_axis_radiobutton.setText(QtGui.QApplication.translate("Form", "Y", None, QtGui.QApplication.UnicodeUTF8))
         self.z_axis_radiobutton.setText(QtGui.QApplication.translate("Form", "Z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("Form", "Amount", None, QtGui.QApplication.UnicodeUTF8))
-        self.nudge_pos_btn.setText(QtGui.QApplication.translate("Form", "+", None, QtGui.QApplication.UnicodeUTF8))
         self.nudge_neg_btn.setText(QtGui.QApplication.translate("Form", "-", None, QtGui.QApplication.UnicodeUTF8))
-
-
+        self.nudge_pos_btn.setText(QtGui.QApplication.translate("Form", "+", None, QtGui.QApplication.UnicodeUTF8))
 
 
 
@@ -83,6 +86,27 @@ class ControlMainWindow(QtGui.QDialog):
         self.setWindowFlags(QtCore.Qt.Tool)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+        
+        self.ui.nudge_pos_btn.clicked.connect(self.click_nudge_pos)
+        self.ui.nudge_neg_btn.clicked.connect(self.click_nudge_neg)
+        
+    def click_nudge_pos(self):
+        self.click_nudge(1)
+        
+    def click_nudge_neg(self):
+        self.click_nudge(-1)
+    
+    def click_nudge(self, direction):
+        
+        if self.ui.x_axis_radiobutton.isChecked():
+            print(direction*self.ui.amount_spinbox.value(), 'x')
+            
+        elif self.ui.y_axis_radiobutton.isChecked():
+            print(direction*self.ui.amount_spinbox.value(), 'y')
+            
+        elif self.ui.z_axis_radiobutton.isChecked():
+            print(direction*self.ui.amount_spinbox.value(), 'z')
+                    
     
 def show():
     myWin = ControlMainWindow(parent=maya_main_window())
