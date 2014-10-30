@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'nudge_transform.ui'
 #
-# Created: Thu Oct 30 19:41:19 2014
+# Created: Thu Oct 30 21:07:52 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -36,8 +36,12 @@ class Ui_Form(object):
         self.label_2 = QtGui.QLabel(Form)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_2.addWidget(self.label_2)
-        self.amount_spinbox = QtGui.QSpinBox(Form)
+        self.amount_spinbox = QtGui.QDoubleSpinBox(Form)
         self.amount_spinbox.setMinimumSize(QtCore.QSize(100, 0))
+        self.amount_spinbox.setDecimals(6)
+        self.amount_spinbox.setMinimum(-1000.0)
+        self.amount_spinbox.setMaximum(1000.0)
+        self.amount_spinbox.setSingleStep(0.1)
         self.amount_spinbox.setObjectName("amount_spinbox")
         self.horizontalLayout_2.addWidget(self.amount_spinbox)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
