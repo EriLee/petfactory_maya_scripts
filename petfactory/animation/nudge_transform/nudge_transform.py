@@ -99,15 +99,37 @@ class ControlMainWindow(QtGui.QDialog):
     def click_nudge(self, direction):
         
         if self.ui.x_axis_radiobutton.isChecked():
-            print(direction*self.ui.amount_spinbox.value(), 'x')
+            self.nudge_it(direction*self.ui.amount_spinbox.value(), 'x')
             
         elif self.ui.y_axis_radiobutton.isChecked():
-            print(direction*self.ui.amount_spinbox.value(), 'y')
+            self.nudge_it(direction*self.ui.amount_spinbox.value(), 'y')
             
         elif self.ui.z_axis_radiobutton.isChecked():
-            print(direction*self.ui.amount_spinbox.value(), 'z')
+            self.nudge_it(direction*self.ui.amount_spinbox.value(), 'z')
+            
+    def nudge_it(self, amount, axis):
+        
+        sel_list = pm.ls(sl=True)
+
+        if len(sel_list) < 1:
+            pm.warning('Nothing is selected!')
+            
+        else:
+            
+            if isinstance(sel_list[0], pm.nodetypes.Transform):
+                
+                if axis is 'x':
+                    pm.move(amount, x=True, r=True)
                     
-    
+                if axis is 'y':
+                    pm.move(amount, y=True, r=True)
+                    
+                if axis is 'z':
+                    pm.move(amount, z=True, r=True)
+                
+            else:
+                pm.warning('Please select a Transform node')
+                      
 def show():
     myWin = ControlMainWindow(parent=maya_main_window())
     myWin.show()
