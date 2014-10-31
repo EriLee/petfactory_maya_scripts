@@ -119,13 +119,13 @@ class ControlMainWindow(QtGui.QDialog):
             if isinstance(sel_list[0], pm.nodetypes.Transform):
                 
                 if axis is 'x':
-                    pm.move(amount, x=True, r=True)
+                    pm.move(amount, localSpace=True, x=True, r=True)
                     
                 if axis is 'y':
-                    pm.move(amount, y=True, r=True)
+                    pm.move(amount, localSpace=True, y=True, r=True)
                     
                 if axis is 'z':
-                    pm.move(amount, z=True, r=True)
+                    pm.move(amount, localSpace=True, z=True, r=True)
                 
             else:
                 pm.warning('Please select a Transform node')
