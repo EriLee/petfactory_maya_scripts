@@ -22,12 +22,19 @@ class myDoubleSpinBox(QtGui.QDoubleSpinBox):
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(226, 199)
+        Form.resize(220, 277)
+        Form.setMinimumSize(QtCore.QSize(220, 0))
         self.verticalLayout = QtGui.QVBoxLayout(Form)
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.label = QtGui.QLabel(Form)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy)
+        self.label.setMinimumSize(QtCore.QSize(60, 0))
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.x_axis_radiobutton = QtGui.QRadioButton(Form)
@@ -44,15 +51,19 @@ class Ui_Form(object):
         self.horizontalLayout_2 = QtGui.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.label_2 = QtGui.QLabel(Form)
+        self.label_2.setMinimumSize(QtCore.QSize(60, 0))
+        self.label_2.setMaximumSize(QtCore.QSize(60, 16777215))
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_2.addWidget(self.label_2)
-        #self.amount_spinbox = QtGui.QDoubleSpinBox(Form)
         self.amount_spinbox = myDoubleSpinBox(Form)
+        #self.amount_spinbox = QtGui.QDoubleSpinBox(Form)
         self.amount_spinbox.setMinimumSize(QtCore.QSize(100, 0))
+        self.amount_spinbox.setMaximumSize(QtCore.QSize(100, 16777215))
         self.amount_spinbox.setDecimals(6)
         self.amount_spinbox.setMinimum(-1000.0)
         self.amount_spinbox.setMaximum(1000.0)
         self.amount_spinbox.setSingleStep(0.1)
+        self.amount_spinbox.setProperty("value", 0.1)
         self.amount_spinbox.setObjectName("amount_spinbox")
         self.horizontalLayout_2.addWidget(self.amount_spinbox)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
@@ -71,8 +82,33 @@ class Ui_Form(object):
         self.nudge_pos_btn.setObjectName("nudge_pos_btn")
         self.horizontalLayout_3.addWidget(self.nudge_pos_btn)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
-        spacerItem1 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout.addItem(spacerItem1)
+        self.horizontalLayout_4 = QtGui.QHBoxLayout()
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.label_3 = QtGui.QLabel(Form)
+        self.label_3.setMinimumSize(QtCore.QSize(60, 0))
+        self.label_3.setMaximumSize(QtCore.QSize(60, 16777215))
+        self.label_3.setObjectName("label_3")
+        self.horizontalLayout_4.addWidget(self.label_3)
+        self.time_step_spinbox = QtGui.QSpinBox(Form)
+        self.time_step_spinbox.setMinimumSize(QtCore.QSize(100, 0))
+        self.time_step_spinbox.setMaximumSize(QtCore.QSize(100, 16777215))
+        self.time_step_spinbox.setProperty("value", 1)
+        self.time_step_spinbox.setObjectName("time_step_spinbox")
+        self.horizontalLayout_4.addWidget(self.time_step_spinbox)
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem1)
+        self.verticalLayout.addLayout(self.horizontalLayout_4)
+        self.horizontalLayout_5 = QtGui.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.timestep_neg_btn = QtGui.QPushButton(Form)
+        self.timestep_neg_btn.setObjectName("timestep_neg_btn")
+        self.horizontalLayout_5.addWidget(self.timestep_neg_btn)
+        self.timestep_pos_btn = QtGui.QPushButton(Form)
+        self.timestep_pos_btn.setObjectName("timestep_pos_btn")
+        self.horizontalLayout_5.addWidget(self.timestep_pos_btn)
+        self.verticalLayout.addLayout(self.horizontalLayout_5)
+        spacerItem2 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(spacerItem2)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -86,8 +122,9 @@ class Ui_Form(object):
         self.label_2.setText(QtGui.QApplication.translate("Form", "Amount", None, QtGui.QApplication.UnicodeUTF8))
         self.nudge_neg_btn.setText(QtGui.QApplication.translate("Form", "-", None, QtGui.QApplication.UnicodeUTF8))
         self.nudge_pos_btn.setText(QtGui.QApplication.translate("Form", "+", None, QtGui.QApplication.UnicodeUTF8))
-
-
+        self.label_3.setText(QtGui.QApplication.translate("Form", "Time step", None, QtGui.QApplication.UnicodeUTF8))
+        self.timestep_neg_btn.setText(QtGui.QApplication.translate("Form", "<", None, QtGui.QApplication.UnicodeUTF8))
+        self.timestep_pos_btn.setText(QtGui.QApplication.translate("Form", ">", None, QtGui.QApplication.UnicodeUTF8))
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -104,6 +141,10 @@ class ControlMainWindow(QtGui.QDialog):
         
         self.ui.nudge_pos_btn.clicked.connect(self.click_nudge_pos)
         self.ui.nudge_neg_btn.clicked.connect(self.click_nudge_neg)
+        
+        self.ui.timestep_pos_btn.clicked.connect(self.click_time_pos)
+        self.ui.timestep_neg_btn.clicked.connect(self.click_time_neg)
+        
         self.ui.amount_spinbox.c.key_pressed.connect(self.key_handler)
         
     def click_nudge_pos(self):
@@ -111,6 +152,12 @@ class ControlMainWindow(QtGui.QDialog):
         
     def click_nudge_neg(self):
         self.click_nudge(-1)
+        
+    def click_time_pos(self):
+        self.change_time(1)
+        
+    def click_time_neg(self):
+        self.change_time(-1)
     
     def click_nudge(self, direction):
         
@@ -122,7 +169,7 @@ class ControlMainWindow(QtGui.QDialog):
             
         elif self.ui.z_axis_radiobutton.isChecked():
             self.nudge_it(direction*self.ui.amount_spinbox.value(), 'z')
-            
+         
     def nudge_it(self, amount, axis):
         
         sel_list = pm.ls(sl=True)
@@ -146,6 +193,10 @@ class ControlMainWindow(QtGui.QDialog):
             else:
                 pm.warning('Please select a Transform node')
 
+    def change_time(self, direction):
+        time = pm.currentTime(query=True) + (direction*self.ui.time_step_spinbox.value())
+        pm.currentTime(time, update=True, edit=True ) 
+        
     def key_handler(self, key_string):
         if key_string == 's':
             pm.setKeyframe()
