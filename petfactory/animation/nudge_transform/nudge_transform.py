@@ -5,7 +5,7 @@ import pymel.core as pm
 
 class Communicate(QtCore.QObject):
     key_pressed = QtCore.Signal(str)
-    
+   
 class myDoubleSpinBox(QtGui.QDoubleSpinBox):
     
     def __init__(self, *args):
@@ -18,6 +18,20 @@ class myDoubleSpinBox(QtGui.QDoubleSpinBox):
             return True
             
         return QtGui.QDoubleSpinBox.event(self, event)
+
+class myQSpinBox(QtGui.QSpinBox):
+    
+    def __init__(self, *args):
+        super(myQSpinBox, self).__init__(*args)        
+        self.c = Communicate()
+        
+    def event(self, event):
+        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_S:
+            self.c.key_pressed.emit('s')
+            return True
+            
+        return QtGui.QSpinBox.event(self, event)
+
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -89,7 +103,8 @@ class Ui_Form(object):
         self.label_3.setMaximumSize(QtCore.QSize(60, 16777215))
         self.label_3.setObjectName("label_3")
         self.horizontalLayout_4.addWidget(self.label_3)
-        self.time_step_spinbox = QtGui.QSpinBox(Form)
+        self.time_step_spinbox = myQSpinBox(Form)
+        #self.time_step_spinbox = QtGui.QSpinBox(Form)
         self.time_step_spinbox.setMinimumSize(QtCore.QSize(100, 0))
         self.time_step_spinbox.setMaximumSize(QtCore.QSize(100, 16777215))
         self.time_step_spinbox.setProperty("value", 1)
@@ -146,6 +161,7 @@ class ControlMainWindow(QtGui.QDialog):
         self.ui.timestep_neg_btn.clicked.connect(self.click_time_neg)
         
         self.ui.amount_spinbox.c.key_pressed.connect(self.key_handler)
+        self.ui.time_step_spinbox.c.key_pressed.connect(self.key_handler)
         
     def click_nudge_pos(self):
         self.click_nudge(1)
