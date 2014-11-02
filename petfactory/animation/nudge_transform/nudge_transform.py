@@ -3,6 +3,21 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 
+class Communicate(QtCore.QObject):
+    key_pressed = QtCore.Signal(str)
+    
+class myDoubleSpinBox(QtGui.QDoubleSpinBox):
+    
+    def __init__(self, *args):
+        super(myDoubleSpinBox, self).__init__(*args)        
+        self.c = Communicate()
+        
+    def event(self, event):
+        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_S:
+            self.c.key_pressed.emit('s')
+            return True
+            
+        return QtGui.QDoubleSpinBox.event(self, event)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -31,7 +46,8 @@ class Ui_Form(object):
         self.label_2 = QtGui.QLabel(Form)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_2.addWidget(self.label_2)
-        self.amount_spinbox = QtGui.QDoubleSpinBox(Form)
+        #self.amount_spinbox = QtGui.QDoubleSpinBox(Form)
+        self.amount_spinbox = myDoubleSpinBox(Form)
         self.amount_spinbox.setMinimumSize(QtCore.QSize(100, 0))
         self.amount_spinbox.setDecimals(6)
         self.amount_spinbox.setMinimum(-1000.0)
@@ -77,7 +93,6 @@ def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
     
-    
 class ControlMainWindow(QtGui.QDialog):
 
     def __init__(self, parent=None):
@@ -89,6 +104,7 @@ class ControlMainWindow(QtGui.QDialog):
         
         self.ui.nudge_pos_btn.clicked.connect(self.click_nudge_pos)
         self.ui.nudge_neg_btn.clicked.connect(self.click_nudge_neg)
+        self.ui.amount_spinbox.c.key_pressed.connect(self.key_handler)
         
     def click_nudge_pos(self):
         self.click_nudge(1)
@@ -129,9 +145,11 @@ class ControlMainWindow(QtGui.QDialog):
                 
             else:
                 pm.warning('Please select a Transform node')
+
+    def key_handler(self, key_string):
+        if key_string == 's':
+            pm.setKeyframe()
                       
-def show():
-    myWin = ControlMainWindow(parent=maya_main_window())
-    myWin.show()
-    
-show()
+
+myWin = ControlMainWindow(parent=maya_main_window())
+myWin.show()
