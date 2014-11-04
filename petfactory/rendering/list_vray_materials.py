@@ -1,7 +1,14 @@
 import sys, os
 from PySide import QtGui, QtCore
 import pymel.core as pm
+from shiboken import wrapInstance
+import maya.OpenMayaUI as omui
 
+def maya_main_window():
+    main_window_ptr = omui.MQtUtil.mainWindow()
+    return wrapInstance(long(main_window_ptr), QtGui.QWidget)
+    
+    
 
 # custom data
 class MyCustomType(object):
@@ -10,20 +17,20 @@ class MyCustomType(object):
         self.data = data
         
 class MaterialItem(QtGui.QStandardItem):
-	pass
+    pass
 
 class MeshParentItem(QtGui.QStandardItem):
-	pass
+    pass
 
 class FaceParentItem(QtGui.QStandardItem):
-	pass
+    pass
 
 class MeshItem(QtGui.QStandardItem):
-	pass
+    pass
 
 class FaceItem(QtGui.QStandardItem):
-	pass
-	             
+    pass
+                 
 class DeselectableTreeView(QtGui.QTreeView):
     
     # deselect when clicked outside the items
@@ -40,15 +47,15 @@ class DeselectableTreeView(QtGui.QTreeView):
 
 class Example(QtGui.QWidget):
 
-    def __init__(self):
-        super(Example, self).__init__()
+    def __init__(self, parent):
+        super(Example, self).__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Tool)
         self.initUI()
 
     def initUI(self):      
         
         self.setGeometry(300, 300, 300, 300)
         self.setWindowTitle('Tree View')
-        self.setWindowFlags(QtCore.Qt.Tool)
         self.click_function = None;
 
         # layout
@@ -72,45 +79,45 @@ class Example(QtGui.QWidget):
         self.tree_view.setModel(self.model)
         self.layout.addWidget(self.tree_view)
 
-        self.show()
-      
+        #self.show()
+     
       
     def item_clicked(self):
 
-    	child_list = []
+        child_list = []
 
-    	if(self.tree_view.selectionModel().hasSelection()):
+        if(self.tree_view.selectionModel().hasSelection()):
             for index in self.tree_view.selectedIndexes():
                 item = self.model.itemFromIndex(index)
 
                 # Mat main parent
                 if isinstance(item, MaterialItem):
-                	# get the child items
-                	for i in range(item.rowCount()):
-                		mat_child = item.child(i)
-                		for j in range(mat_child.rowCount()):
-            				child_list.append(mat_child.child(j))
+                    # get the child items
+                    for i in range(item.rowCount()):
+                        mat_child = item.child(i)
+                        for j in range(mat_child.rowCount()):
+                            child_list.append(mat_child.child(j))
 
-  				# Mesh group parent
-            	elif isinstance(item, MeshParentItem):
-                	#print('MESH')
-                	for i in range(item.rowCount()):
-            			child_list.append(item.child(i))
+                # Mesh group parent
+                elif isinstance(item, MeshParentItem):
+                    #print('MESH')
+                    for i in range(item.rowCount()):
+                        child_list.append(item.child(i))
 
-            	# Face group paerent
-               	elif isinstance(item, FaceParentItem):
-                	#print('FACE')
-                	for i in range(item.rowCount()):
-            			child_list.append(item.child(i))
+                # Face group paerent
+                elif isinstance(item, FaceParentItem):
+                    #print('FACE')
+                    for i in range(item.rowCount()):
+                        child_list.append(item.child(i))
 
-            	# bottom level mesh or face
-            	elif isinstance(item, MeshItem):
-            		child_list.append(item)
+                # bottom level mesh or face
+                elif isinstance(item, MeshItem):
+                    child_list.append(item)
 
-            	elif isinstance(item, FaceItem):
-            		child_list.append(item)  
-            		
-            		
+                elif isinstance(item, FaceItem):
+                    child_list.append(item)  
+                    
+                    
         data_list = []
         
         for x in child_list:
@@ -176,7 +183,7 @@ class Example(QtGui.QWidget):
                 face_parent.appendRow(face_item)
      
             row_index += 1
-		                   
+                           
 
 def custom_click_function(data):
     pm.select(data)
@@ -215,12 +222,17 @@ def get_dict(mat_list):
                 
     return ret_dict
 
-mat_list = pm.ls(mat=True)
-d = get_dict(mat_list)
-#pprint.pprint(d)
 
-ex = Example()
-#d = {"mat_1":{"mesh":[MyCustomType(cube)],"face":[MyCustomType(cube)]}}
-ex.populate_model(d)
-ex.click_function = custom_click_function
+def show():
+    mat_list = pm.ls(mat=True)
+    d = get_dict(mat_list)
+    
+    ex = Example(parent=maya_main_window())
+    ex.populate_model(d)
+    ex.click_function = custom_click_function
+    ex.show()
+    #d = {"mat_1":{"mesh":[MyCustomType(cube)],"face":[MyCustomType(cube)]}}
+    
 
+
+#show()

@@ -217,6 +217,6 @@ class ControlMainWindow(QtGui.QDialog):
         if key_string == 's':
             pm.setKeyframe()
                       
-
-myWin = ControlMainWindow(parent=maya_main_window())
-myWin.show()
+def show():
+    myWin = ControlMainWindow(parent=maya_main_window())
+    myWin.show()
