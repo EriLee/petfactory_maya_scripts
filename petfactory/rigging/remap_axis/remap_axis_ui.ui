@@ -31,12 +31,12 @@
            </size>
           </property>
           <property name="text">
-           <string>From</string>
+           <string>Source</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineEdit">
+         <widget class="QLineEdit" name="source_node_lineedit">
           <property name="minimumSize">
            <size>
             <width>300</width>
@@ -46,7 +46,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="source_node_button">
           <property name="text">
            <string>&lt;</string>
           </property>
@@ -65,12 +65,12 @@
            </size>
           </property>
           <property name="text">
-           <string>To</string>
+           <string>Target</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineEdit_2">
+         <widget class="QLineEdit" name="target_node_lineedit">
           <property name="minimumSize">
            <size>
             <width>300</width>
@@ -80,7 +80,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_2">
+         <widget class="QPushButton" name="target_node_button">
           <property name="text">
            <string>&lt;</string>
           </property>
@@ -119,7 +119,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox"/>
+         <widget class="QComboBox" name="aim_vector_combobox"/>
         </item>
         <item>
          <widget class="QLabel" name="label_4">
@@ -141,7 +141,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox_2"/>
+         <widget class="QComboBox" name="aim_axis_combobox"/>
         </item>
         <item>
          <spacer name="horizontalSpacer_3">
@@ -180,7 +180,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox_3"/>
+         <widget class="QComboBox" name="up_vector_combobox"/>
         </item>
         <item>
          <widget class="QLabel" name="label_6">
@@ -202,7 +202,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox_4"/>
+         <widget class="QComboBox" name="up_axis_combobox"/>
         </item>
         <item>
          <spacer name="horizontalSpacer_4">
@@ -238,7 +238,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_3">
+      <widget class="QPushButton" name="doit_button">
        <property name="minimumSize">
         <size>
          <width>100</width>
