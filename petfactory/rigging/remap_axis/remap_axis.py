@@ -200,8 +200,15 @@ class ControlMainWindow(QtGui.QDialog):
             pm.warning('Target node is not a transform node')
             return
             
-        tm = source_node.getMatrix()
-        target_node.setMatrix(tm)
+        source_matrix = pm.datatypes.TransformationMatrix(source_node.getMatrix())
+        #source_translation = source_matrix.getTranslation()
+        source_rot_matrix = source_matrix.asRotateMatrix()
+        
+        target_matrix = target_node.getMatrix()
+        #target_scale = target_matrix.getScale()
+        
+        
+        target_node.setMatrix(source_rot_matrix)
         
         #copy_scale = self.ui.copy_scale_checkbox.checkState()
         copy_scale = self.ui.copy_scale_checkbox.isChecked()
