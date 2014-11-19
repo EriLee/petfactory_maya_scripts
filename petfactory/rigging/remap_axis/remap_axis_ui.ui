@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>475</width>
-    <height>371</height>
+    <height>368</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -229,9 +229,9 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
-       <widget class="QCheckBox" name="checkBox">
+       <widget class="QCheckBox" name="copy_scale_checkbox">
         <property name="text">
-         <string>Use scale</string>
+         <string>Copy scale</string>
         </property>
        </widget>
       </item>

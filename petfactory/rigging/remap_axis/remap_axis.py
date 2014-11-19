@@ -2,12 +2,13 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 
+
 from PySide import QtCore, QtGui
 
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(475, 301)
+        Form.resize(475, 368)
         self.verticalLayout_3 = QtGui.QVBoxLayout(Form)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.groupBox = QtGui.QGroupBox(Form)
@@ -90,18 +91,28 @@ class Ui_Form(object):
         self.horizontalLayout_4.addItem(spacerItem1)
         self.verticalLayout_2.addLayout(self.horizontalLayout_4)
         self.verticalLayout_3.addWidget(self.groupBox_2)
+        self.groupBox_3 = QtGui.QGroupBox(Form)
+        self.groupBox_3.setObjectName("groupBox_3")
+        self.horizontalLayout_6 = QtGui.QHBoxLayout(self.groupBox_3)
+        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+        self.copy_scale_checkbox = QtGui.QCheckBox(self.groupBox_3)
+        self.copy_scale_checkbox.setObjectName("copy_scale_checkbox")
+        self.horizontalLayout_6.addWidget(self.copy_scale_checkbox)
+        spacerItem2 = QtGui.QSpacerItem(336, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_6.addItem(spacerItem2)
+        self.verticalLayout_3.addWidget(self.groupBox_3)
         self.horizontalLayout_5 = QtGui.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        spacerItem2 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_5.addItem(spacerItem2)
+        spacerItem3 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_5.addItem(spacerItem3)
         self.doit_button = QtGui.QPushButton(Form)
         self.doit_button.setMinimumSize(QtCore.QSize(100, 0))
         self.doit_button.setMaximumSize(QtCore.QSize(100, 16777215))
         self.doit_button.setObjectName("doit_button")
         self.horizontalLayout_5.addWidget(self.doit_button)
         self.verticalLayout_3.addLayout(self.horizontalLayout_5)
-        spacerItem3 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout_3.addItem(spacerItem3)
+        spacerItem4 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_3.addItem(spacerItem4)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -118,7 +129,10 @@ class Ui_Form(object):
         self.label_4.setText(QtGui.QApplication.translate("Form", "Aim Axis", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("Form", "Up Vector", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6.setText(QtGui.QApplication.translate("Form", "Up Axis", None, QtGui.QApplication.UnicodeUTF8))
+        self.groupBox_3.setTitle(QtGui.QApplication.translate("Form", "Options", None, QtGui.QApplication.UnicodeUTF8))
+        self.copy_scale_checkbox.setText(QtGui.QApplication.translate("Form", "Copy scale", None, QtGui.QApplication.UnicodeUTF8))
         self.doit_button.setText(QtGui.QApplication.translate("Form", "Do it!", None, QtGui.QApplication.UnicodeUTF8))
+
 
 
 
@@ -168,13 +182,13 @@ class ControlMainWindow(QtGui.QDialog):
         try:
             source_node = pm.PyNode(source_node_name)
         except pm.general.MayaNodeError as e:
-            print('{0} is not a valid transform'.format(source_node_name))
+            pm.warning('{0} is not a valid transform'.format(source_node_name))
             return
             
         try:
             target_node = pm.PyNode(target_node_name)
         except pm.general.MayaNodeError as e:
-            print('{0} is not a valid transform'.format(target_node_name))
+            pm.warning('{0} is not a valid transform'.format(target_node_name))
             return
             
         
@@ -188,6 +202,18 @@ class ControlMainWindow(QtGui.QDialog):
             
         tm = source_node.getMatrix()
         target_node.setMatrix(tm)
+        
+        #copy_scale = self.ui.copy_scale_checkbox.checkState()
+        copy_scale = self.ui.copy_scale_checkbox.isChecked()
+
+        aim_vector = self.ui.aim_vector_combobox.currentIndex()
+        aim_axis = self.ui.aim_axis_combobox.currentIndex()
+        
+        up_vector = self.ui.up_vector_combobox.currentIndex()
+        up_axis = self.ui.up_axis_combobox.currentIndex()
+        
+        print(aim_vector, aim_axis, up_vector, up_axis, copy_scale)
+
             
                 
     def populate_line_edit(self, *args):
