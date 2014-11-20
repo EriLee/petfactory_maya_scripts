@@ -200,18 +200,41 @@ class ControlMainWindow(QtGui.QDialog):
             pm.warning('Target node is not a transform node')
             return
             
-        source_matrix = pm.datatypes.TransformationMatrix(source_node.getMatrix())
+        #source_matrix = pm.datatypes.TransformationMatrix(source_node.getMatrix())
         #source_translation = source_matrix.getTranslation()
-        source_rot_matrix = source_matrix.asRotateMatrix()
+        #source_rot_matrix = source_matrix.asRotateMatrix()
         
-        target_matrix = target_node.getMatrix()
+        #target_matrix = target_node.getMatrix()
         #target_scale = target_matrix.getScale()
         
         
-        target_node.setMatrix(source_rot_matrix)
+        #target_node.setMatrix(source_rot_matrix)
         
         #copy_scale = self.ui.copy_scale_checkbox.checkState()
-        copy_scale = self.ui.copy_scale_checkbox.isChecked()
+        #copy_scale = self.ui.copy_scale_checkbox.isChecked()
+        
+        kRotateOrders = [om.MEulerRotation.kXYZ,
+                            om.MEulerRotation.kYZX,
+                            om.MEulerRotation.kZXY,
+                            om.MEulerRotation.kXZY,
+                            om.MEulerRotation.kYXZ,
+                            om.MEulerRotation.kZYX]
+                            
+        source_matrix = pm.getAttr('{0}.worldMatrix'.format(source_node))
+        target_rot_order = pm.getAttr('{0}.rotateOrder'.format(target_node))
+        
+        om_m = om.MMatrix(source_matrix)
+
+        # construct a transformation matrix
+        tm = om.MTransformationMatrix(om_m)
+        
+        # get translation and rotation from the matrix
+        t = tm.translation(1)
+        r = tm.rotation().reorder(kRotateOrders[target_rot_order])
+        
+        
+        #target_node.translate.set(t)
+        target_node.rotate.set(pm.util.degrees((r.x, r.y, r.z)))
 
         aim_vector = self.ui.aim_vector_combobox.currentIndex()
         aim_axis = self.ui.aim_axis_combobox.currentIndex()
