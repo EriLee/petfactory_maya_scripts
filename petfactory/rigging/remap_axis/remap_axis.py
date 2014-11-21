@@ -1,7 +1,14 @@
 from shiboken import wrapInstance
+import maya.api.OpenMaya as om
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 
+try:
+    import petfactory.util.vector
+    #reload(petfactory.util.vector)
+    
+except ImportError as e:
+    pm.warning('This script requires petfactory vector util. ', e)
 
 from PySide import QtCore, QtGui
 
@@ -200,18 +207,27 @@ class ControlMainWindow(QtGui.QDialog):
             pm.warning('Target node is not a transform node')
             return
             
-        #source_matrix = pm.datatypes.TransformationMatrix(source_node.getMatrix())
-        #source_translation = source_matrix.getTranslation()
-        #source_rot_matrix = source_matrix.asRotateMatrix()
-        
-        #target_matrix = target_node.getMatrix()
-        #target_scale = target_matrix.getScale()
-        
-        
-        #target_node.setMatrix(source_rot_matrix)
+        source_matrix = pm.getAttr('{0}.worldMatrix'.format(source_node))
         
         #copy_scale = self.ui.copy_scale_checkbox.checkState()
         #copy_scale = self.ui.copy_scale_checkbox.isChecked()
+        
+        aim_vec_enum = self.ui.aim_vector_combobox.currentIndex()
+        aim_axis = self.ui.aim_axis_combobox.currentIndex()
+        
+        up_vec_enum = self.ui.up_vector_combobox.currentIndex()
+        up_axis = self.ui.up_axis_combobox.currentIndex()
+        
+         
+        aim_vec = (source_matrix[aim_vec_enum][0], source_matrix[aim_vec_enum][1], source_matrix[aim_vec_enum][2])
+        up_vec = (source_matrix[up_vec_enum][0], source_matrix[up_vec_enum][1], source_matrix[up_vec_enum][2])
+        
+        #remap_aim_up(aim_vec, up_vec, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, pos=(0,0,0)):
+        
+        remap_matrix = petfactory.util.vector.remap_aim_up(aim_vec=aim_vec, up_vec=up_vec, aim_axis=aim_axis, up_axis=up_axis)
+        
+        if remap_matrix is None:
+            return
         
         kRotateOrders = [om.MEulerRotation.kXYZ,
                             om.MEulerRotation.kYZX,
@@ -220,10 +236,10 @@ class ControlMainWindow(QtGui.QDialog):
                             om.MEulerRotation.kYXZ,
                             om.MEulerRotation.kZYX]
                             
-        source_matrix = pm.getAttr('{0}.worldMatrix'.format(source_node))
+        
         target_rot_order = pm.getAttr('{0}.rotateOrder'.format(target_node))
         
-        om_m = om.MMatrix(source_matrix)
+        om_m = om.MMatrix(remap_matrix)
 
         # construct a transformation matrix
         tm = om.MTransformationMatrix(om_m)
@@ -236,13 +252,7 @@ class ControlMainWindow(QtGui.QDialog):
         #target_node.translate.set(t)
         target_node.rotate.set(pm.util.degrees((r.x, r.y, r.z)))
 
-        aim_vector = self.ui.aim_vector_combobox.currentIndex()
-        aim_axis = self.ui.aim_axis_combobox.currentIndex()
         
-        up_vector = self.ui.up_vector_combobox.currentIndex()
-        up_axis = self.ui.up_axis_combobox.currentIndex()
-        
-        print(aim_vector, aim_axis, up_vector, up_axis, copy_scale)
 
             
                 

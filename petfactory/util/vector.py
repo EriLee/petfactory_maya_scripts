@@ -27,9 +27,10 @@ def viz_sphere(pos, name='sphere', color_index=16):
          
 def ortho_aim_up(aim_vec, up_vec, invert_aim=False, invert_up=False):
     '''returns a dict with orthogonal vectors for aim, up and cross'''
+
     if aim_vec == up_vec:
-        pm.warning('The joint aim axis can not be equal to the joint up axis!')
-        return
+        pm.warning('The joint aim vector can not be equal to the joint up vector!')
+        return None
             
     # create a pymel vector and normalize
     aim_vec = pm.datatypes.Vector(aim_vec[0], aim_vec[1], aim_vec[2])
@@ -65,6 +66,8 @@ def remap_aim_up(aim_vec, up_vec, aim_axis=0, up_axis=2, invert_aim=False, inver
     # get orthogonal axis
     ortho_axis = ortho_aim_up(aim_vec=aim_vec, up_vec=up_vec, invert_aim=invert_aim, invert_up=invert_up)
     
+    if not ortho_axis:
+    	return None
     # the position
     pos = pm.datatypes.Vector(pos[0], pos[1], pos[2])
     
