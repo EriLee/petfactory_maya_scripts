@@ -229,9 +229,9 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
-       <widget class="QCheckBox" name="copy_scale_checkbox">
+       <widget class="QCheckBox" name="copy_position_checkbox">
         <property name="text">
-         <string>Copy scale</string>
+         <string>Copy Position</string>
         </property>
        </widget>
       </item>
