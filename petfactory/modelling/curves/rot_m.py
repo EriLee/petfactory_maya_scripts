@@ -1,9 +1,9 @@
 import pymel.core as pm
+import pprint
 
-def create_round_corners(crv, name='smooth'):
+def create_round_corners(crv, inner_radius=.5, outer_radius=1, name='smooth'):
     
-    radius_a = 2
-    radius_b = .75
+
     cv_list = crv.getShape().getCVs(space='world')
     num_cv = len(cv_list)
     
@@ -19,10 +19,10 @@ def create_round_corners(crv, name='smooth'):
                 
         if index < num_cv-2:
       
-            pos_a = ((cv_list[index] - cv_list[index+1]).normal())*radius_a + cv_list[index+1]
-            pos_b = ((cv_list[index] - cv_list[index+1]).normal())*radius_b + cv_list[index+1]
-            pos_c = ((cv_list[index+2] - cv_list[index+1]).normal())*radius_b + cv_list[index+1]
-            pos_d = ((cv_list[index+2] - cv_list[index+1]).normal())*radius_a + cv_list[index+1]
+            pos_a = ((cv_list[index] - cv_list[index+1]).normal())*outer_radius + cv_list[index+1]
+            pos_b = ((cv_list[index] - cv_list[index+1]).normal())*inner_radius + cv_list[index+1]
+            pos_c = ((cv_list[index+2] - cv_list[index+1]).normal())*inner_radius + cv_list[index+1]
+            pos_d = ((cv_list[index+2] - cv_list[index+1]).normal())*outer_radius + cv_list[index+1]
     
             #create_loc(pos_a)
             #create_loc(pos_b)
@@ -128,7 +128,7 @@ def plot_pos_on_path(crv, num_step):
     return pos_list
 
 
-def rotate_profile(profile_list, profile_scale):
+def rotate_profile(profile_list, profile_scale, flip=False):
     
     profile_copy = profile_list[:]
     
@@ -146,14 +146,17 @@ def rotate_profile(profile_list, profile_scale):
                                                     [0,0,0,1]
                                                     ])
         
-    # rotate the profile vectors    
+    # rotate the profile vectors
+    tm = tm_z_neg if flip else tm_z_pos
+
+    
     for i, vec in enumerate(profile_copy):
-        profile_copy[i] = vec.rotateBy(tm_z_pos) * profile_scale
+        profile_copy[i] = vec.rotateBy(tm) * profile_scale
     
     return profile_copy 
     
     
-def create_profile_list(crv, num_step, profile_list, profile_scale=1):
+def transform_profile_list(crv, num_step, profile_list, profile_scale=1):
     
     if not crv:
         pm.warning('Please seölect a NurbsCurve!')
@@ -176,9 +179,7 @@ def create_profile_list(crv, num_step, profile_list, profile_scale=1):
     u_step = max_u / (num_step-1)
 
     profile_along_crv_list = []
-    
-    #print(min_u, max_u, u_step)
-    
+
     pos_list = []
     for i in range(num_step):
 
@@ -189,19 +190,18 @@ def create_profile_list(crv, num_step, profile_list, profile_scale=1):
     for index, pos in enumerate(pos_list):
         
         if index < num_pos-1:
-            tangent = (pos_list[index] - pos_list[index+1]).normal()
+            
+            if index is 0:
+                 tangent = (pos_list[index] - pos_list[index+1]).normal()
+            else:
+                tangent = (pos_list[index] - pos_list[index+1]).normal()
+            
         else:
             tangent = (pos_list[-2] - pos_list[-1]).normal()
-
-
+                
         up = pm.datatypes.Vector(0,1,0)
-        #print('normal {0}'.format(normal))
-        
-        
         cross = (tangent.cross(up)).normal()
         up_ortho = cross.cross(tangent)
-        #print('cross {0}'.format(cross))
-        
         
         tm = pm.datatypes.TransformationMatrix(    [tangent[0], tangent[1], tangent[2], 0],
                                                   [up_ortho[0], up_ortho[1], up_ortho[2], 0],
@@ -209,13 +209,15 @@ def create_profile_list(crv, num_step, profile_list, profile_scale=1):
                                                   [pos[0], pos[1], pos[2], 1],
         )
         
-        loc = pm.spaceLocator()
-        loc.setMatrix(tm)
-        
+        #loc = pm.spaceLocator()
+        #loc.setMatrix(tm)
         
         temp_vec_list = []
         
         for profile in profile_list:
+            
+            # scale the profile vectors
+            profile = profile*profile_scale
     
             vec_rot = profile.rotateBy(tm) + pos
             temp_vec_list.append(vec_rot)
@@ -225,8 +227,6 @@ def create_profile_list(crv, num_step, profile_list, profile_scale=1):
 
     return profile_along_crv_list
         
- 
-#plot_pos_on_path(pm.ls(sl=True)[0], 10)
 
 square_profile_list = [  pm.datatypes.Vector(-1,0,-1), pm.datatypes.Vector(1,0,-1), pm.datatypes.Vector(1,0,1), pm.datatypes.Vector(-1,0,1)]
 circle_profile_list = [  pm.datatypes.Vector([2.77555756156e-17, 6.12323399574e-17, -1.0]),
@@ -240,44 +240,61 @@ circle_profile_list = [  pm.datatypes.Vector([2.77555756156e-17, 6.12323399574e-
                           pm.datatypes.Vector([0.64281186962, 4.68914897419e-17, -0.765796142602]),
                           pm.datatypes.Vector([2.77555756156e-17, 6.12323399574e-17, -1.0])]
 
-
-# rotate the prpfile
-roteted_profile = rotate_profile(circle_profile_list, 1)
-
-'''
-crv = None
-sel_list = pm.ls(sl=True)
-if sel_list:
-    crv=sel_list[0]
-
-'''
-profile_list = create_profile_list(crv, 10, roteted_profile)
-
-
-if profile_list:
-    create_polygon_from_profile_list(profile_list)
-
-# build rounded curves
-sel_list = pm.ls(sl=True)
-crv_list = create_round_corners(crv=sel_list[0], name='round')
-
-    
-def create_from_multiple_crv(crv_list, profile_list):
+   
+def create_from_multiple_crv(crv_list, profile_list, profile_scale):
 
     mesh_list = []
+    nested_profile_list = []
     
     for index, crv in enumerate(crv_list):
-        #print(index)
-        profile_list = create_profile_list(crv, 5, roteted_profile)
-    
-        if profile_list:
-            mesh = create_polygon_from_profile_list(profile_list)
-            mesh_list.append(mesh)
         
+        profile_list = transform_profile_list(crv, 5, roteted_profile, profile_scale=profile_scale)
+        nested_profile_list.append(profile_list)
+        
+         
+    for index, profile in enumerate(nested_profile_list):
+        
+        if index%2 is 1:
+            temp = []
+            temp = profile[:]
+            temp[0] = nested_profile_list[index-1][-1]
+            temp[-1] = nested_profile_list[index+1][0]
+            mesh = create_polygon_from_profile_list(temp)
+            mesh_list.append(mesh)
+
+        else:
+            mesh = create_polygon_from_profile_list(profile)
+            mesh_list.append(mesh)
+               
     mesh = pm.polyUnite(mesh_list, ch=False)
     pm.polyMergeVertex(mesh, d=0.15)
     pm.delete(mesh, ch=True)
+
+
+
+
+#plot_pos_on_path(pm.ls(sl=True)[0], 8)
+
+
+
+# rotate the profile
+#roteted_profile = rotate_profile(circle_profile_list, 1)
+roteted_profile = rotate_profile(square_profile_list, 1, flip=True)
+
+
+
+
+# build rounded curves
+#sel_list = pm.ls(sl=True)
+#crv_list = create_round_corners(crv=sel_list[0], inner_radius = 1, outer_radius=2, name='round')
+
+
+   
+#create_from_multiple_crv(crv_list, roteted_profile, profile_scale=.45)
+
+#profile_list = create_profile_list(sel_list[0], 10, roteted_profile)
+#if profile_list:
+#    create_polygon_from_profile_list(profile_list)
     
-create_from_multiple_crv(crv_list, roteted_profile)       
         
 
