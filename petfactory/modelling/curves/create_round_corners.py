@@ -1,17 +1,21 @@
 import pymel.core as pm
 import pprint
 
-def create_round_corners(crv, inner_radius=.5, outer_radius=1, name='smooth'):
+def create_round_corners(crv, radius_list=None, inner_radius=.5, outer_radius=1, name='smooth'):
     
 
     cv_list = crv.getShape().getCVs(space='world')
     num_cv = len(cv_list)
-    
-    #crv_list = []
     crv_cv_list = []
+    
+    uniform_radius = True
+    
+    if radius_list:
+        if len(radius_list) != num_cv-2:
+            pm.warning('The length of radius list ({0}) is not matching the number of corners({1})!'.format(len(radius_list), num_cv-2))
+        else:
+            uniform_radius = False
 
-
-    #crv_grp = pm.group(em=True, name='round_curve_group')
     
     for index, cv in enumerate(cv_list):
         
@@ -19,12 +23,19 @@ def create_round_corners(crv, inner_radius=.5, outer_radius=1, name='smooth'):
                 lin_start_pos = cv_list[index]
                 
         if index < num_cv-2:
-      
-            pos_a = ((cv_list[index] - cv_list[index+1]).normal())*outer_radius + cv_list[index+1]
-            pos_b = ((cv_list[index] - cv_list[index+1]).normal())*inner_radius + cv_list[index+1]
-            pos_c = ((cv_list[index+2] - cv_list[index+1]).normal())*inner_radius + cv_list[index+1]
-            pos_d = ((cv_list[index+2] - cv_list[index+1]).normal())*outer_radius + cv_list[index+1]
-    
+            
+            if not uniform_radius:
+                pos_a = ((cv_list[index] - cv_list[index+1]).normal())*radius_list[index][1] + cv_list[index+1]
+                pos_b = ((cv_list[index] - cv_list[index+1]).normal())*radius_list[index][0] + cv_list[index+1]
+                pos_c = ((cv_list[index+2] - cv_list[index+1]).normal())*radius_list[index][0] + cv_list[index+1]
+                pos_d = ((cv_list[index+2] - cv_list[index+1]).normal())*radius_list[index][1] + cv_list[index+1]
+
+            else:
+                pos_a = ((cv_list[index] - cv_list[index+1]).normal())*outer_radius + cv_list[index+1]
+                pos_b = ((cv_list[index] - cv_list[index+1]).normal())*inner_radius + cv_list[index+1]
+                pos_c = ((cv_list[index+2] - cv_list[index+1]).normal())*inner_radius + cv_list[index+1]
+                pos_d = ((cv_list[index+2] - cv_list[index+1]).normal())*outer_radius + cv_list[index+1]
+
             #create_loc(pos_a)
             #create_loc(pos_b)
             #create_loc(pos_c)
@@ -41,11 +52,9 @@ def create_round_corners(crv, inner_radius=.5, outer_radius=1, name='smooth'):
             )
             
             # deg 1
-            #crv_list.append(pm.curve(degree=1, p=pos_deg_1, name='crv_{0}_{1}'.format(name, index)))
             crv_cv_list.append(pos_deg_1)
             
             # deg 3
-            #crv_list.append(pm.curve(degree=3, p=pos_list, name='crv_{0}_{1}'.format(name, index)))
             crv_cv_list.append(pos_list)    
                 
             lin_start_pos = pos_d
@@ -57,10 +66,8 @@ def create_round_corners(crv, inner_radius=.5, outer_radius=1, name='smooth'):
             )
             
             # deg 1
-            #crv_list.append(pm.curve(degree=1, p=pos_deg_1, name='crv_{0}_{1}'.format(name, index)))
             crv_cv_list.append(pos_deg_1)
             
-    #pm.parent(crv_list, crv_grp)       
     return crv_cv_list
     
 '''
@@ -71,7 +78,7 @@ except pm.MayaNodeError as e:
 '''
   
 #crv = pm.ls(sl=True)[0]
-crv_cv_list = create_round_corners(crv)
+crv_cv_list = create_round_corners(crv, radius_list=[(.5,1),(1,2),(1,2),(.5,1),(2,4),(.5,1),(.75,3),(.5,1)])
 
 pos_list = []
 for crv_cv in crv_cv_list:
