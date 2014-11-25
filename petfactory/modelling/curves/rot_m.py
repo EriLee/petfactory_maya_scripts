@@ -290,7 +290,7 @@ roteted_profile = rotate_profile(square_profile_list, 1, flip=True)
 
 
    
-#create_from_multiple_crv(crv_list, roteted_profile, profile_scale=.45)
+#create_from_multiple_crv(crv_list, roteted_profile, profile_scale=.4)
 
 #profile_list = create_profile_list(sel_list[0], 10, roteted_profile)
 #if profile_list:
