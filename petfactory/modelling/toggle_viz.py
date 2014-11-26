@@ -31,6 +31,26 @@ class Toggle_viz(QtGui.QWidget):
         
     def toggle_button_click(self):
         
+        mods = QtGui.QApplication.keyboardModifiers()
+        
+    	if mods & QtCore.Qt.ShiftModifier:
+    	    #print('shift')
+    	    pm.warning('Hide both objects')
+    	    self.obj_a.visibility.set(False)
+            self.obj_b.visibility.set(False)
+    	    return
+        
+        # cmd (mac) or ctrl (win)
+        if mods & QtCore.Qt.ControlModifier:
+            pm.warning('Hide both objects')
+    	    self.obj_a.visibility.set(self.toggle_enum)
+            self.obj_b.visibility.set(self.toggle_enum)
+            self.toggle_enum = not self.toggle_enum
+    	    return
+    	    
+    	if mods & QtCore.Qt.AltModifier:
+    	    return
+	
         self.obj_a.visibility.set(self.toggle_enum)
         self.toggle_enum = not self.toggle_enum
         self.obj_b.visibility.set(self.toggle_enum)
