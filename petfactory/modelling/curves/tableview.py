@@ -17,13 +17,14 @@ class Curve_spreadsheet(QtGui.QWidget):
         super(Curve_spreadsheet, self).__init__(parent)
         self.setWindowFlags(QtCore.Qt.Tool)
         
-        self.horizontalLayout = QtGui.QHBoxLayout()
-        self.setLayout(self.horizontalLayout)
+        self.vertical_layout = QtGui.QVBoxLayout()
+        self.setLayout(self.vertical_layout)
         
         self.table_view = QtGui.QTableView()
-        self.horizontalLayout.addWidget(self.table_view)
+        self.vertical_layout.addWidget(self.table_view)
         
         self.model = QtGui.QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(['Inner Radius', 'Outer Radius'])
         
         num_corners = 5
         inner = '1'
@@ -39,10 +40,44 @@ class Curve_spreadsheet(QtGui.QWidget):
         
         self.table_view.setModel(self.model)
         
-        v_header = self.table_view.verticalHeader()
+        #v_header = self.table_view.verticalHeader()
         h_header = self.table_view.horizontalHeader()
         h_header.setResizeMode(QtGui.QHeaderView.Stretch)
-        #self.table_view.resizeColumnsToContents()
+        
+        self.build_button = QtGui.QPushButton('Build it!')
+        self.vertical_layout.addWidget(self.build_button)
+        self.build_button.clicked.connect(self.on_build_click)
+        
+    def on_build_click(self):
+        
+        num_rows = self.model.rowCount()
+        
+        for row in range(num_rows):
+            
+            inner_radius_text = self.model.item(row,0).text()
+            outer_radius_text = self.model.item(row,1).text()
+            
+            try:
+                inner_radius = float(inner_radius_text)
+                
+            except ValueError as e:
+                pm.warning('The Inner Radius of row {0} is not a valid number'.format(row+1))
+                #print(e)
+                return None
+                
+            try:
+                outer_radius = float(outer_radius_text)
+                
+            except ValueError as e:
+                pm.warning('The Outer Radius of row {0} is not a valid number'.format(row+1))
+                #print(e)
+                return None
+            
+            print('Row {0}'.format(row))
+            print('Inner radius: {0}'.format(inner_radius_text))
+            print('Outer radius: {0}'.format(outer_radius_text))
+        
+
 
         
 win = Curve_spreadsheet(parent=maya_main_window())
