@@ -1,6 +1,11 @@
 import pymel.core as pm
 import math
 
+def loc(pos):
+    loc = pm.spaceLocator()
+    loc.translate.set(pos)
+    loc.getShape().localScale.set(.2,.2,.2)
+    
 def draw_radius(pos_list, radius=1.0, line_length=1):
 
     # get the vector B - A (second to first cv)
@@ -33,6 +38,17 @@ def draw_radius(pos_list, radius=1.0, line_length=1):
     # using angle theta and the radius (opposite leg)
     h = radius / math.sin(theta_rad)
     #print(h)
+    
+    # the adjacent length, use this to know where to big drw the radius
+    # this is where the circle touches the lines    
+    a = radius / math.tan(theta_rad)
+    #print(a)
+    a_pos = pos_list[1]+ba_vec_n*a
+    loc(a_pos)
+    
+    c_pos = pos_list[1]+bc_vec_n*a
+    loc(c_pos)
+    
     
     # draw the mid line
     line_length = h if not line_length else line_length
