@@ -101,15 +101,15 @@ def circular_corners(pos_list):
     #pos(h_vec_tm.x, h_vec_tm.y, h_vec_tm.z)
         
     # get the positions where the circle touches the lines
-    adjacent_aim = aim_uv_vec.normal().rotateBy(tm) * h + pos_list[1]
+    adjacent_aim = (aim_uv_vec.normal() * a).rotateBy(tm) + pos_list[1]
     pos(adjacent_aim.x, adjacent_aim.y, adjacent_aim.z)
     
-    adjacent_up = up_uv_vec.normal().rotateBy(tm) * h + pos_list[1]
+    adjacent_up = (up_uv_vec.normal() * a).rotateBy(tm) + pos_list[1]
     pos(adjacent_up.x, adjacent_up.y, adjacent_up.z)
     
     # get the circle cenyter position
-    circ_center = mid_vec*h
-    circ_center_tm = circ_center.rotateBy(tm)
+    circ_center = (mid_vec*h).rotateBy(tm)
+    circ_center_tm = circ_center
     
     circ = pm.circle(r=radius, normal=(0,0,1))[0]
     circ.setMatrix(tm)
@@ -119,6 +119,11 @@ def circular_corners(pos_list):
     mid_pos_on_circ = mid_vec*(h-radius)
     mid_pos_on_circ_tm = mid_pos_on_circ.rotateBy(tm)+pos_list[1]
     pos(mid_pos_on_circ_tm.x, mid_pos_on_circ_tm.y, mid_pos_on_circ_tm.z)
+    
+    line([pos_list[1], pos_list[1]+circ_center])
+    line([adjacent_aim, pos_list[1]+circ_center])
+    line([adjacent_up, pos_list[1]+circ_center])
+    
     
     
 
