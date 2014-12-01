@@ -9,20 +9,7 @@ def pos(x, y, z=0):
     sp.translate.set((x, y, z))
     return sp
     
-
-sel_all = pm.ls(type='transform')
-for x in sel_all:
-    if x.name() != 'crv':
-        pm.delete(x)  
- 
-radius = 2
-# get the curve
-crv = pm.PyNode('crv')
-# get the cv positions
-cv_pos_list = crv.getShape().getCVs(space='world')
-
-
-def circular_corners(pos_list):
+def create_round_corner(pos_list, radius):
     
     ret_pos_list = []
     
@@ -202,30 +189,74 @@ def circular_corners(pos_list):
     return ret_pos_list
     
     
-
-num_cvs = len(cv_pos_list)
-crv_build_cv_list = []
-
-for index in range(num_cvs):
-    
-    if index is 0:
-        crv_build_cv_list.append(cv_pos_list[0])
-        
-    elif index is num_cvs-1:
-        crv_build_cv_list.append(cv_pos_list[-1])
-        
-    else:
-        p_list = cv_pos_list[index-1:index+2] 
-        p = circular_corners(p_list)
-        crv_build_cv_list += p
-
+# delete all
 '''
-for p in crv_build_cv_list:
-    print(p)
-    pos(p.x, p.y, p.z)
+sel_all = pm.ls(type='transform')
+for x in sel_all:
+    if x.name() != 'crv':
+        pm.delete(x)  
 '''
+
+
+def add_smooth_corners(radius=1, radius_list=None):
     
-pm.curve(d=1, p=crv_build_cv_list)
+    sel_list = pm.ls(sl=True)
+        
+    if not sel_list:
+        pm.warning('Please select a NurbsCurve transform')
+        return
     
+    if not isinstance(sel_list[0], pm.nodetypes.Transform):
+        pm.warning('Please select a NurbsCurve transform')
+        return
+    
+    try:
+        crv = sel_list[0].getShape()
+        
+    except:
+        pm.warning('Please select a NurbsCurve transform')
+        return
+    
+
+    # get the cv positions
+    cv_pos_list = crv.getCVs(space='world')  
+    num_cvs = len(cv_pos_list)
+    
+    # if we have aradius list specified
+    if radius_list is not None:
+        
+        if num_cvs-2 != len(radius_list):
+            pm.warning('The length of the radius list {0} do not match the number of corners {1}'.format(len(radius_list), num_cvs-2))
+        
+
+    crv_build_cv_list = []
+    
+    
+    for index in range(num_cvs):
+        
+        if index is 0:
+            crv_build_cv_list.append(cv_pos_list[0])
+            
+        elif index is num_cvs-1:
+            crv_build_cv_list.append(cv_pos_list[-1])
+            
+        else:
+            
+            if radius_list is not None:
+                radius = radius_list[index-1]
+                
+            p_list = cv_pos_list[index-1:index+2] 
+            p = create_round_corner(p_list, radius)
+            crv_build_cv_list += p
+    
+        
+    pm.curve(d=1, p=crv_build_cv_list)
+
+
+        
+#add_smooth_corners(radius=1)
+add_smooth_corners(radius_list=[5,4,3,2,1,.5])
+
+
 
 
