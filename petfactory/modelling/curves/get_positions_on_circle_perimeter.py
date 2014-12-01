@@ -13,6 +13,8 @@ r = 1.0
 circ_center = pm.datatypes.Vector(2,1,0)
 
 
+mid_vec = pos_list[1] - pos_list[0]
+
 #The angle of the mid vector, i.e. the shared hypotenuse
 theta = math.atan2(pos_list[1].y, pos_list[1].x)
 #print(pm.util.degrees(theta))
@@ -38,6 +40,16 @@ for i in range(num_points):
     
     x = (math.cos(rot)) + circ_center.x
     y = (math.sin(rot)) + circ_center.y
+ 
+    pos = pm.datatypes.Vector(x,y,0)
     
-    loc(x,y)
+    loc(pos.x, pos.y, pos.z)
+    
+    # reflect around the mid vec
+    reflect_pos = 2 * pos.dot(mid_vec) / mid_vec.dot(mid_vec) * mid_vec - pos
+    
+    loc(reflect_pos.x, reflect_pos.y, reflect_pos.z)
+    
+    
+
 
