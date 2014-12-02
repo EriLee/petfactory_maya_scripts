@@ -9,7 +9,7 @@ def pos(x, y, z=0, name='pos'):
     sp.translate.set((x, y, z))
     return sp
     
-def create_round_corner(pos_list, radius):
+def create_round_corner(pos_list, radius, visualize=False):
     
     # the position return list
     ret_pos_list = []
@@ -122,27 +122,28 @@ def create_round_corner(pos_list, radius):
     #---------------------
     
     # visualize:
+    if visualize:
         
-    # get the circle cenyter position
-    circ_center = (mid_vec*h).rotateBy(tm)
-    circ_center_tm = circ_center
- 
-    # get the positions where the circle touches the lines
-    adjacent_aim = aim_uv_vec.normal() * a
-    adjacent_aim_refl = 2 * adjacent_aim.dot(mid_vec) / mid_vec.dot(mid_vec) * mid_vec - adjacent_aim
-
-    # visulaize the local vectors
-    adjacent_aim_tm = adjacent_aim.rotateBy(tm) + pos_list[1]
-    adjacent_aim_refl_tm = adjacent_aim_refl.rotateBy(tm) + pos_list[1]
+        # get the circle cenyter position
+        circ_center = (mid_vec*h).rotateBy(tm)
+        circ_center_tm = circ_center
+     
+        # get the positions where the circle touches the lines
+        adjacent_aim = aim_uv_vec.normal() * a
+        adjacent_aim_refl = 2 * adjacent_aim.dot(mid_vec) / mid_vec.dot(mid_vec) * mid_vec - adjacent_aim
     
-    
-    circ = pm.circle(r=radius, normal=(0,0,1))[0]
-    circ.setMatrix(tm)
-    circ.translate.set(pos_list[1]+circ_center_tm)
-    
-    line([pos_list[1]+circ_center_tm, adjacent_aim_tm])
-    line([pos_list[1]+circ_center_tm, adjacent_aim_refl_tm])
-    line([pos_list[1], pos_list[1]+circ_center_tm])
+        # visulaize the local vectors
+        adjacent_aim_tm = adjacent_aim.rotateBy(tm) + pos_list[1]
+        adjacent_aim_refl_tm = adjacent_aim_refl.rotateBy(tm) + pos_list[1]
+        
+        
+        circ = pm.circle(r=radius, normal=(0,0,1))[0]
+        circ.setMatrix(tm)
+        circ.translate.set(pos_list[1]+circ_center_tm)
+        
+        line([pos_list[1]+circ_center_tm, adjacent_aim_tm])
+        line([pos_list[1]+circ_center_tm, adjacent_aim_refl_tm])
+        line([pos_list[1], pos_list[1]+circ_center_tm])
 
     #---------------------
     
@@ -150,7 +151,7 @@ def create_round_corner(pos_list, radius):
     return ret_pos_list
     
 
-def add_smooth_corners(crv, radius=1.0, radius_list=None):
+def add_smooth_corners(crv, radius=1.0, radius_list=None, visualize=False):
     
     '''
     sel_list = pm.ls(sl=True)
@@ -199,7 +200,7 @@ def add_smooth_corners(crv, radius=1.0, radius_list=None):
                 radius = radius_list[index-1]
                 
             p_list = cv_pos_list[index-1:index+2] 
-            p = create_round_corner(p_list, radius)
+            p = create_round_corner(p_list, radius, visualize)
             crv_build_cv_list += p
     
         
@@ -257,6 +258,15 @@ class Curve_spreadsheet(QtGui.QWidget):
         h_header = self.table_view.horizontalHeader()
         h_header.setResizeMode(QtGui.QHeaderView.Stretch)
         
+        
+        self.visualize_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(self.visualize_horiz_layout)
+        
+        self.visualize_label = QtGui.QLabel('Visualize')
+        self.visualize_horiz_layout.addWidget(self.visualize_label)
+        
+        self.visualize_checkbox = QtGui.QCheckBox()
+        self.visualize_horiz_layout.addWidget(self.visualize_checkbox)
         
         self.build_button = QtGui.QPushButton('Build it!')
         self.vertical_layout.addWidget(self.build_button)
@@ -333,8 +343,9 @@ class Curve_spreadsheet(QtGui.QWidget):
             #print('Inner radius: {0}'.format(inner_radius_text))
             #print('Outer radius: {0}'.format(outer_radius_text))
             
-        #print(radius_list)  
-        add_smooth_corners(self.curve, radius_list=radius_list)
+        #print(radius_list)
+        visualize = self.visualize_checkbox.isChecked()
+        add_smooth_corners(self.curve, radius_list=radius_list, visualize=visualize)
 
        
 win = Curve_spreadsheet(parent=maya_main_window())
