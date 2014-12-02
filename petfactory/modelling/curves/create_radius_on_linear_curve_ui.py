@@ -117,10 +117,7 @@ def create_round_corner(pos_list, radius, visualize=False):
     # transform the position to world space  
     for i, p in enumerate(ret_pos_list):
         ret_pos_list[i] = p.rotateBy(tm) + pos_list[1]
-        
-    for p in ret_pos_list:
-        pos(p.x, p.y, p.z)
-        
+            
 
     #---------------------
     
@@ -147,6 +144,9 @@ def create_round_corner(pos_list, radius, visualize=False):
         line([pos_list[1]+circ_center_tm, adjacent_aim_tm])
         line([pos_list[1]+circ_center_tm, adjacent_aim_refl_tm])
         line([pos_list[1], pos_list[1]+circ_center_tm])
+
+        for p in ret_pos_list:
+            pos(p.x, p.y, p.z)
 
     #---------------------
     
