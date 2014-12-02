@@ -1,3 +1,6 @@
+from PySide import QtCore, QtGui
+from shiboken import wrapInstance
+import maya.OpenMayaUI as omui
 import pymel.core as pm
 import math, pprint
 
@@ -347,8 +350,9 @@ class Curve_spreadsheet(QtGui.QWidget):
         visualize = self.visualize_checkbox.isChecked()
         add_smooth_corners(self.curve, radius_list=radius_list, visualize=visualize)
 
-       
-win = Curve_spreadsheet(parent=maya_main_window())
-win.show()
+
+def show():      
+	win = Curve_spreadsheet(parent=maya_main_window())
+	win.show()
 
 
