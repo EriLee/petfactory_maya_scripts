@@ -118,7 +118,7 @@ def build_joint_info(group_name, override_name=None):
     return info_list
 
 def vec_from_transform(group_name, axis):
-    
+    ''' returns the vector of the specified transform and axis'''
     jnt_grp = pm.PyNode(group_name)
     
     # get the vector to be used as the "up vector" for the joint rotation, the axis that the 
@@ -136,11 +136,10 @@ def vec_from_transform(group_name, axis):
 
 
 #info_list = build_joint_info('group1')
-info_list = build_joint_info('group1', override_name='flower')
-up_vec = vec_from_transform('group1', 2)
+#info_list = build_joint_info('group1', override_name='flower')
+#up_vec = vec_from_transform('group1', 2)
 
 #build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, prefix='prefix', suffix='suffix'):
-jnt_list = build_joint_hierarchy(info_list, up_vector=up_vec)
+#jnt_list = build_joint_hierarchy(info_list, up_vector=up_vec)
 #jnt_list = build_joint_hierarchy(info_list, up_vector=up_vec, suffix='suffix', prefix='prefix')
 #jnt_list = build_joint_hierarchy(info_list, up_vector=up_vec, suffix='suffix')
-
