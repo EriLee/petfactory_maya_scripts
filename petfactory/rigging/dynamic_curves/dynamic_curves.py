@@ -57,17 +57,17 @@ def make_dynamic(crv):
     
 
 
-def make_curves_dynamic():
+def make_curves_dynamic(crv_list):
        
     follicle_grp = pm.group(em=True, name='follicle_grp')
     out_curve_grp = pm.group(em=True, name='output_curve_grp')
 
     del_list = []
     
-    for index, sel in enumerate(sel_list):
+    for index, crv in enumerate(crv_list):
         
        if index is 0:
-           main_dynamic_dict = make_dynamic(sel)
+           main_dynamic_dict = make_dynamic(crv)
            main_hairsystem = main_dynamic_dict['hairsystem']
            main_follicle = main_dynamic_dict['follicle']
            main_output_curve = main_dynamic_dict['output_curve']
@@ -83,7 +83,7 @@ def make_curves_dynamic():
            del_list += main_misc
            
        else:
-           dynamic_dict = make_dynamic(sel)
+           dynamic_dict = make_dynamic(crv)
            hairsystem = dynamic_dict['hairsystem']
            follicle = dynamic_dict['follicle']
            output_curve = dynamic_dict['output_curve']
