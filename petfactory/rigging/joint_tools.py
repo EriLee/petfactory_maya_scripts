@@ -1,14 +1,21 @@
-
 import pymel.core as pm
+
+import_success = True
 
 try:
     import petfactory.util.vector as util_vec
-    
+       
 except ImportError as e:
-    print('The script requires module "petfactory.util.vector"\n{0}'.format(e))
+    pm.warning('The script requires module "petfactory.util.vector"\n{0}'.format(e))
+    import_success = False
 
 
-def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, prefix='prefix', suffix='suffix'):
+def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, prefix=None, suffix=None):
+    
+    if not import_success:
+        pm.warning('The script requires module "petfactory.util.vector"')
+        return
+    
     '''
     build a joint hierarchy. info_list is a list of dicts that contains the name of the joint and the position
     
@@ -40,8 +47,14 @@ def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_ai
     
     for index, info in enumerate(info_list):
         
-        name = info.get('name')
-                       
+        name = '{0}_jnt'.format(info.get('name'))
+        
+        if prefix is not None:
+            name = '{0}_{1}'.format(prefix, name)
+            
+        if suffix is not None:           
+            name = '{0}_{1}'.format(name, suffix)
+            
         start_pos = info.get('pos')        
         start_vec = pm.datatypes.Vector(start_pos[0], start_pos[1], start_pos[2])
         
@@ -63,7 +76,7 @@ def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_ai
         rot_deg = pm.datatypes.degrees(rot_rad)
           
         # create the joint
-        jnt = pm.createNode('joint', ss=True, name='{0}_{1}_jnt_{2}'.format(prefix, name, suffix))
+        jnt = pm.createNode('joint', ss=True, name='{0}'.format(name))
 
         # set the joint orients and translation
         pm.setAttr('{0}.jointOrientX'.format(jnt), rot_deg[0])
@@ -71,8 +84,8 @@ def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_ai
         pm.setAttr('{0}.jointOrientZ'.format(jnt), rot_deg[2])
     
         jnt.translate.set(start_vec)
-        
         jnt_list.append(jnt)
+        pm.toggle(jnt, localAxis=True)
         
     
     # parent the joints
@@ -87,16 +100,20 @@ def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_ai
     return jnt_list
     
 
-def build_joint_info(group_name):
+def build_joint_info(group_name, override_name=None):
     '''Build the info list that contains dicts with the name and pos'''
     info_list = []
     
     jnt_grp = pm.PyNode(group_name)
     node_list = pm.listRelatives(jnt_grp, children=True)
     
-    for node in node_list:
+    for index, node in enumerate(node_list):
         
-        info_list.append({'name':node.nodeName(), 'pos':pm.xform(node, q=True, ws=True, translation=True)})
+        if override_name is not None:
+            name = '{0}_{1}'.format(override_name, index)
+        else:
+            name = node.nodeName()
+        info_list.append({'name':name, 'pos':pm.xform(node, q=True, ws=True, translation=True)})
 
     return info_list
 
@@ -109,35 +126,21 @@ def vec_from_transform(group_name, axis):
     m = jnt_grp.getMatrix(worldSpace=True)
     vx = pm.datatypes.Vector(m[0][0], m[0][1], m[0][2])
     vy = pm.datatypes.Vector(m[1][0], m[1][1], m[1][2])
+
     vz = pm.datatypes.Vector(m[2][0], m[2][1], m[2][2])
     
     axis_list = [vx, vy, vz]
     
     # Return a normalized vec
     return  axis_list[axis].normal()
-    
-'''
-
-pm.openFile('/Users/johan/Dev/maya/build_joint_hierarchy/jnt_ref_v02.mb', force=True)
 
 
-info_list = [ {'name':'one', 'pos':(0,0,0)},
-               {'name':'two', 'pos':(0,10,10)},
-               {'name':'three', 'pos':(0,20,10)}
-             ]
+#info_list = build_joint_info('group1')
+info_list = build_joint_info('group1', override_name='flower')
+up_vec = vec_from_transform('group1', 2)
 
+#build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, prefix='prefix', suffix='suffix'):
+jnt_list = build_joint_hierarchy(info_list, up_vector=up_vec)
+#jnt_list = build_joint_hierarchy(info_list, up_vector=up_vec, suffix='suffix', prefix='prefix')
+#jnt_list = build_joint_hierarchy(info_list, up_vector=up_vec, suffix='suffix')
 
-up_vec = (1,0,0)
-
-
-
-up_vec = vec_from_transform('jnt_grp', 0)
-info_list = build_joint_info('jnt_grp')
-
-
-
-
-jnt_list = build_joint_hierarchy(info_list=info_list, up_vector=up_vec, aim_axis=1, up_axis=2, invert_aim=False, invert_up=False)
-pm.toggle(jnt_list, localAxis=True)
-
-'''
