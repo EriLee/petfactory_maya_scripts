@@ -5,7 +5,7 @@ import pprint
 
 reload(dynamic_curves)
 
-pm.system.openFile('/Users/johan/Desktop/jnt_ref.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v01.mb', f=True)
 
 
 def build_joints(joint_ref_list):
@@ -67,8 +67,18 @@ def setup_dynamic_joints(nested_jnt_list):
         pm.ikHandle(solver='ikSplineSolver', curve=dynamic_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=nested_jnt_list[index][0], ee=nested_jnt_list[index][-1])    
     
 
-pm.select(['group1', 'group2', 'group3'])
-#pm.select(['group1'])
+    # adjust the hairsystem
+    hairsystem = info_dict_list[0].get('hairsystem').getShape()
+    #print(hairsystem)
+   
+    hairsystem.startCurveAttract.set(0.005)
+    #pprint.pprint(dir(hairsystem))
+    #print(type(hairsystem))
+    pm.select(hairsystem)
+    
+    
+#pm.select(['group1', 'group2', 'group3'])
+pm.select(['group1'])
 sel_list = pm.ls(sl=True)
 
 nested_jnt_list = build_joints(sel_list)
