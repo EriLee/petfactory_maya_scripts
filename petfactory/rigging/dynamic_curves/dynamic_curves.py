@@ -75,6 +75,7 @@ def make_curves_dynamic(crv_list):
            main_follicle = main_dynamic_dict['follicle']
            main_output_curve = main_dynamic_dict['output_curve']
            main_misc = main_dynamic_dict['misc']
+           main_nucleus = main_dynamic_dict['nucleus']
            
            pm.setAttr('{}.pointLock'.format(main_follicle.getShape()), 1)
     
@@ -85,7 +86,7 @@ def make_curves_dynamic(crv_list):
            
            del_list += main_misc
 
-           ret_info_list.append({'hairsystem':main_hairsystem, 'follicle':main_follicle, 'curve':main_output_curve})
+           ret_info_list.append({'hairsystem':main_hairsystem, 'follicle':main_follicle, 'curve':main_output_curve, 'nucleus':main_nucleus})
            
        else:
            dynamic_dict = make_dynamic(crv)
