@@ -67,18 +67,25 @@ def setup_dynamic_joints(nested_jnt_list):
         pm.ikHandle(solver='ikSplineSolver', curve=dynamic_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=nested_jnt_list[index][0], ee=nested_jnt_list[index][-1])    
     
 
-    # adjust the hairsystem
+    # get a reference to the hairsystem and nucleus
     hairsystem = info_dict_list[0].get('hairsystem').getShape()
-    #print(hairsystem)
-   
+    nucleus = info_dict_list[0].get('nucleus')
+
+    # hairsystem
     hairsystem.startCurveAttract.set(0.005)
-    #pprint.pprint(dir(hairsystem))
-    #print(type(hairsystem))
-    pm.select(hairsystem)
+    #pm.select(hairsystem)
     
     
-#pm.select(['group1', 'group2', 'group3'])
-pm.select(['group1'])
+    # nucleus
+    #nucleus.spaceScale.set(.1)
+    nucleus.timeScale.set(10)
+    #print(nucleus)
+    
+    
+    
+    
+pm.select(['group1', 'group2', 'group3', 'group4'])
+#pm.select(['group1'])
 sel_list = pm.ls(sl=True)
 
 nested_jnt_list = build_joints(sel_list)
