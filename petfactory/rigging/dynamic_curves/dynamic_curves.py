@@ -105,9 +105,18 @@ def make_curves_dynamic(crv_list):
            
            
            del_list += misc
+           
            del_list.append(hairsystem)
-
-           ret_info_list.append({'hairsystem':hairsystem, 'follicle':follicle, 'curve':output_curve})
+           # since we will delete the node we also delete it from the dict that will be
+           # return, and possibel used bu other functions, will cause warning or error if
+           # we try to access it
+           # we do not return this dict so we can leave it alone
+           #dynamic_dict.pop('hairsystem', None)
+           
+           
+           #ret_info_list.append({'hairsystem':hairsystem, 'follicle':follicle, 'curve':output_curve})
+           # skip to return the hairsystem, since it will be deletes
+           ret_info_list.append({'follicle':follicle, 'curve':output_curve})
            
     #pm.select(del_list, add=True)
     pm.delete(del_list)

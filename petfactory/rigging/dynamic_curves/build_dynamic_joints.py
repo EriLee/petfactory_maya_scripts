@@ -8,45 +8,77 @@ reload(dynamic_curves)
 pm.system.openFile('/Users/johan/Desktop/jnt_ref.mb', f=True)
 
 
-
-def create_dynamic_joints(joint_ref_list):
-
+def build_joints(joint_ref_list):
+    
     nested_jnt_list = []
+    
+    for index, joint_ref in enumerate(joint_ref_list):
+        
+        joint_info = joint_tools.build_joint_info(joint_ref, override_name='flower_{0}'.format(index))
+        up_vec = joint_tools.vec_from_transform(joint_ref, 2)
+        jnt_list = joint_tools.build_joint_hierarchy(joint_info, up_vec)
+        nested_jnt_list.append(jnt_list)
+        
+    return nested_jnt_list
+    
+
+
+def setup_dynamic_joints(nested_jnt_list):
+    
     crv_list = []
     
-    for joint_ref in joint_ref_list:
+    for index, jnt_list in enumerate(nested_jnt_list):
         
-        joint_info = joint_tools.build_joint_info(joint_ref, override_name='flower')
-        up_vec = joint_tools.vec_from_transform(joint_ref, 2)
+        # get the joint positions
+        pos_list = [pm.joint(jnt, q=True, p=True, a=True) for jnt in jnt_list]
         
-        jnt_list = joint_tools.build_joint_hierarchy(joint_info, up_vec)
-        
-        nested_jnt_list.append(jnt_list)
-        pos_list = []
-        
-        for jnt in jnt_list:
-            pos_list.append(pm.joint(jnt, q=True, p=True, a=True))
-            
+        # build the curve that we will make dynamic, and drive the ik spline rig 
         crv = pm.curve(ep=pos_list, name='original_curve')
-        crv_list.append(crv)
         
-    
-    
+        blendshape_crv = pm.duplicate(crv, name='blendshape_{0}_crv'.format(index))[0]
+        pm.blendShape(blendshape_crv, crv)
+        
+        num_cvs = blendshape_crv.getShape().numCVs()
+        
+        # loop through the cv and add cluster. On cv 0-1 add one cluster,
+        # the rest of the cv will have one cluster each, 
+        # might add one to the second to last and last
+        for i in range(num_cvs):
+            if i is 0:
+                cv = '0:1'
+            elif i is 1:
+                continue
+            else:
+                cv = i
+                
+            pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
+        
+        crv_list.append(crv)
+  
+    # make the curves dynamic    
     info_dict_list = dynamic_curves.make_curves_dynamic(crv_list)
-    
-    
+     
     # might want to delete stuff later...
-    
     for index, info_dict in enumerate(info_dict_list):
         
-        #print(info_dict)
+        #pprint.pprint(info_dict)
         dynamic_curve = info_dict.get('curve')
         dynamic_curve.rename('dynamic_curve')  
         pm.ikHandle(solver='ikSplineSolver', curve=dynamic_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=nested_jnt_list[index][0], ee=nested_jnt_list[index][-1])    
     
 
 pm.select(['group1', 'group2', 'group3'])
+#pm.select(['group1'])
 sel_list = pm.ls(sl=True)
 
-create_dynamic_joints(sel_list)
+nested_jnt_list = build_joints(sel_list)
+
+setup_dynamic_joints(nested_jnt_list)
     
+
+
+#pm.select('.cv[0:1]')
+#pm.select('.cv[2]')
+
+#pm.cluster('{}.cv[{1}]'.format(crv, cv), relative=True)
+#pm.cluster('{0}.cv[{1}]'.format('blendshape_0_crv', 2), relative=True)
