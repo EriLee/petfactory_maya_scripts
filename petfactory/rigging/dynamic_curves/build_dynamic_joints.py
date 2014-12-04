@@ -73,7 +73,7 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
             else:
                 cv = i
                 
-            clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
+            clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=False)
             pm.parent(clust_handle, cluster_grp)
         
         crv_list.append(crv)
