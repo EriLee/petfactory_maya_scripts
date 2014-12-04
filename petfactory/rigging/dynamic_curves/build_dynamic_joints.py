@@ -55,8 +55,8 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
         crv = pm.curve(ep=pos_list, name='original_curve')
         
         blendshape_crv = pm.duplicate(crv, name='blendshape_{0}_crv'.format(index))[0]
-        pm.blendShape(blendshape_crv, crv)
-        #pm.parent(blendshape_crv, blendshape_grp)
+        pm.blendShape(blendshape_crv, crv, origin='world')
+        
         
         num_cvs = blendshape_crv.getShape().numCVs()
         
@@ -73,10 +73,16 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
             else:
                 cv = i
                 
-            clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=False)
+            clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
             pm.parent(clust_handle, cluster_grp)
         
         crv_list.append(crv)
+        
+        # if we parent and and set zero out the transforms, the cluster and blendshape curves plays along :)
+        # with no offset... hmmm need to check out why this is...
+        pm.parent(blendshape_crv, blendshape_grp)
+        blendshape_crv.translate.set(0,0,0)
+        blendshape_crv.rotate.set(0,0,0)
   
     # make the curves dynamic    
     info_dict_list = dynamic_curves.make_curves_dynamic(crv_list)
