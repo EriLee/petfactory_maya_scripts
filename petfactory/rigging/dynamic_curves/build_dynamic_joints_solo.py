@@ -29,9 +29,11 @@ def build_joints(joint_ref_list):
 
 
 
-def setup_dynamic_joint_chain(jnt_dict):
+def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     #pprint.pprint(jnt_dict)
+    
+    ret_dict = {}
     
     name = jnt_dict.keys()[0]
     jnt_list = jnt_dict.get(name)
@@ -96,16 +98,106 @@ def setup_dynamic_joint_chain(jnt_dict):
     
     
     # make the curves dynamic    
-    info_dict_list = nhair_dynamics.make_curve_dynamic(crv)
-
-
- 
+    nhair_dict_list = nhair_dynamics.make_curve_dynamic(crv)
     
-#pm.select(['group1', 'group2', 'group3', 'group4'])
-pm.select(['group1'])
+    #pprint.pprint(info_dict_list)
+    
+    output_curve = nhair_dict_list.get('output_curve')
+    follicle = nhair_dict_list.get('follicle')
+    nucleus = nhair_dict_list.get('nucleus')
+    hairsystem = nhair_dict_list.get('hairsystem')
+    
+    
+    # output curve
+    if output_curve:
+        iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=output_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
+        pm.parent(iks_handle, root_misc_grp)
+        ret_dict['output_curve'] = output_curve
+    
+    else:
+        print('could not access the output curve')  
+          
+      
+    # follicle    
+    if follicle:
+        pm.setAttr('{}.pointLock'.format(follicle.getShape()), 1)
+        pm.parent(follicle.getParent(), root_ctrl)
+        ret_dict['follicle'] = follicle
+        
+    else:
+        print('could not access the follicle')
+      
+      
+    # nucleus    
+    if nucleus:
+        nucleus.timeScale.set(10)
+        ret_dict['nucleus'] = nucleus
+        
+    else:
+        print('could not access the nucleus')
+        
+        
+    
+    # hair system  
+    if hairsystem:
+        
+        # if we want to use an existing hair system
+        if existing_hairsystem is not None:
+            print('Delete current hairsystem, use {0}'.format(existing_hairsystem))
+            
+            num_connection = len(pm.listConnections('{0}.inputHair'.format(hairsystem_1)))
+            
+            follicle.outHair >> existing_hairsystem.inputHair[num_connection]
+            existing_hairsystem.outputHair[num_connection] >> follicle.currentPosition
+            
+            pm.delete(hairsystem)
+            
+        else:         
+            hairsystem.startCurveAttract.set(0.005)
+            
+        ret_dict['hairsystem'] = hairsystem
+        
+        
+    else:
+        print('could not access the hairsystem')
+        
+        
+    return ret_dict
+        
+        
+
+    
+pm.select(['group1', 'group2', 'group3', 'group4'])
+#pm.select(['group1', 'group2', 'group3'])
+#pm.select(['group1'])
 sel_list = pm.ls(sl=True)
 
+# build the joints
 jnt_dict_list = build_joints(sel_list)
 
 
-setup_dynamic_joint_chain(jnt_dict_list[0])
+# set up the nhair dynamics
+output_curve_list = []
+output_curve_grp = pm.group(em=True, name='output_curve_grp')
+
+dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
+hairsystem_1 = dyn_joint_dict_1.get('hairsystem')
+output_curve_list.append(dyn_joint_dict_1.get('output_curve'))
+
+dyn_joint_dict_2 = setup_dynamic_joint_chain(jnt_dict_list[1], existing_hairsystem=hairsystem_1)
+output_curve_list.append(dyn_joint_dict_2.get('output_curve'))
+
+dyn_joint_dict_3 = setup_dynamic_joint_chain(jnt_dict_list[2], existing_hairsystem=hairsystem_1)
+output_curve_list.append(dyn_joint_dict_3.get('output_curve'))
+
+dyn_joint_dict_4 = setup_dynamic_joint_chain(jnt_dict_list[3], existing_hairsystem=hairsystem_1)
+output_curve_list.append(dyn_joint_dict_4.get('output_curve'))
+
+for output_curve in output_curve_list:
+    curve_parent = output_curve.getParent()
+    pm.parent(output_curve, output_curve_grp)
+    pm.delete(curve_parent)
+    
+
+
+
