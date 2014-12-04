@@ -23,10 +23,11 @@ def build_joints(joint_ref_list):
     
 
 
-def setup_dynamic_joints(nested_jnt_list, name='name'):
+def setup_dynamic_joints(nested_jnt_list):
     
     crv_list = []
     
+    '''
     root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
     root_ctrl_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_ctrl_grp'.format(name))
     root_misc_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_misc_grp'.format(name))
@@ -43,10 +44,32 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
     pm.parent(nested_jnt_list[0][0], jnt_grp)
     
     pm.parent(jnt_grp, root_ctrl)
-    
+    '''
     
     
     for index, jnt_list in enumerate(nested_jnt_list):
+        
+        name = 'flower_{0}'.format(index)
+        
+        root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
+        root_ctrl_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_ctrl_grp'.format(name))
+        root_misc_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_misc_grp'.format(name))
+     
+        root_ctrl = pm.circle(normal=(1,0,0), radius =5, ch=False, name='{0}_root_ctrl'.format(name))[0]
+        pm.parent(root_ctrl, root_ctrl_grp)
+        root_ctrl_grp.setMatrix(nested_jnt_list[index][0].getMatrix())
+        
+        cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
+        blendshape_grp = pm.group(parent=root_ctrl, em=True, name='{0}_blendshape_grp'.format(name))
+        
+        jnt_grp = pm.group(em=True, name='{0}_jnt_grp'.format(name))
+        jnt_grp.setMatrix(nested_jnt_list[index][0].getMatrix())
+        pm.parent(nested_jnt_list[index][0], jnt_grp)
+        
+        pm.parent(jnt_grp, root_ctrl)
+        
+        
+    
         
         # get the joint positions
         pos_list = [pm.joint(jnt, q=True, p=True, a=True) for jnt in jnt_list]
@@ -93,38 +116,46 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
         #pprint.pprint(info_dict)
         dynamic_curve = info_dict.get('curve')
         dynamic_curve.rename('dynamic_curve')  
-        pm.ikHandle(solver='ikSplineSolver', curve=dynamic_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=nested_jnt_list[index][0], ee=nested_jnt_list[index][-1])    
+        iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=dynamic_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=nested_jnt_list[index][0], ee=nested_jnt_list[index][-1])    
+        pm.parent(iks_handle, root_misc_grp)
+
+        if index is 0:
+            # get a reference to the hairsystem and nucleus
+            hairsystem = info_dict_list[0].get('hairsystem').getShape()
+            nucleus = info_dict_list[0].get('nucleus')
+            follicle = info_dict_list[0].get('follicle')
+            output_curve = info_dict_list[0].get('curve')
+            
+            
+            
+            pm.parent(output_curve.getParent(), root_misc_grp)
+            
+            pm.parent(follicle.getParent(), root_ctrl)
+            
+            # hairsystem
+            hairsystem.startCurveAttract.set(0.005)
+            #pm.select(hairsystem)
+            
+            
+            # nucleus
+            #nucleus.spaceScale.set(.1)
+            nucleus.timeScale.set(10)
+            #print(nucleus)
     
 
-    # get a reference to the hairsystem and nucleus
-    hairsystem = info_dict_list[0].get('hairsystem').getShape()
-    nucleus = info_dict_list[0].get('nucleus')
-    follicle = info_dict_list[0].get('follicle')
-
-
-    pm.parent(follicle.getParent(), root_ctrl)
 
     
-    # hairsystem
-    hairsystem.startCurveAttract.set(0.005)
-    #pm.select(hairsystem)
+
     
+  
     
-    # nucleus
-    #nucleus.spaceScale.set(.1)
-    nucleus.timeScale.set(10)
-    #print(nucleus)
-    
-    
-    
-    
-#pm.select(['group1', 'group2', 'group3', 'group4'])
-pm.select(['group1'])
+pm.select(['group1', 'group2', 'group3', 'group4'])
+#pm.select(['group1'])
 sel_list = pm.ls(sl=True)
 
 nested_jnt_list = build_joints(sel_list)
 
-setup_dynamic_joints(nested_jnt_list, name='flower')
+setup_dynamic_joints(nested_jnt_list)
     
 
 
