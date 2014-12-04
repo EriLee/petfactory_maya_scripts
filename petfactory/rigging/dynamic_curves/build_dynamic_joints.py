@@ -5,7 +5,7 @@ import pprint
 
 reload(dynamic_curves)
 
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v01.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
 
 
 def build_joints(joint_ref_list):
@@ -23,7 +23,7 @@ def build_joints(joint_ref_list):
     
 
 
-def setup_dynamic_joints(nested_jnt_list):
+def setup_dynamic_joints(nested_jnt_list, name='name'):
     
     crv_list = []
     
@@ -40,6 +40,8 @@ def setup_dynamic_joints(nested_jnt_list):
         
         num_cvs = blendshape_crv.getShape().numCVs()
         
+        
+        cluster_grp = pm.group(em=True, name='{0}_{1}_cluster_grp'.format(name, index))
         # loop through the cv and add cluster. On cv 0-1 add one cluster,
         # the rest of the cv will have one cluster each, 
         # might add one to the second to last and last
@@ -51,7 +53,8 @@ def setup_dynamic_joints(nested_jnt_list):
             else:
                 cv = i
                 
-            pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
+            clust = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
+            pm.parent(clust, cluster_grp)
         
         crv_list.append(crv)
   
@@ -84,13 +87,13 @@ def setup_dynamic_joints(nested_jnt_list):
     
     
     
-pm.select(['group1', 'group2', 'group3', 'group4'])
-#pm.select(['group1'])
+#pm.select(['group1', 'group2', 'group3', 'group4'])
+pm.select(['group1'])
 sel_list = pm.ls(sl=True)
 
 nested_jnt_list = build_joints(sel_list)
 
-setup_dynamic_joints(nested_jnt_list)
+setup_dynamic_joints(nested_jnt_list, name='flower')
     
 
 
