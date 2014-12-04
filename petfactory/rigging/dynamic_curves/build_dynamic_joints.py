@@ -27,6 +27,25 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
     
     crv_list = []
     
+    root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
+    root_ctrl_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_ctrl_grp'.format(name))
+    root_misc_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_misc_grp'.format(name))
+ 
+    root_ctrl = pm.circle(normal=(1,0,0), radius =5, ch=False, name='{0}_root_ctrl'.format(name))[0]
+    pm.parent(root_ctrl, root_ctrl_grp)
+    root_ctrl_grp.setMatrix(nested_jnt_list[0][0].getMatrix())
+    
+    cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
+    blendshape_grp = pm.group(parent=root_ctrl, em=True, name='{0}_blendshape_grp'.format(name))
+    
+    jnt_grp = pm.group(em=True, name='{0}_jnt_grp'.format(name))
+    jnt_grp.setMatrix(nested_jnt_list[0][0].getMatrix())
+    pm.parent(nested_jnt_list[0][0], jnt_grp)
+    
+    pm.parent(jnt_grp, root_ctrl)
+    
+    
+    
     for index, jnt_list in enumerate(nested_jnt_list):
         
         # get the joint positions
@@ -37,11 +56,12 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
         
         blendshape_crv = pm.duplicate(crv, name='blendshape_{0}_crv'.format(index))[0]
         pm.blendShape(blendshape_crv, crv)
+        #pm.parent(blendshape_crv, blendshape_grp)
         
         num_cvs = blendshape_crv.getShape().numCVs()
         
         
-        cluster_grp = pm.group(em=True, name='{0}_{1}_cluster_grp'.format(name, index))
+        
         # loop through the cv and add cluster. On cv 0-1 add one cluster,
         # the rest of the cv will have one cluster each, 
         # might add one to the second to last and last
@@ -53,8 +73,8 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
             else:
                 cv = i
                 
-            clust = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
-            pm.parent(clust, cluster_grp)
+            clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
+            pm.parent(clust_handle, cluster_grp)
         
         crv_list.append(crv)
   
@@ -73,7 +93,12 @@ def setup_dynamic_joints(nested_jnt_list, name='name'):
     # get a reference to the hairsystem and nucleus
     hairsystem = info_dict_list[0].get('hairsystem').getShape()
     nucleus = info_dict_list[0].get('nucleus')
+    follicle = info_dict_list[0].get('follicle')
 
+
+    pm.parent(follicle.getParent(), root_ctrl)
+
+    
     # hairsystem
     hairsystem.startCurveAttract.set(0.005)
     #pm.select(hairsystem)
