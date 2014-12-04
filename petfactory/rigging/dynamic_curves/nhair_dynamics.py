@@ -1,3 +1,5 @@
+import pymel.core as pm
+
 def make_curve_dynamic(crv):
     
     pm.select(crv)
