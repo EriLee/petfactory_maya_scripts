@@ -5,20 +5,29 @@ import petfactory.rigging.joint_tools as joint_tools
 import petfactory.rigging.dynamic_curves.nhair_dynamics as nhair_dynamics
 reload(nhair_dynamics)
 
-
-
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
 
 
 # build the joints from the joint ref group
-def build_joints(joint_ref_list):
+def build_joints(joint_ref_list, name_list=None):
     
     ret_list = []
        
     for index, joint_ref in enumerate(joint_ref_list):
         
-        name = joint_ref.nodeName()
-        joint_info = joint_tools.build_joint_info(joint_ref, override_name='{0}_{1}'.format(name, index))
+        if name_list is not None:
+            
+            if len(joint_ref_list) != len(name_list):
+                pm.warning('The length of name list does not match the ref list! ref name used instead')
+                name = joint_ref.nodeName()
+                
+            else:
+                name = name_list[index]
+        else:
+            name = joint_ref.nodeName()
+        
+        #joint_info = joint_tools.build_joint_info(joint_ref, override_name='{0}_{1}'.format(name, index))
+        joint_info = joint_tools.build_joint_info(joint_ref, override_name='{0}'.format(name))
         up_vec = joint_tools.vec_from_transform(joint_ref, 2)
         jnt_list = joint_tools.build_joint_hierarchy(joint_info, up_vec)
         
@@ -85,7 +94,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         else:
             cv = i
             
-        clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True)
+        clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True, name='{0}_{1}_cluster_'.format(name, i))
         pm.parent(clust_handle, cluster_grp)
         
         
@@ -167,14 +176,17 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
 
     
-pm.select(['group1', 'group2', 'group3', 'group4'])
+#pm.select(['group1', 'group2', 'group3', 'group4'])
 #pm.select(['group1', 'group2', 'group3'])
 #pm.select(['group1'])
-sel_list = pm.ls(sl=True)
+#sel_list = pm.ls(sl=True)
+#jnt_dict_list = build_joints(sel_list)
+
+node = pm.PyNode('flower_jnt_pos')
+ref_list = [node, node, node, node]
 
 # build the joints
-jnt_dict_list = build_joints(sel_list)
-
+jnt_dict_list = build_joints(ref_list, name_list=['tendri_1', 'tendril_2', 'tendril_3', 'tendril_4'])
 
 # set up the nhair dynamics
 output_curve_list = []
@@ -184,8 +196,10 @@ dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
 hairsystem_1 = dyn_joint_dict_1.get('hairsystem')
 output_curve_list.append(dyn_joint_dict_1.get('output_curve'))
 
+
 dyn_joint_dict_2 = setup_dynamic_joint_chain(jnt_dict_list[1], existing_hairsystem=hairsystem_1)
 output_curve_list.append(dyn_joint_dict_2.get('output_curve'))
+
 
 dyn_joint_dict_3 = setup_dynamic_joint_chain(jnt_dict_list[2], existing_hairsystem=hairsystem_1)
 output_curve_list.append(dyn_joint_dict_3.get('output_curve'))
