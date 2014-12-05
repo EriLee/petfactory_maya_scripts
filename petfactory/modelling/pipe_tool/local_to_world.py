@@ -27,6 +27,30 @@ for z in range(10):
     
     sl = pm.spaceLocator()
     sl.translate.set(z_wp)
+
+
+
+'''
+random note on 2d rotation....
+
+
+2D rotation
+
+clockwise about the origin
+
+functional form:
+
+x' =  x * cos(theta) + y * sin(theta)
+y' = -x * sin(theta) + y * cos(theta)
+
+matrix form:
+
+x' = | cos(theta)  sin(theta) |   | x |
+     |                        | x |   |
+y' = | cos(theta)  sin(theta) |   | y |
+
+
+'''
         
 
 
