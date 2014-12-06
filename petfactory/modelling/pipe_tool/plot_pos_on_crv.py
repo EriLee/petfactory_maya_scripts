@@ -81,7 +81,7 @@ def build_radius_t_matrix(radius, theta, num_points):
     crv_ang_diff = pm.curve(d=1, p=[(0,0,0),(8,0,0)])
        
     crv_theta.rotate.set((0, 0, pm.util.degrees(theta)))
-    #crv_ang_diff.rotate.set((0, 0, pm.util.degrees(ang_opp)))
+    #crv_ang_diff.rotate.set((0, 0, pm.u til.degrees(ang_opp)))
     
     circ = pm.circle(radius=radius)[0]
     circ.translate.set(radius_center)
@@ -94,7 +94,13 @@ def build_radius_t_matrix(radius, theta, num_points):
 
 radius_t_matrix_list = build_radius_t_matrix(radius=3, theta=math.pi/6, num_points=4)
 
+# get the matrix of the current sel to transform the matrix
+#tm = pm.ls(sl=True)[0].getMatrix()
+
 for i, p in enumerate(radius_t_matrix_list):
         sp = pm.polySphere(r=.2)[0]
+        #sp.setMatrix(radius_t_matrix_list[i] * tm)
         sp.setMatrix(radius_t_matrix_list[i])
         pm.toggle(sp, localAxis=True)
+        
+        
