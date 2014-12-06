@@ -1,8 +1,10 @@
 import pymel.core as pm
 import maya.cmds as cmds
 import pprint
+import math
 
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
 
 
 def pos(p, size=.2):
@@ -14,27 +16,25 @@ radius = 3
 theta = math.pi/6
 num_points = 6
 
-ang_start = (1.5 * math.pi) - theta
-ang_rest = (math.pi/2) - theta
-
-# to get the last angle in the right triangle we can use the simplified
-#ang_opp = (180 - 90) - theta 
-#ang_opp = 90 - theta
+# The total angle in a triangle is 180 degrees
+# since one angle is 90 deg (pi/2) and the theta ang is known, we can
+# get the remaining angle with 180 - 90 - theta, which can be simplified to
+# 90 - theta i.e. (math.pi/2) - theta
 ang_opp = (math.pi/2) - theta
 
-# how to get the adjacent given the opposite (radius) and the angle
-#math.tan(theta) = o/a
-#a * math.tan(theta) = o
-#a = a / math.tan(theta)
+# get the adjacent given the opposite (radius) and the angle theta
+# math.tan(theta) = o/a
+# a * math.tan(theta) = o
+# a = a / math.tan(theta)
 adjacent = radius / math.tan(theta)
 
-
+# create the vector to reflect about
 mid_vec = pm.datatypes.Vector(adjacent, radius, 0)
 
-# calculate the positions on the circlw
+# calculate the positions on the circle
 ang_inc = ang_opp/(num_points-1)
-pos_on_circ= []
 
+pos_on_circ= []
 for i in range(num_points):
     
     a = (1.5 * math.pi) - (ang_inc * i)
