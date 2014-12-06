@@ -31,10 +31,12 @@ adjacent = radius / math.tan(theta)
 # create the vector to reflect about
 mid_vec = pm.datatypes.Vector(adjacent, radius, 0)
 
+radius_center = pm.datatypes.Vector(adjacent, radius, 0)
+
 # calculate the positions on the circle
 ang_inc = ang_opp/(num_points-1)
 
-pos_on_circ= []
+pos_on_circ = []
 for i in range(num_points):
     
     a = (1.5 * math.pi) - (ang_inc * i)
@@ -50,9 +52,27 @@ pos_on_circ_reflected = [ 2 * pos_on_circ[i].dot(mid_vec) / mid_vec.dot(mid_vec)
 pos_on_circ_reflected.reverse()
 radius_pos_list =  pos_on_circ + pos_on_circ_reflected
 
-# visualize
+
+# create transformation matrices per point on circle
+t_matrix_list = []
 for p in radius_pos_list:
-    pos(p)
+    aim = (radius_center - p).normal()
+    up = pm.datatypes.Vector(0,0,1)
+    cross = aim.cross(up)
+    
+    tm = pm.datatypes.TransformationMatrix( [ [aim.x, aim.y, aim.z, 0],
+                                              [cross.x, cross.y, cross.z, 0],
+                                              [up.x, up.y, up.z, 0],
+                                              [p.x, p.y, p.z, 1] ])
+    t_matrix_list.append(tm)
+
+
+# visualize
+for i, p in enumerate(radius_pos_list):
+    #pos(p)
+    sp = pm.polySphere(r=.2)[0]
+    sp.setMatrix(t_matrix_list[i])
+    pm.toggle(sp, localAxis=True)
 
  
 crv_theta = pm.curve(d=1, p=[(0,0,0),(8,0,0)])
@@ -62,7 +82,7 @@ crv_theta.rotate.set((0, 0, pm.util.degrees(theta)))
 #crv_ang_diff.rotate.set((0, 0, pm.util.degrees(ang_opp)))
 
 circ = pm.circle(radius=radius)[0]
-circ.translate.set(adjacent, radius, 0)
+circ.translate.set(radius_center)
 
 pos((adjacent, radius, 0), size=4)
 
