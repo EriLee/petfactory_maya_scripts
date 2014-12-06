@@ -13,15 +13,13 @@ def pos(p, size=.2):
     loc.translate.set(p)
 
 def build_radius_t_matrix(radius, theta, num_points):
-
-    #radius = 3
-    #theta = math.pi/6
     
     # The total angle in a triangle is 180 degrees
     # since one angle is 90 deg (pi/2) and the theta ang is known, we can
     # get the remaining angle with 180 - 90 - theta, which can be simplified to
-    # 90 - theta i.e. (math.pi/2) - theta
-    ang_opp = (math.pi/2) - theta
+    # 90 - theta i.e. (math.pi/2) - theta, then we multiply by 2 to get the full circle
+    # so we do not need to relect the vectors across the mid vec to get the full radius circ
+    ang_full = ((math.pi/2) - theta) * 2
     
     # get the adjacent given the opposite (radius) and the angle theta
     # math.tan(theta) = o/a
@@ -30,33 +28,25 @@ def build_radius_t_matrix(radius, theta, num_points):
     adjacent = radius / math.tan(theta)
     
     # create the vector to reflect about
-    mid_vec = pm.datatypes.Vector(adjacent, radius, 0)
+    #mid_vec = pm.datatypes.Vector(adjacent, radius, 0)
     
     radius_center = pm.datatypes.Vector(adjacent, radius, 0)
     
     # calculate the positions on the circle
-    ang_inc = ang_opp/(num_points-1)
+    ang_inc = ang_full/(num_points-1)
     
-    pos_on_circ = []
+    # the ang from pos x axis to opposite (negative y axis)
+    ang_to_opp = (1.5 * math.pi)
+    
+    t_matrix_list = []
     for i in range(num_points):
         
-        a = (1.5 * math.pi) - (ang_inc * i)
+        a = ang_to_opp - (ang_inc * i)
         x = math.cos(a) * radius + adjacent
         y = math.sin(a) * radius + radius
-        pos_on_circ.append(pm.datatypes.Vector(x, y, 0))
+        p = pm.datatypes.Vector(x, y, 0)
         
-    
-    # reflect the pos on circle across the mid vec  
-    pos_on_circ_reflected = [ 2 * pos_on_circ[i].dot(mid_vec) / mid_vec.dot(mid_vec) * mid_vec - pos_on_circ[i] for i in range(num_points-1) ]
-    
-    # combine the pos and the reflected pos
-    pos_on_circ_reflected.reverse()
-    radius_pos_list =  pos_on_circ + pos_on_circ_reflected
-    
-    
-    # create transformation matrices per point on circle
-    t_matrix_list = []
-    for p in radius_pos_list:
+        # create the etransformation matrix
         aim = (radius_center - p).normal()
         up = pm.datatypes.Vector(0,0,1)
         cross = aim.cross(up)
@@ -66,41 +56,34 @@ def build_radius_t_matrix(radius, theta, num_points):
                                                   [up.x, up.y, up.z, 0],
                                                   [p.x, p.y, p.z, 1] ])
         t_matrix_list.append(tm)
+        
     
+    # visualize    
+    #crv_theta = pm.curve(d=1, p=[(0,0,0),(8,0,0)])       
+    #crv_theta.rotate.set((0, 0, pm.util.degrees(theta)))
+
+    #circ = pm.circle(radius=radius)[0]
+    #circ.translate.set(radius_center)
     
-    '''
-    # visualize
-    for i, p in enumerate(radius_pos_list):
-        pos(p)
-        #sp = pm.polySphere(r=.2)[0]
-        #sp.setMatrix(t_matrix_list[i])
-        #pm.toggle(sp, localAxis=True)
+    # center locator    
+    #pos((adjacent, radius, 0), size=4)
     
-    
-    crv_theta = pm.curve(d=1, p=[(0,0,0),(8,0,0)])
-    crv_ang_diff = pm.curve(d=1, p=[(0,0,0),(8,0,0)])
-       
-    crv_theta.rotate.set((0, 0, pm.util.degrees(theta)))
-    #crv_ang_diff.rotate.set((0, 0, pm.u til.degrees(ang_opp)))
-    
-    circ = pm.circle(radius=radius)[0]
-    circ.translate.set(radius_center)
-    
-    pos((adjacent, radius, 0), size=4)
-    '''
     
     return t_matrix_list
 
 
-radius_t_matrix_list = build_radius_t_matrix(radius=3, theta=math.pi/6, num_points=4)
+radius_t_matrix_list = build_radius_t_matrix(radius=3, theta=math.pi/6, num_points=12)
 
 # get the matrix of the current sel to transform the matrix
-#tm = pm.ls(sl=True)[0].getMatrix()
+cube = pm.polyCube()[0]
+cube.translate.set(5,5,5)
+cube.rotate.set(50,70,90)
+
+tm = cube.getMatrix()
 
 for i, p in enumerate(radius_t_matrix_list):
         sp = pm.polySphere(r=.2)[0]
-        #sp.setMatrix(radius_t_matrix_list[i] * tm)
-        sp.setMatrix(radius_t_matrix_list[i])
+        sp.setMatrix(radius_t_matrix_list[i] * tm)
+        #sp.setMatrix(radius_t_matrix_list[i])
         pm.toggle(sp, localAxis=True)
-        
         
