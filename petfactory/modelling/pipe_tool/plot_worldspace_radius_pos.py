@@ -118,17 +118,21 @@ tm_list = worldspace_radius(cv_list=cv_list, radius=3, num_points=9)
 
 result_pos_list = []
 
-for index in range(num_cv):
+for index in range(num_cv-2):
+    
+    tm_list = worldspace_radius(cv_list=cv_list[index:index+3], radius=1.5, num_points=9)
     
     if index is 0:
-        print('first')
-    elif index is num_cv-1:
-        print('last')
-    else:
-        tm_list = worldspace_radius(cv_list=cv_list[index-1:index+2], radius=1.5, num_points=9)
-        
-        for tm in tm_list:
+        first_matrix = tm_list[0]
+    
+    
+    for tm in tm_list:
             result_pos_list.append([pos.rotateBy(tm) + tm.getTranslation(space='world') for pos in profile_pos])
+            
+    if index is num_cv-3:
+        result_pos_list.insert(0, [pos.rotateBy(first_matrix) + cv_list[0] for pos in profile_pos])
+        result_pos_list.append([pos.rotateBy(tm_list[-1]) + cv_list[-1] for pos in profile_pos])
+        
                 
 
 #pprint.pprint(result_pos_list)
