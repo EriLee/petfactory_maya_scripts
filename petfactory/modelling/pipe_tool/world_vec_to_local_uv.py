@@ -7,47 +7,59 @@ def loc(p, size=.2):
     loc.translate.set(p)
 
 
-crv = pm.curve(d=1, p=[(10,2,0), (7, 3, 0), (10, 5, 0)])
+def world_to_uv(cv_list):
+    
+    vec_aim = pm.datatypes.Vector(cv_list[0] - cv_list[1]).normal()
+    vec_up = pm.datatypes.Vector(cv_list[2] - cv_list[1]).normal()
+    pos = pm.datatypes.Vector(cv_list[1])
+    
+    # construct a orthogonalized coordinate space
+    vec_cross = vec_aim.cross(vec_up).normal()
+    vec_up_ortho = vec_cross.cross(vec_aim).normal()
+    
+    # create a transformation matrix
+    tm = pm.datatypes.TransformationMatrix( [ [vec_aim.x, vec_aim.y, vec_aim.z, 0],
+                                              [vec_up_ortho.x, vec_up_ortho.y, vec_up_ortho.z, 0],   
+                                              [vec_cross.x, vec_cross.y, vec_cross.z, 0],   
+                                              [pos.x, pos.y, pos.z, 1] 
+                                                
+                                            ])
+    # bring the 3d pos to 2d uv space, by using the dot product to project on the orthogonal "base vectors"
+    aim_u = vec_aim.dot(vec_aim)
+    aim_v = vec_aim.dot(vec_up_ortho)
+    
+    up_u = vec_up.dot(vec_aim)
+    up_v = vec_up.dot(vec_up_ortho)
+    
+    theta = math.atan2(up_v, up_u)
+    
+    radius = 2
+    
+    #radius, theta, num_points
 
+    # NOTE that we divide theta by half!!!!
+    t_matrix_list = build_radius_t_matrix(radius=radius, theta=theta/2, num_points=12)
+    
+    for tm in t_matrix_list:
+        loc((tm[3][0], tm[3][1], tm[3][2]))
+        
+    # visulaize
+
+    print(pm.util.degrees(theta))
+    #loc((aim_u, aim_v, 0))
+    #loc((up_u, up_v, 0))
+    
+    
+    #loc(vec_ba)
+    #loc(vec_bc)
+    
+    #cube = pm.polyCube()[0]
+    #cube.setMatrix(tm)
+
+
+crv = pm.curve(d=1, p=[(10,2,0), (7, 3, 0), (10, 5, 0)])
 cv_list = crv.getCVs()
 
-vec_aim = pm.datatypes.Vector(cv_list[0] - cv_list[1]).normal()
-vec_up = pm.datatypes.Vector(cv_list[2] - cv_list[1]).normal()
-pos = pm.datatypes.Vector(cv_list[1])
-
-# construct a orthogonalized coordinate space
-vec_cross = vec_aim.cross(vec_up).normal()
-vec_up_ortho = vec_cross.cross(vec_aim).normal()
-
-# create a transformation matrix
-tm = pm.datatypes.TransformationMatrix( [ [vec_aim.x, vec_aim.y, vec_aim.z, 0],
-                                          [vec_up_ortho.x, vec_up_ortho.y, vec_up_ortho.z, 0],   
-                                          [vec_cross.x, vec_cross.y, vec_cross.z, 0],   
-                                          [pos.x, pos.y, pos.z, 1] 
-                                            
-                                        ])
-# bring the 3d pos to 2d uv space, by using the dot product to project on the orthogonal "base vectors"
-aim_u = vec_aim.dot(vec_aim)
-aim_v = vec_aim.dot(vec_up_ortho)
-
-up_u = vec_up.dot(vec_aim)
-up_v = vec_up.dot(vec_up_ortho)
-
-theta = math.atan2(up_v, up_u)
-
-radius = 2
+world_to_uv(cv_list=cv_list)
 
 
-
-# visulaize
-
-#print(pm.util.degrees(theta))
-#loc((aim_u, aim_v, 0))
-#loc((up_u, up_v, 0))
-
-
-#loc(vec_ba)
-#loc(vec_bc)
-
-#cube = pm.polyCube()[0]
-#cube.setMatrix(tm)
