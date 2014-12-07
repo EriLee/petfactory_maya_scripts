@@ -10,7 +10,22 @@ def loc(p, size=.2):
     loc.localScale.set((size,size,size))
     loc.translate.set(p)
 
-
+def create_profile_points(radius, num_points):
+    '''Returns a list of positions (pm.datatypes.Vector) on a circle 
+    around the origin, in the xz plane, i.e. y axis as normal'''
+    
+    ang_inc = (math.pi*2)/num_points
+    
+    p_list = []
+    
+    for i in range(num_points):
+        u = math.cos(ang_inc*i)*radius
+        v = math.sin(ang_inc*i)*radius
+        p_list.append(pm.datatypes.Vector(u, 0, v))
+     
+    return p_list
+    
+    
 def worldspace_radius(cv_list, radius, num_points):
     
     vec_aim = pm.datatypes.Vector(cv_list[0] - cv_list[1]).normal()
@@ -67,6 +82,7 @@ def worldspace_radius(cv_list, radius, num_points):
     ang_to_opp = (1.5 * math.pi)
     
     t_matrix_list = []
+    #transformed_profile_pos = []
     for i in range(num_points):
         
         a = ang_to_opp - (ang_inc * i)
@@ -85,20 +101,42 @@ def worldspace_radius(cv_list, radius, num_points):
                                                   [p.x, p.y, p.z, 1] ])
         t_matrix_list.append(tm * world_tm)
         #loc((p.x, p.y, p.z))
+        #transformed_profile_pos.append( [po.rotateBy(tm * world_tm) + p for po in profile_pos] )
         
     return t_matrix_list
+    #return transformed_profile_pos
 
 
-crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3)])
+crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,12,0), (5,5,0), (0,5,0)])
 cv_list = crv.getCVs()
+num_cv = len(cv_list)
 
-tm_list = worldspace_radius(cv_list=cv_list, radius=3, num_points=10)
-#pprint.pprint(tm_list)
+profile_pos = create_profile_points(.4, 8)
 
-for tm in tm_list:
-    cube = pm.polySphere(r=.1)[0]
-    cube.setMatrix(tm)
-    pm.toggle(cube, localAxis=True)
-    #print(tm)
+tm_list = worldspace_radius(cv_list=cv_list, radius=3, num_points=9)
 
+
+result_pos_list = []
+
+for index in range(num_cv):
+    
+    if index is 0:
+        print('first')
+    elif index is num_cv-1:
+        print('last')
+    else:
+        tm_list = worldspace_radius(cv_list=cv_list[index-1:index+2], radius=1.5, num_points=9)
+        
+        for tm in tm_list:
+            result_pos_list.append([pos.rotateBy(tm) + tm.getTranslation(space='world') for pos in profile_pos])
+                
+
+#pprint.pprint(result_pos_list)
+for result_pos in result_pos_list:
+    pos_list = result_pos
+    
+    for pos in pos_list:
+        cube = pm.polySphere(r=.06)[0]
+        cube.translate.set(pos)
+        
 
