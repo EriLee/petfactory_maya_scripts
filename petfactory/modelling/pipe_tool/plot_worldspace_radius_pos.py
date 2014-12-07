@@ -11,7 +11,7 @@ def loc(p, size=.2):
     loc.translate.set(p)
 
 
-def world_to_uv(cv_list):
+def worldspace_radius(cv_list, radius, num_points):
     
     vec_aim = pm.datatypes.Vector(cv_list[0] - cv_list[1]).normal()
     vec_up = pm.datatypes.Vector(cv_list[2] - cv_list[1]).normal()
@@ -36,10 +36,14 @@ def world_to_uv(cv_list):
     up_u = vec_up.dot(vec_aim)
     up_v = vec_up.dot(vec_up_ortho)
     
-    # NOTE can we remove the multiplication with 2 ??
-    theta = math.atan2(up_v, up_u) / 2
-    radius = 2
-    num_points = 12
+    # using atan2 we can find the angle between the aim vec and the up vector.
+    # we have used the dot product to "project" the aim vec so that it is projected
+    # on the x axis (the adjacent side in the right angled triangle)
+    # we want to get the angle from the adjacent side to the mid vector (mid between the aim and up)
+    # that is the reason that multiply it with .5.
+    theta = math.atan2(up_v, up_u) * .5
+    #radius = 2
+    #num_points = 12
     
     # The total angle in a triangle is 180 degrees
     # since one angle is 90 deg (pi/2) and the theta ang is known, we can
@@ -88,7 +92,7 @@ def world_to_uv(cv_list):
 crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3)])
 cv_list = crv.getCVs()
 
-tm_list = world_to_uv(cv_list=cv_list)
+tm_list = worldspace_radius(cv_list=cv_list, radius=3, num_points=10)
 #pprint.pprint(tm_list)
 
 for tm in tm_list:
