@@ -2,7 +2,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pprint
 import petfactory.rigging.joint_tools as joint_tools
-import petfactory.rigging.dynamic_curves.nhair_dynamics as nhair_dynamics
+import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 reload(nhair_dynamics)
 
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
@@ -178,10 +178,13 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
 #pm.select(['group1', 'group2', 'group3', 'group4'])
 #pm.select(['group1', 'group2', 'group3'])
-#pm.select(['group1'])
-#sel_list = pm.ls(sl=True)
-#jnt_dict_list = build_joints(sel_list)
+pm.select(['group1'])
+sel_list = pm.ls(sl=True)
+jnt_dict_list = build_joints(sel_list)
+dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
 
+
+'''
 node = pm.PyNode('flower_jnt_pos')
 ref_list = [node, node, node, node]
 
@@ -212,6 +215,6 @@ for output_curve in output_curve_list:
     pm.parent(output_curve, output_curve_grp)
     pm.delete(curve_parent)
     
-
+'''
 
 
