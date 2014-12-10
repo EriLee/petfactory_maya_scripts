@@ -8,6 +8,9 @@ pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/
 # create cable meash from duplicated geo, duplicate combine, merge, bind to the joints
 # the move crv into position.
 
+main_cable_grp = pm.group(em=True, name='main_cable_grp')
+misc_grp = pm.group(em=True, name='misc_grp', parent=main_cable_grp)
+
 num_joints = 10
 jnt_list = []
 
@@ -16,20 +19,23 @@ crv = pm.curve(name='orig_crv', d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
 
 # create and position the start and end ctrl
 start_ctrl = pm.circle(normal=(1,0,0), name='start')[0]
-# add attr
-pm.addAttr(start_ctrl, longName='stretchScale', defaultValue=1.0, keyable=True)
-pm.addAttr(start_ctrl, longName='Mode', at="enum", en="Static:Dynamic", keyable=True)
 end_ctrl = pm.circle(normal=(1,0,0), name='end')[0]
 
-# create a crv that will be used as a target for the nahir
-# drive the nhair target crv with a blendshape, maybe unnesecary ?
+# add attr to start ctrl
+pm.addAttr(start_ctrl, longName='stretchScale', defaultValue=1.0, keyable=True)
+pm.addAttr(start_ctrl, longName='Mode', at="enum", en="Static:Dynamic", keyable=True)
+
+# create a crv that will be used as a target for the nhair
+# drive the nhair target crv with the orig crv, set the full weight (index, weight)
 nhair_target_crv = pm.duplicate(crv, name='nhair_target_crv')[0]
 pm.blendShape(crv, nhair_target_crv, origin='world', weight = (0,1))
 
 # make the nhair_target_crv dynamic
 nhair_dict = nhair_dynamics.make_curve_dynamic(nhair_target_crv)
 output_crv = nhair_dict.get('output_curve')
+follicle = nhair_dict.get('follicle')
 
+# create a crv that will drive the ikspline, blend the orig crv, dynamic crv
 # set the weight of index 0 to 1 weigth = (0,1)
 result_spline_crv = pm.duplicate(crv, name='result_spline_crv')[0]
 result_blendshape = pm.blendShape(crv, output_crv, result_spline_crv, origin='world', weight = (0,1))[0]
@@ -41,17 +47,8 @@ reverse_mode.outputX >> result_blendshape.weight[0]
 start_ctrl.Mode >> result_blendshape.weight[1]
 
 
-# create a crv info
+# create a crv info, to get the arclength
 result_crv_info = pm.arclen(result_spline_crv, ch=True)
-
-
-# create a crv info
-#crv_info = pm.arclen(crv, ch=True)
-
-
-crv_shape = crv.getShape()
-min_u, max_u = crv_shape.getKnotDomain()
-
 
 # setup the joint stretch, divide the crv length with the number of joints to
 # to get a value of how much to scale each joint to reach the full crv length
@@ -66,6 +63,10 @@ result_crv_info.arcLength >> arclen_mult.input1
 stretch_scale_mult.output >> arclen_mult.input2
 
 
+# get the max u value
+crv_shape = crv.getShape()
+num_cvs = crv_shape.numCVs()
+min_u, max_u = crv_shape.getKnotDomain()
 # get a u value increment from start to end
 u_inc = max_u / (num_joints-1)
 for index in range(num_joints):
@@ -92,8 +93,6 @@ end_ctrl.setMatrix(jnt_list[-1].getMatrix(ws=True))
 
 
 # create the ikSpline
-#iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=output_crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
-#iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
 iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=result_spline_crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
 
 # enable the advanced twist controls
@@ -115,34 +114,27 @@ start_ctrl.worldMatrix[0] >> iks_handle.dWorldUpMatrix
 end_ctrl.worldMatrix[0] >> iks_handle.dWorldUpMatrixEnd
 
 
-
-num_cvs = crv_shape.numCVs()
-
 # add cluster to cvs. The first cluster will have first and second cv the mid cv will have one
 # cluster to it self and the last cluster will have to cvs.
 cluster_list = []
-for i in range(num_cvs-2):
-    
-    if i is 0:
-        cv = '0:1'
-        
-    elif i > num_cvs-4:
-        cv = '{0}:{1}'.format(num_cvs-2, num_cvs-1)
-        
-    else:
-        cv = str(i+1)
-
-    clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(crv_shape.longName(), cv), relative=False, name='{0}_{1}_cluster_'.format('test', i))
+for i in range(num_cvs):
+ 
+    clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(crv_shape.longName(), str(i)), relative=False, name='{0}_{1}_cluster_'.format('test', i))
     cluster_list.append(clust_handle)
     
 # parent the first and last clusters to ctrl   
-pm.parent(cluster_list[0], start_ctrl)
-pm.parent(cluster_list[-1], end_ctrl)
+pm.parent(cluster_list[0], cluster_list[1], start_ctrl)
+pm.parent(cluster_list[-1], cluster_list[-2], end_ctrl)
 
 # parent the joint to the first ctrl
 pm.parent(jnt_list[0], start_ctrl)
 
 mid_clust_grp = pm.group(em=True, name='mid_cluster_grp')
-pm.parent(cluster_list[1], mid_clust_grp)
-
+pm.parent(cluster_list[2], mid_clust_grp)
 pm.pointConstraint(start_ctrl, end_ctrl, mid_clust_grp)
+
+
+pm.parent(start_ctrl, end_ctrl, main_cable_grp)
+follicle_parent = follicle.getParent()
+pm.parent(mid_clust_grp, iks_handle, crv, result_spline_crv, follicle, misc_grp)
+pm.delete(follicle_parent)
