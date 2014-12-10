@@ -1,4 +1,5 @@
 import pymel.core as pm
+import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
 
@@ -11,10 +12,41 @@ num_joints = 10
 jnt_list = []
 
 # the crv, should be 3 degree, with 5 cvs
-crv = pm.curve(d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
+crv = pm.curve(name='orig_crv', d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
+
+# create and position the start and end ctrl
+start_ctrl = pm.circle(normal=(1,0,0), name='start')[0]
+# add attr
+pm.addAttr(start_ctrl, longName='stretchScale', defaultValue=1.0, keyable=True)
+pm.addAttr(start_ctrl, longName='Mode', at="enum", en="Static:Dynamic", keyable=True)
+end_ctrl = pm.circle(normal=(1,0,0), name='end')[0]
+
+# create a crv that will be used as a target for the nahir
+# drive the nhair target crv with a blendshape, maybe unnesecary ?
+nhair_target_crv = pm.duplicate(crv, name='nhair_target_crv')[0]
+pm.blendShape(crv, nhair_target_crv, origin='world', weight = (0,1))
+
+# make the nhair_target_crv dynamic
+nhair_dict = nhair_dynamics.make_curve_dynamic(nhair_target_crv)
+output_crv = nhair_dict.get('output_curve')
+
+# set the weight of index 0 to 1 weigth = (0,1)
+result_spline_crv = pm.duplicate(crv, name='result_spline_crv')[0]
+result_blendshape = pm.blendShape(crv, output_crv, result_spline_crv, origin='world', weight = (0,1))[0]
+
+# setup the mode to switch between static and dynamic
+reverse_mode = pm.createNode('reverse', name='reverse_mode')
+start_ctrl.Mode >> reverse_mode.input.inputX
+reverse_mode.outputX >> result_blendshape.weight[0]
+start_ctrl.Mode >> result_blendshape.weight[1]
+
 
 # create a crv info
-crv_info = pm.arclen(crv, ch=True)
+result_crv_info = pm.arclen(result_spline_crv, ch=True)
+
+
+# create a crv info
+#crv_info = pm.arclen(crv, ch=True)
 
 
 crv_shape = crv.getShape()
@@ -24,9 +56,15 @@ min_u, max_u = crv_shape.getKnotDomain()
 # setup the joint stretch, divide the crv length with the number of joints to
 # to get a value of how much to scale each joint to reach the full crv length
 # the output from the mult double linear will be fed into the scale x of the jnts
-mult_double = pm.createNode('multDoubleLinear')
-crv_info.arcLength >> mult_double.input1
-mult_double.input2.set(1.0/num_joints)
+stretch_scale_mult = pm.createNode('multDoubleLinear', name='stretch_scale_mult')
+arclen_mult = pm.createNode('multDoubleLinear', name='arclen_mult')
+
+start_ctrl.stretchScale >> stretch_scale_mult.input1
+stretch_scale_mult.input2.set(1.0/num_joints)
+
+result_crv_info.arcLength >> arclen_mult.input1
+stretch_scale_mult.output >> arclen_mult.input2
+
 
 # get a u value increment from start to end
 u_inc = max_u / (num_joints-1)
@@ -41,15 +79,22 @@ for index in range(num_joints):
     pm.toggle(jnt, localAxis=True)
     
     # setup the joint stretch
-    mult_double.output >> jnt.scaleX
+    arclen_mult.output >> jnt.scaleX
     
     # parent the jnt
     if index > 0:
         pm.parent(jnt, jnt_list[index-1])
     
 
+# position the ctrl
+start_ctrl.setMatrix(jnt_list[0].getMatrix(ws=True))
+end_ctrl.setMatrix(jnt_list[-1].getMatrix(ws=True))
+
+
 # create the ikSpline
-iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
+#iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=output_crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
+#iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
+iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=result_spline_crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
 
 # enable the advanced twist controls
 iks_handle.dTwistControlEnable.set(1)
@@ -64,12 +109,6 @@ iks_handle.dWorldUpAxis.set(3)
 iks_handle.dWorldUpVector.set(0,0,1)
 iks_handle.dWorldUpVectorEnd.set(0,0,1)
 
-# create and position the start and end ctrl
-start_ctrl = pm.circle(normal=(1,0,0), name='start')[0]
-start_ctrl.setMatrix(jnt_list[0].getMatrix(ws=True))
-
-end_ctrl = pm.circle(normal=(1,0,0), name='end')[0]
-end_ctrl.setMatrix(jnt_list[-1].getMatrix(ws=True))
 
 # set the world up objects
 start_ctrl.worldMatrix[0] >> iks_handle.dWorldUpMatrix
