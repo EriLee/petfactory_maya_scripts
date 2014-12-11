@@ -35,6 +35,15 @@ def create_pos_list(profile_pos_list, height_divisions):
     
         
 def mesh_from_pos_list(pos_list, axis_divisions, height_divisions, name):
+
+    if height_divisions < 2:
+        pm.warning('height_divisions must be at least 2!')
+        return
+
+    if axis_divisions < 2:
+        pm.warning('axis_divisions must be at least 2!')
+        return
+
     
     # total num verts
     numVertices = len(pos_list)
@@ -121,6 +130,29 @@ pos_list = create_pos_list(profile_pos_list=profile_pos_list, height_divisions=h
 mesh = mesh_from_pos_list(pos_list=pos_list, axis_divisions=axis_divisions, height_divisions=height_divisions, name='myPipe')
 '''
 
+'''
+import petfactory.modelling.mesh.extrude_profile as pet_extrude
+reload(pet_extrude)
+
+dir(pet_extrude)
+
+pos_list = [    (-1, 0, -1), (-1, 0, 1), (1, 0, 1), (1, 0, -1),
+                (-1, 1, -1), (-1, 1, 1), (1, 1, 1), (1, 1, -1),
+            ]
+            
+
+axis_divisions = 4
+height_divisions = 2
+name = 'apa'
+
+print(pos_list)
+
+pm_pos_list = [pm.datatypes.Vector(p[0], p[1], p[2]) for p in pos_list]
+print(pm_pos_list)
+
+pet_extrude.mesh_from_pos_list(pm_pos_list, axis_divisions, height_divisions, name)
+
+'''
 
 
 
