@@ -1,6 +1,8 @@
 import maya.OpenMaya as om
 import pymel.core as pm
+import math
 import pprint
+
 
 def mesh_from_pos_list(pos_list, name):
 
@@ -111,32 +113,42 @@ def mesh_from_pos_list(pos_list, name):
     return mesh_depend_node
     
 
+def create_profile_points(radius, axis_divisions):
+    '''Returns a list of positions (pm.datatypes.Vector) on a circle 
+    around the origin, in the xz plane, i.e. y axis as normal'''
+    
+    ang_inc = (math.pi*2)/axis_divisions
+    
+    p_list = []
+    
+    for i in range(axis_divisions):
+        u = math.cos(ang_inc*i)*radius
+        v = math.sin(ang_inc*i)*radius
+        p_list.append(pm.datatypes.Vector(u, 0, v))
+    
+    # reverse the positions to end up with normals
+    # pointing in the right direction :)
+    p_list.reverse()
+    return p_list
 
-pos_list = [ [   [-1.0, 0.0, -1.0],
-                 [-1.0, 0.0, 1.0],
-                 [1.0, 0.0, 1.0],
-                 [1.0, 0.0, -1.0]
-                 ],
-                 
-             [   [-1.0, 2.0, -1.0],
-                 [-1.0, 2.0, 1.0],
-                 [1.0, 2.0, 1.0],
-                 [1.0, 2.0, -1.0]
-                 ],
-                 
-             [
-                 [-1.0, 4.0, -1.0],
-                 [-1.0, 4.0, 1.0],
-                 [1.0, 4.0, 1.0],
-                 [1.0, 4.0, -1.0]
-                 ],
-                 
-             [   [-1.0, 6.0, -1.0],
-                 [-1.0, 6.0, 1.0],
-                 [1.0, 6.0, 1.0],
-                 [1.0, 6.0, -1.0]]
-                 ] 
-#pprint.pprint(pos_list)            
+
+def create_pos_list(profile_pos_list, height_divisions):
+ 
+    # all the positions that makes up the cylinder in a flat list
+    pos_list = []
+    for i in range(height_divisions):
+        temp_list = []
+        for p in profile_pos_list:
+            temp_list.append(pm.datatypes.Vector(p.x, p.y+i, p.z))
+        pos_list.append(temp_list)
+            
+    return pos_list
+    
+    
+profile_pos = create_profile_points(radius=2, axis_divisions=12)  
+pos_list = create_pos_list(profile_pos_list=profile_pos, height_divisions=20)
+    
+          
 
 mesh = mesh_from_pos_list(pos_list=pos_list, name='test')
 pm.select(mesh.name())
