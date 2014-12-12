@@ -1,8 +1,10 @@
+import maya.OpenMaya as om
 import pymel.core as pm
 import pprint
 import math
 
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
+reload(pet_extrude)
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
 
@@ -176,13 +178,15 @@ def transform_profile_list(result_matrix_list, profile_pos):
     result_pos_list = []
     
     for matrix_list in result_matrix_list:
-    
+        
+        temp_list = []
         for matrix in matrix_list:
             #sp = pm.polySphere(r=.2)[0]
             #sp.setMatrix(matrix)
             #pm.toggle(sp, localAxis=True)
-            result_pos_list.append([pos.rotateBy(matrix) + matrix.getTranslation(space='world') for pos in profile_pos])
+            temp_list.append([pos.rotateBy(matrix) + matrix.getTranslation(space='world') for pos in profile_pos])
             
+        result_pos_list.append(temp_list)
             
     return result_pos_list
             
@@ -233,15 +237,13 @@ profile_pos = create_profile_points(radius=.4, num_points=12)
 
 
 pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
-#pprint.pprint(pos_list)
-#print(len(pos_list))
-
-pet_extrude.mesh_from_pos_list(pos_list=pos_list, name='test')
 
 
+def build_mesh(pos_list):
+    
+    mesh_list = []
+    for p in pos_list:
+        mesh_list.append(pet_extrude.mesh_from_pos_list(pos_list=p, name='test'))
+    return mesh_list
 
-# To avoid twisting of straight pipes build all meshes parts (corners and straight parts)
-# separately, and at the last stage combine them to one mesh. The uvs could be layed out
-# as if the were one peice if we pass in the last used v coord to the next mesh to be
-# generated. The advantage of having separate pices is that we could avoid the twisting
-# of the end points of straight pipes, but we could unfold them as the were one mesh.
+mesh_list = build_mesh(pos_list)
