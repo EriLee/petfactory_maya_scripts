@@ -114,7 +114,28 @@ def create_profile_points(radius, num_points):
      
     return p_list
     
-       
+
+def add_division_to_straight_pipe(start_matrix, end_matrix, num_divisions):
+    
+    ret_matrix_list = []
+    
+    start_pos = start_matrix.getTranslation(space='world')
+    end_pos = end_matrix.getTranslation(space='world')
+    
+    vec = end_pos - start_pos
+    inc = 1.0/(num_divisions-1)
+    
+    for i in range(num_divisions):
+        
+        temp_m = pm.datatypes.TransformationMatrix(start_matrix.asRotateMatrix())
+        pos = start_pos+vec*i*inc
+        temp_m.a30 = pos.x
+        temp_m.a31 = pos.y
+        temp_m.a32 = pos.z
+        ret_matrix_list.append(temp_m)
+
+    return ret_matrix_list
+           
 # build a transformation matrix list for the start point, all the radius positions and the last point
 def create_round_corner_matrix_list(cv_list, num_radius_div):
 
@@ -146,11 +167,16 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             temp_m.a32 = cv_list[0].z
             
             # add the to matrices of the first straight pipe, then add the radius matrix list
-            result_matrix_list.append([temp_m, tm_list[0]])
+            #result_matrix_list.append([temp_m, tm_list[0]])
+            result_matrix_list.append(add_division_to_straight_pipe(temp_m, tm_list[0], 10))
             result_matrix_list.append(tm_list)
             
             last_matrix = tm_list[-1]
+ 
         
+        #
+        # REWRITE THIS IF STATEMENT!!!
+        #
         # last cv to be used when calculating the radius 
         elif index is num_cv-2:           
             print('LAST radie cv: \n\t> straight\n')
@@ -168,7 +194,8 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             
             # add the radius list, then the following straight pipe
             result_matrix_list.append(tm_list)
-            result_matrix_list.append([last_matrix, temp_m])
+            #result_matrix_list.append([last_matrix, temp_m])
+            result_matrix_list.append(add_division_to_straight_pipe(last_matrix, temp_m, 10))
             
             last_matrix = tm_list[-1]
             
@@ -179,7 +206,8 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
     temp_m.a31 = cv_list[-1].y
     temp_m.a32 = cv_list[-1].z
                 
-    result_matrix_list.append([tm_list[-1], temp_m])
+    #result_matrix_list.append([tm_list[-1], temp_m])
+    result_matrix_list.append(add_division_to_straight_pipe(tm_list[-1], temp_m, 10))
 
 
     return result_matrix_list
@@ -187,8 +215,7 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
 
 
 def transform_profile_list(result_matrix_list, profile_pos): 
-
-    
+   
     result_pos_list = []
     
     for matrix_list in result_matrix_list:
