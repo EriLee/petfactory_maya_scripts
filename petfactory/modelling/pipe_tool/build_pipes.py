@@ -6,7 +6,7 @@ import math
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 reload(pet_extrude)
 
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
 
 def loc(p, size=.2):
     loc = pm.spaceLocator()
@@ -234,9 +234,9 @@ def transform_profile_list(result_matrix_list, profile_pos):
 
 #crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,10,3), (5,5,0), (0,5,-3)])
 #crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0)])
-#crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
+crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
 
-crv = pm.ls(sl=True)[0]
+#crv = pm.ls(sl=True)[0]
 cv_list = crv.getCVs(space='world')
 
 # get the matrix list
@@ -256,4 +256,30 @@ def build_mesh(pos_list):
         mesh_list.append(pet_extrude.mesh_from_pos_list(pos_list=p, name='test'))
     return mesh_list
 
+'''
+def add_pipe_fitting(result_matrix_list):
+    
+    num_matrix_list = len(result_matrix_list)
+    
+    for index, matrix_list in enumerate(result_matrix_list):
+        
+        if index is 0:
+            tm = matrix_list[0]
+            
+        elif index < num_matrix_list-1:
+            tm = matrix_list[0]
+            
+             
+        else:
+            tm = matrix_list[-1]
+            print('last')
+            
+        cube = pm.polyCube()[0]
+        cube.setMatrix(tm)
+        cube.scale.set(.2,1.2,1.2)
+        pm.toggle(cube, localAxis=True)
+            
+'''   
 mesh_list = build_mesh(pos_list)
+#add_pipe_fitting(result_matrix_list)
+#len(result_matrix_list)
