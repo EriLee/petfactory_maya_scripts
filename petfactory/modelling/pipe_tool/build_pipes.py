@@ -6,7 +6,7 @@ import math
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 reload(pet_extrude)
 
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
 
 def loc(p, size=.2):
     loc = pm.spaceLocator()
@@ -117,61 +117,73 @@ def create_profile_points(radius, num_points):
        
 # build a transformation matrix list for the start point, all the radius positions and the last point
 def create_round_corner_matrix_list(cv_list, num_radius_div):
-    
-    
-    num_cv = len(cv_list)
 
+    num_cv = len(cv_list)
     result_matrix_list = []
-    for index in range(num_cv):
+    last_matrix = None
     
-        if index <num_cv-2:
+    print('\n')
+    
+    
+    # all the radius calculations is done when the index is in range 0 - (length-2)
+    # I am using the index in the cv positions array [n:n+3] i.e. if the starting 
+    # index is 0 I take aslice of the list starting at 0 index up to 3 (but not including)
+    # so index 0,1,2 is used to calculate the radie. so we would get and index error if
+    # we go past num_cv-2.
+    for index in range(num_cv-2):
+        
+        # calculate the radius
+        tm_list = worldspace_radius(cv_list=cv_list[index:index+3], radius=1, num_points=num_radius_div)
+        
+        # first cv
+        if index is 0:
             
-            tm_list = worldspace_radius(cv_list=cv_list[index:index+3], radius=1, num_points=num_radius_div)
+            # get the rotation matrix from the first matrix in the tm_list (the first matrix of the radius)
+            # set the translation to the world pos of the first cv
+            temp_m = pm.datatypes.TransformationMatrix(tm_list[0].asRotateMatrix())
+            temp_m.a30 = cv_list[0].x
+            temp_m.a31 = cv_list[0].y
+            temp_m.a32 = cv_list[0].z
             
-            # if we are at the first cv, copy the transformation matrix of the first radius,
-            # and set the translation to the cv pos
-            if index is 0:
-                
-                temp_m = pm.datatypes.TransformationMatrix(tm_list[0].asRotateMatrix())
-                temp_m.a30 = cv_list[0].x
-                temp_m.a31 = cv_list[0].y
-                temp_m.a32 = cv_list[0].z
-                
-                result_matrix_list.append([temp_m, tm_list[0]])
-            
-            # append the radius tm list
+            # add the to matrices of the first straight pipe, then add the radius matrix list
+            result_matrix_list.append([temp_m, tm_list[0]])
             result_matrix_list.append(tm_list)
             
+            last_matrix = tm_list[-1]
+        
+        # last cv to be used when calculating the radius 
+        elif index is num_cv-2:           
+            print('LAST radie cv: \n\t> straight\n')
             
+        # mid cv, we are betwen the first and last cv
+        else:
             
-            '''
-            # then we appand the straight pipe between radius
-            temp_m = pm.datatypes.TransformationMatrix(tm_list[-1].asRotateMatrix())
-            #temp_m = tm_list[-1][:]
-            p = tm_list[-1].getTranslation(space='world')
-            temp_m.a30 = p.x
-            temp_m.a31 = p.y
-            temp_m.a32 = p.z
+            # get the rotation matrix from the last matrix (prevoius radius)
+            # set the translation to the world pos of the the first matrix in the current radius matrix list         
+            temp_m = pm.datatypes.TransformationMatrix(last_matrix.asRotateMatrix())
+            pos = tm_list[0].getTranslation(space='world')
+            temp_m.a30 = pos.x
+            temp_m.a31 = pos.y
+            temp_m.a32 = pos.z
             
-            result_matrix_list.append([tm_list[0], temp_m])
-            '''
+            # add the radius list, then the following straight pipe
+            result_matrix_list.append(tm_list)
+            result_matrix_list.append([last_matrix, temp_m])
             
+            last_matrix = tm_list[-1]
             
-           
-        # we are at the last cv, copy the last transformation matrix in the matrix list,
-        # of the last corner set the translation to the position of the last cv 
-        elif index is num_cv-1:
-    
-            temp_m = pm.datatypes.TransformationMatrix(tm_list[-1].asRotateMatrix())
-            temp_m.a30 = cv_list[-1].x
-            temp_m.a31 = cv_list[-1].y
-            temp_m.a32 = cv_list[-1].z
-            
-            result_matrix_list.append([tm_list[-1], temp_m])
-            
+ 
+    # the last cv of the crv, get the ending position of the last straight pipe
+    temp_m = pm.datatypes.TransformationMatrix(tm_list[-1].asRotateMatrix())
+    temp_m.a30 = cv_list[-1].x
+    temp_m.a31 = cv_list[-1].y
+    temp_m.a32 = cv_list[-1].z
+                
+    result_matrix_list.append([tm_list[-1], temp_m])
+
+
     return result_matrix_list
         
-
 
 
 def transform_profile_list(result_matrix_list, profile_pos): 
@@ -195,34 +207,18 @@ def transform_profile_list(result_matrix_list, profile_pos):
 
 #crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,10,3), (5,5,0), (0,5,-3)])
 #crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0)])
-crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0)])
+#crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
 
-#crv = pm.ls(sl=True)[0]
+crv = pm.ls(sl=True)[0]
 cv_list = crv.getCVs(space='world')
 
 # get the matrix list
 result_matrix_list = create_round_corner_matrix_list(cv_list, num_radius_div=10)
 
-#pprint.pprint(len(result_matrix_list))
-
-'''
-for matrix_list in result_matrix_list:
-    
-    for matrix in matrix_list:
-        sp = pm.polySphere(r=.2)[0]
-        sp.setMatrix(matrix)
-        pm.toggle(sp, localAxis=True)
-'''
-# cretae the profile 
+# create the profile 
 profile_pos = create_profile_points(radius=.4, num_points=12)
 
-# plot the profile with the matrix list
-#plot_profile_from_matrix_list(result_matrix_list, profile_pos)
-
-# add fitting mesh to each radius to liner connection
-#add_pipe_fitting(result_matrix_list)
-
-
+# get the positions
 pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
 
 
