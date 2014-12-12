@@ -2,6 +2,8 @@ import maya.OpenMaya as om
 import pymel.core as pm
 
 axis_div = 4
+height_div = 3
+
 
 # the vert positions
 pos_list = [ [-1.0, 0.0, -1.0],
@@ -38,11 +40,21 @@ connection_list = [ 0,1,5,4,
                   ]
 
 # the uv positions
+'''
 uv_coords = [   (0,0), (1,0), (2,0), (3,0), (4,0),
                 (0,1), (1,1), (2,1), (3,1), (4,1),
                 (0,2), (1,2), (2,2), (3,2), (4,2)
             ]
-  
+'''
+
+uv_coords = []
+for v in range(height_div):
+    for u in range(axis_div+1):
+        uv_coords.append((u, v))
+        
+    
+
+
 # uv connections (which vert to assign uv to)
 uv_ids = []
 for n in range(numPolygons):
@@ -101,4 +113,7 @@ meshFn = om.MFnMesh()
 mesh = meshFn.create(numVertices, numPolygons, vertexArray, polyCount, polyConnections, uArray, vArray)
 # assign the uvs
 meshFn.assignUVs(uvCounts, uvIds)
+
+mesh_depend_node = om.MFnDependencyNode(mesh)
+pm.select(mesh_depend_node.name())
 
