@@ -6,7 +6,7 @@ import math
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 reload(pet_extrude)
 
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
 
 def loc(p, size=.2):
     loc = pm.spaceLocator()
@@ -138,8 +138,25 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
                 temp_m.a32 = cv_list[0].z
                 
                 result_matrix_list.append([temp_m, tm_list[0]])
-
+            
+            # append the radius tm list
             result_matrix_list.append(tm_list)
+            
+            
+            
+            '''
+            # then we appand the straight pipe between radius
+            temp_m = pm.datatypes.TransformationMatrix(tm_list[-1].asRotateMatrix())
+            #temp_m = tm_list[-1][:]
+            p = tm_list[-1].getTranslation(space='world')
+            temp_m.a30 = p.x
+            temp_m.a31 = p.y
+            temp_m.a32 = p.z
+            
+            result_matrix_list.append([tm_list[0], temp_m])
+            '''
+            
+            
            
         # we are at the last cv, copy the last transformation matrix in the matrix list,
         # of the last corner set the translation to the position of the last cv 
@@ -154,22 +171,7 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             
     return result_matrix_list
         
-'''
-def plot_profile_from_matrix_list(result_matrix_list, profile_pos): 
 
-    result_pos_list = []
-    for result_matrix in result_matrix_list:
-       
-        for matrix in result_matrix:
-            result_pos_list.append([pos.rotateBy(matrix) + matrix.getTranslation(space='world') for pos in profile_pos])
-
-    for result_pos in result_pos_list:
-    
-        for pos in result_pos:
-            cube = pm.polySphere(r=.06)[0]
-            cube.translate.set(pos)      
- 
-'''
 
 
 def transform_profile_list(result_matrix_list, profile_pos): 
@@ -191,26 +193,11 @@ def transform_profile_list(result_matrix_list, profile_pos):
     return result_pos_list
             
 
-    '''
-    for result_matrix in result_matrix_list:
-       
-        for matrix in result_matrix:
-            result_pos_list.append([pos.rotateBy(matrix) + matrix.getTranslation(space='world') for pos in profile_pos])
-
-    for result_pos in result_pos_list:
-    
-        for pos in result_pos:
-            cube = pm.polySphere(r=.06)[0]
-            cube.translate.set(pos) 
-    '''     
- 
-
-
-
 #crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,10,3), (5,5,0), (0,5,-3)])
 #crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0)])
+crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0)])
 
-crv = pm.ls(sl=True)[0]
+#crv = pm.ls(sl=True)[0]
 cv_list = crv.getCVs(space='world')
 
 # get the matrix list
