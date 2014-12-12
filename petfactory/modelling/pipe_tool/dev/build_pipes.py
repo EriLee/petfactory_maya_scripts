@@ -2,9 +2,10 @@ import pymel.core as pm
 import pprint
 import math
 
-import petfactory.modelling.mesh.extrude_profile as pet_extrude
-
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+
 
 def loc(p, size=.2):
     loc = pm.spaceLocator()
@@ -96,6 +97,37 @@ def worldspace_radius(cv_list, radius, num_points):
     return t_matrix_list
 
 
+    
+ 
+# visualize
+'''
+num_mid_points = 1
+u_inc = 1.0 / (num_mid_points+1)
+
+for index, result_matrix in enumerate(result_matrix_list):
+   
+    for matrix in result_matrix:
+        sp = pm.polySphere(r=.10)[0]
+        pm.toggle(sp, localAxis=True)
+        sp.setMatrix(matrix)
+        
+    if index > 0:
+
+        end_pos = result_matrix[0].getTranslation(space='world')
+        
+        #dot(start_pos, name='start_pos_{0}'.format(index))
+        #dot(end_pos, name='end_pos_{0}'.format(index))
+        
+        for n in range( num_mid_points):
+            
+            mid_pos = (end_pos - start_pos)*(n+1)*u_inc + start_pos
+        
+            dot(mid_pos, r=.1,  name='smid_pos_{0}'.format(index))
+        
+        
+    start_pos = result_matrix[-1].getTranslation(space='world')
+'''    
+    
 
 def create_profile_points(radius, num_points):
     '''Returns a list of positions (pm.datatypes.Vector) on a circle 
@@ -135,8 +167,8 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
                 temp_m.a31 = cv_list[0].y
                 temp_m.a32 = cv_list[0].z
                 
-                result_matrix_list.append([temp_m, tm_list[0]])
-
+                result_matrix_list.append([temp_m])
+                
             result_matrix_list.append(tm_list)
            
         # we are at the last cv, copy the last transformation matrix in the matrix list,
@@ -148,11 +180,11 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             temp_m.a31 = cv_list[-1].y
             temp_m.a32 = cv_list[-1].z
             
-            result_matrix_list.append([tm_list[-1], temp_m])
+            result_matrix_list.append([temp_m])
             
     return result_matrix_list
         
-'''
+
 def plot_profile_from_matrix_list(result_matrix_list, profile_pos): 
 
     result_pos_list = []
@@ -167,61 +199,107 @@ def plot_profile_from_matrix_list(result_matrix_list, profile_pos):
             cube = pm.polySphere(r=.06)[0]
             cube.translate.set(pos)      
  
-'''
 
 
-def transform_profile_list(result_matrix_list, profile_pos): 
-
+def add_pipe_fitting(matrix_list):
     
+    num_cv = len(result_matrix_list)
+
+    for index, matrix in enumerate(matrix_list):
+         
+        if index is 0:
+            print('first', index)
+            cube = pm.polyCube()[0]
+            cube.setMatrix(matrix[0])
+            
+        elif index is num_cv-1:
+            print('last', index)
+            cube = pm.polyCube()[0]
+            cube.setMatrix(matrix[0])
+   
+        else:
+            print('mid', index)
+            cube = pm.polyCube()[0]
+            cube.setMatrix(matrix[0])
+            
+            cube = pm.polyCube()[0]
+            cube.setMatrix(matrix[-1])
+                
+
+
+def build_mesh_slow(result_matrix_list, profile_pos): 
+
     result_pos_list = []
-    
-    for matrix_list in result_matrix_list:
-    
-        for matrix in matrix_list:
-            #sp = pm.polySphere(r=.2)[0]
-            #sp.setMatrix(matrix)
-            #pm.toggle(sp, localAxis=True)
-            result_pos_list.append([pos.rotateBy(matrix) + matrix.getTranslation(space='world') for pos in profile_pos])
-            
-            
-    return result_pos_list
-            
-
-    '''
     for result_matrix in result_matrix_list:
-       
+        
         for matrix in result_matrix:
             result_pos_list.append([pos.rotateBy(matrix) + matrix.getTranslation(space='world') for pos in profile_pos])
 
-    for result_pos in result_pos_list:
+    num_sections = len(result_pos_list)
+    num_faces = len(result_pos_list[0])
     
-        for pos in result_pos:
-            cube = pm.polySphere(r=.06)[0]
-            cube.translate.set(pos) 
-    '''     
- 
+    #print(num_sections)
+    #print(num_faces)
+    
+    #polygon_list = []
+    for i, result_pos in enumerate(result_pos_list):
+        
+        polygon_list = []
+        
+        if i < num_sections-1:
+            
+            #polygon_list = []
+            
+            for j, pos in enumerate(result_pos):
+                                
+                if j < num_faces-1:
+                
+                    p_list = [result_pos_list[i][j], result_pos_list[i][j+1], result_pos_list[i+1][j+1], result_pos_list[i+1][j]]
+                
+                else:
+                    p_list = [result_pos_list[i][j], result_pos_list[i][0], result_pos_list[i+1][0], result_pos_list[i+1][j]]
+   
+                polygon = pm.polyCreateFacet(p=p_list, name='face_{0}_{1}'.format(i, j))[0]
+                polygon_list.append(polygon)
+            '''    
+            try:
+                mesh = pm.polyUnite(polygon_list, ch=False)
+                pm.polyMergeVertex(mesh, d=0.05)
+                pm.delete(mesh, ch=True)
+                
+            except RuntimeError as e:
+                print e
+        
+            '''
 
+
+        if len(polygon_list) > 1:
+            try:
+                print('merging')
+                mesh = pm.polyUnite(polygon_list, ch=False)
+                pm.polyMergeVertex(mesh, d=0.05)
+                pm.delete(mesh, ch=True)
+                
+            except RuntimeError as e:
+                print e
+                
+
+                
+    #mesh = pm.polyUnite(polygon_list, ch=False)
+    #pm.polyMergeVertex(mesh, d=0.01)
+    #pm.delete(mesh, ch=True)
+            
 
 
 #crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,10,3), (5,5,0), (0,5,-3)])
 #crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0)])
 
 crv = pm.ls(sl=True)[0]
-cv_list = crv.getCVs(space='world')
+cv_list = crv.getCVs()
 
 # get the matrix list
 result_matrix_list = create_round_corner_matrix_list(cv_list, num_radius_div=10)
 
-#pprint.pprint(len(result_matrix_list))
-
-'''
-for matrix_list in result_matrix_list:
-    
-    for matrix in matrix_list:
-        sp = pm.polySphere(r=.2)[0]
-        sp.setMatrix(matrix)
-        pm.toggle(sp, localAxis=True)
-'''
 # cretae the profile 
 profile_pos = create_profile_points(radius=.4, num_points=12)
 
@@ -232,16 +310,8 @@ profile_pos = create_profile_points(radius=.4, num_points=12)
 #add_pipe_fitting(result_matrix_list)
 
 
-pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
-#pprint.pprint(pos_list)
-#print(len(pos_list))
-
-pet_extrude.mesh_from_pos_list(pos_list=pos_list, name='test')
+build_mesh_slow(result_matrix_list, profile_pos)
 
 
 
-# To avoid twisting of straight pipes build all meshes parts (corners and straight parts)
-# separately, and at the last stage combine them to one mesh. The uvs could be layed out
-# as if the were one peice if we pass in the last used v coord to the next mesh to be
-# generated. The advantage of having separate pices is that we could avoid the twisting
-# of the end points of straight pipes, but we could unfold them as the were one mesh.
+

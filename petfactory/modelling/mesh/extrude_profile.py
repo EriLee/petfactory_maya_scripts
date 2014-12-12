@@ -145,12 +145,8 @@ def create_pos_list(profile_pos_list, height_divisions):
     return pos_list
     
     
-profile_pos = create_profile_points(radius=2, axis_divisions=12)  
-pos_list = create_pos_list(profile_pos_list=profile_pos, height_divisions=20)
-    
-          
+#profile_pos = create_profile_points(radius=2, axis_divisions=12)  
+#pos_list = create_pos_list(profile_pos_list=profile_pos, height_divisions=20)
+#mesh = mesh_from_pos_list(pos_list=pos_list, name='test')
+#pm.select(mesh.name())
 
-mesh = mesh_from_pos_list(pos_list=pos_list, name='test')
-pm.select(mesh.name())
-             
-             
