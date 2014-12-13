@@ -61,6 +61,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     # add attr to ctrl
     pm.addAttr(root_ctrl, longName='blendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
+    pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
+
 
     
     # cluster group
@@ -130,6 +132,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         pm.parent(iks_handle, root_hidden_grp)
         ret_dict['output_curve'] = output_curve
         output_curve_shape = output_curve.getShape()
+        
+        output_curve_info = pm.arclen(output_curve, ch=True)
     
     else:
         print('could not access the output curve')  
@@ -197,6 +201,31 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     jnt_grp.overrideDisplayType.set(2)
     
     
+    
+    # setup the joint stretch
+    arc_length = output_curve_info.arcLength.get()
+    
+    md_global_scale = pm.createNode('multiplyDivide', name='global_scale_compensate')
+    md_global_scale.operation.set(2)
+    
+    output_curve_info.arcLength >> md_global_scale.input1X
+    root_ctrl.sx >> md_global_scale.input2X
+    
+    stretch_scale_mult = pm.createNode('multDoubleLinear', name='stretch_scale_mult')
+    md_global_scale.outputX >> stretch_scale_mult.input1
+    root_ctrl.stretchScale >> stretch_scale_mult.input2
+
+    
+    for index, jnt in enumerate(jnt_list):
+        
+        if index is not 0:
+            mult_double = pm.createNode('multDoubleLinear', name='jnt_{0}_stretch_mult'.format(index))
+            mult_double.input1.set(jnt.tx.get() / arc_length)
+            #output_curve_info.arcLength >> mult_double.input2
+            #md_global_scale.outputX >> mult_double.input2
+            stretch_scale_mult.output >> mult_double.input2
+            mult_double.output >> jnt.tx
+            
     
     return ret_dict
         
