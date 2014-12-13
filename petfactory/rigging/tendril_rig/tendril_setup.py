@@ -60,7 +60,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     root_ctrl_grp.setMatrix(jnt_list[0].getMatrix())
     
     # add attr to ctrl
-    pm.addAttr(root_ctrl, longName='blendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
+    pm.addAttr(root_ctrl, longName='origBlendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
+    pm.addAttr(root_ctrl, longName='IkSplineBlendshape', minValue=0.0, maxValue=1.0, defaultValue=0.0, keyable=True)
     pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
 
 
@@ -86,11 +87,12 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     # duplicate and create a blendshape curve
     blendshape_crv = pm.duplicate(crv, name='{0}_blendshape_crv'.format(name))[0]
     blendshape = pm.blendShape(blendshape_crv, crv, origin='world')[0]
+    result_spline_crv = pm.duplicate(crv, name='{0}_result_spline_crv'.format(name))[0]
 
-    root_ctrl.blendshape >> blendshape.weight[0]
-    
+    root_ctrl.origBlendshape >> blendshape.weight[0]   
     num_cvs = blendshape_crv.getShape().numCVs()
     
+  
     
     # loop through the cv and add cluster. On cv 0-1 add one cluster,
     # the rest of the cv will have one cluster each, 
@@ -128,12 +130,27 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     # output curve
     if output_curve:
-        iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=output_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
+        
+        # add a crv that we can switch between the cluster driven crv and the dynamic output ctv
+        pm.connectAttr('{0}.worldSpace[0]'.format(blendshape_crv), '{0}.create'.format(result_spline_crv))
+        pm.parent(result_spline_crv, root_ctrl)
+        result_spline_crv.translate.set(0,0,0)
+        result_spline_crv.rotate.set(0,0,0)
+        
+        # blendshape between the cluster driben crv and the dynamic output crv
+        result_blendshape = pm.blendShape(output_curve, result_spline_crv, origin='world')[0]
+        root_ctrl.IkSplineBlendshape >> result_blendshape.weight[0]  
+
+        # create a ik spline
+        iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=result_spline_crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
         pm.parent(iks_handle, root_hidden_grp)
         ret_dict['output_curve'] = output_curve
         output_curve_shape = output_curve.getShape()
         
-        output_curve_info = pm.arclen(output_curve, ch=True)
+        #output_curve_info = pm.arclen(output_curve, ch=True)
+        result_spline_info = pm.arclen(result_spline_crv, ch=True)
+        
+  
     
     else:
         print('could not access the output curve')  
@@ -203,12 +220,12 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     
     # setup the joint stretch
-    arc_length = output_curve_info.arcLength.get()
+    arc_length = result_spline_info.arcLength.get()
     
     md_global_scale = pm.createNode('multiplyDivide', name='global_scale_compensate')
     md_global_scale.operation.set(2)
     
-    output_curve_info.arcLength >> md_global_scale.input1X
+    result_spline_info.arcLength >> md_global_scale.input1X
     root_ctrl.sx >> md_global_scale.input2X
     
     stretch_scale_mult = pm.createNode('multDoubleLinear', name='stretch_scale_mult')
@@ -221,8 +238,6 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         if index is not 0:
             mult_double = pm.createNode('multDoubleLinear', name='jnt_{0}_stretch_mult'.format(index))
             mult_double.input1.set(jnt.tx.get() / arc_length)
-            #output_curve_info.arcLength >> mult_double.input2
-            #md_global_scale.outputX >> mult_double.input2
             stretch_scale_mult.output >> mult_double.input2
             mult_double.output >> jnt.tx
             
