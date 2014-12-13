@@ -63,9 +63,12 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.addAttr(root_ctrl, longName='origBlendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
     pm.addAttr(root_ctrl, longName='IkSplineBlendshape', minValue=0.0, maxValue=1.0, defaultValue=0.0, keyable=True)
     pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
-
-
     
+    pm.addAttr(root_ctrl, longName='sineY', keyable=True)
+    pm.addAttr(root_ctrl, longName='time', keyable=True)
+
+
+ 
     # cluster group
     cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
     rig_crv_grp = pm.group(parent=root_ctrl, em=True, name='{0}_rig_crv_grp'.format(name))
@@ -119,8 +122,6 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     # make the curves dynamic    
     nhair_dict_list = nhair_dynamics.make_curve_dynamic(crv)
-    
-    #pprint.pprint(info_dict_list)
     
     output_curve = nhair_dict_list.get('output_curve')
     follicle = nhair_dict_list.get('follicle')
@@ -230,6 +231,39 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
             stretch_scale_mult.output >> mult_double.input2
             mult_double.output >> jnt.tx
             
+        
+        #print(jnt)
+        # create a sine offset jnt
+        offset_jnt = pm.createNode('joint', name='offset_{0}_jnt'.format(index), ss=True)
+        offset_jnt.setMatrix(jnt.getMatrix(ws=True))
+        pm.parent(offset_jnt, jnt)
+        
+        
+        # pma to offset the time
+        pma = pm.createNode('plusMinusAverage')
+        root_ctrl.time >> pma.input1D[0]
+        #pma.input1D[1].set(index*2)
+        pm.addAttr(root_ctrl, longName='timeOffset{0}'.format(index), keyable=True)
+        #root_ctrl.time >> pma.input1D[0]
+        pm.connectAttr('{0}.timeOffset{1}'.format(root_ctrl.longName(), index),  pma.input1D[1])
+        
+    
+        # create node cache
+        cache = pm.createNode('frameCache', name='frameCache_{0}_jnt'.format(index))
+        
+        #root_ctrl.time >> cache.varyTime
+        pma.output1D >> cache.varyTime
+        root_ctrl.sineY >> cache.stream
+        cache.varying >> offset_jnt.ty
+        
+    # set keyframes of the time attr on the root ctrl, set naim curve properties   
+    pm.setKeyframe(root_ctrl, v=0, attribute='time', t=0)
+    pm.setKeyframe(root_ctrl, v=1, attribute='time', t=1)
+    pm.setInfinity(root_ctrl, at='time', pri='cycleRelative', poi='cycleRelative')
+    
+    #time_anim_crv = root_ctrl.time.listConnections(d=False, s=True)
+    pm.keyTangent(root_ctrl, edit=True, attribute='time', itt='linear', ott='linear') 
+
     
     return ret_dict
         
