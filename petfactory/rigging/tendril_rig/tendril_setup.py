@@ -5,7 +5,7 @@ import petfactory.rigging.joint_tools as joint_tools
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 reload(nhair_dynamics)
 
-#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
 
 
 # build the joints from the joint ref group
@@ -51,12 +51,17 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
     root_ctrl_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_ctrl_grp'.format(name))
     root_misc_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_misc_grp'.format(name))
+    root_hidden_grp = pm.group(parent=root_misc_grp, em=True, name='{0}_root_hidden_grp'.format(name))
     
     
     # ctrl
     root_ctrl = pm.circle(normal=(1,0,0), radius=5, ch=False, name='{0}_root_ctrl'.format(name))[0]
     pm.parent(root_ctrl, root_ctrl_grp)
     root_ctrl_grp.setMatrix(jnt_list[0].getMatrix())
+    
+    # add attr to ctrl
+    pm.addAttr(root_ctrl, longName='blendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
+
     
     # cluster group
     cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
@@ -78,7 +83,9 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     # duplicate and create a blendshape curve
     blendshape_crv = pm.duplicate(crv, name='{0}_blendshape_crv'.format(name))[0]
-    pm.blendShape(blendshape_crv, crv, origin='world')
+    blendshape = pm.blendShape(blendshape_crv, crv, origin='world')[0]
+
+    root_ctrl.blendshape >> blendshape.weight[0]
     
     num_cvs = blendshape_crv.getShape().numCVs()
     
@@ -120,8 +127,9 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     # output curve
     if output_curve:
         iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=output_curve, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
-        pm.parent(iks_handle, root_misc_grp)
+        pm.parent(iks_handle, root_hidden_grp)
         ret_dict['output_curve'] = output_curve
+        output_curve_shape = output_curve.getShape()
     
     else:
         print('could not access the output curve')  
@@ -170,7 +178,26 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     else:
         print('could not access the hairsystem')
         
-        
+    
+    # make curves unselectable
+    crv.overrideEnabled.set(1)
+    crv.overrideDisplayType.set(2)
+    
+    blendshape_crv.overrideEnabled.set(1)
+    blendshape_crv.overrideDisplayType.set(2)
+    
+    output_curve_shape.overrideEnabled.set(1)
+    output_curve_shape.overrideDisplayType.set(2)
+    
+    # hide the hidden group
+    root_hidden_grp.visibility.set(0)
+    
+    # make the joint group unselectable
+    jnt_grp.overrideEnabled.set(1)
+    jnt_grp.overrideDisplayType.set(2)
+    
+    
+    
     return ret_dict
         
         
