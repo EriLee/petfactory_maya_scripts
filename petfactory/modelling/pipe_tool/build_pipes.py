@@ -6,7 +6,7 @@ import math
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 reload(pet_extrude)
 
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
 
 def loc(p, size=.2):
     loc = pm.spaceLocator()
@@ -143,9 +143,6 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
     result_matrix_list = []
     last_matrix = None
     
-    print('\n')
-    
-    
     # all the radius calculations is done when the index is in range 0 - (length-2)
     # I am using the index in the cv positions array [n:n+3] i.e. if the starting 
     # index is 0 I take aslice of the list starting at 0 index up to 3 (but not including)
@@ -167,23 +164,15 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             temp_m.a32 = cv_list[0].z
             
             # add the to matrices of the first straight pipe, then add the radius matrix list
-            #result_matrix_list.append([temp_m, tm_list[0]])
             result_matrix_list.append(add_division_to_straight_pipe(temp_m, tm_list[0], 10))
             result_matrix_list.append(tm_list)
             
             last_matrix = tm_list[-1]
- 
-        
-        #
-        # REWRITE THIS IF STATEMENT!!!
-        #
-        # last cv to be used when calculating the radius 
-        elif index is num_cv-2:           
-            print('LAST radie cv: \n\t> straight\n')
-            
-        # mid cv, we are betwen the first and last cv
+
+          
+        # mid cvs
         else:
-            
+
             # get the rotation matrix from the last matrix (prevoius radius)
             # set the translation to the world pos of the the first matrix in the current radius matrix list         
             temp_m = pm.datatypes.TransformationMatrix(last_matrix.asRotateMatrix())
@@ -193,9 +182,8 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             temp_m.a32 = pos.z
             
             # add the radius list, then the following straight pipe
-            result_matrix_list.append(tm_list)
-            #result_matrix_list.append([last_matrix, temp_m])
             result_matrix_list.append(add_division_to_straight_pipe(last_matrix, temp_m, 10))
+            result_matrix_list.append(tm_list)
             
             last_matrix = tm_list[-1]
             
@@ -206,7 +194,6 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
     temp_m.a31 = cv_list[-1].y
     temp_m.a32 = cv_list[-1].z
                 
-    #result_matrix_list.append([tm_list[-1], temp_m])
     result_matrix_list.append(add_division_to_straight_pipe(tm_list[-1], temp_m, 10))
 
 
@@ -222,21 +209,46 @@ def transform_profile_list(result_matrix_list, profile_pos):
         
         temp_list = []
         for matrix in matrix_list:
-            #sp = pm.polySphere(r=.2)[0]
-            #sp.setMatrix(matrix)
-            #pm.toggle(sp, localAxis=True)
             temp_list.append([pos.rotateBy(matrix) + matrix.getTranslation(space='world') for pos in profile_pos])
             
         result_pos_list.append(temp_list)
             
     return result_pos_list
+           
+
+def build_mesh(pos_list):
+    
+    mesh_list = []
+    for p in pos_list:
+        mesh_list.append(pet_extrude.mesh_from_pos_list(pos_list=p, name='test'))
+    return mesh_list
+
+
+def add_pipe_fitting(result_matrix_list):
+    
+    for index, matrix_list in enumerate(result_matrix_list):
+        
+        # just get the matrix list on even index, i.e. the straight pipes
+        if not index%2:
+
+            cube_1 = pm.polyCylinder(r=.50, h=.3, axis=(1,0,0))[0]
+            cube_1.setMatrix(matrix_list[0])
+            #pm.toggle(cube_1, localAxis=True)
+            
+            # flip the rotation of the second pipe fitting
+            tm = matrix_list[-1]
+            tm.addRotation((0,0,math.pi), order=1, space='preTransform')
+            
+            cube_2 = pm.polyCylinder(r=.50, h=.3, axis=(1,0,0))[0]
+            cube_2.setMatrix(tm)
+            #pm.toggle(cube_2, localAxis=True)
             
 
 #crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,10,3), (5,5,0), (0,5,-3)])
 #crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0)])
-crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
+#crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
 
-#crv = pm.ls(sl=True)[0]
+crv = pm.ls(sl=True)[0]
 cv_list = crv.getCVs(space='world')
 
 # get the matrix list
@@ -248,38 +260,12 @@ profile_pos = create_profile_points(radius=.4, num_points=12)
 # get the positions
 pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
 
-
-def build_mesh(pos_list):
-    
-    mesh_list = []
-    for p in pos_list:
-        mesh_list.append(pet_extrude.mesh_from_pos_list(pos_list=p, name='test'))
-    return mesh_list
-
-'''
-def add_pipe_fitting(result_matrix_list):
-    
-    num_matrix_list = len(result_matrix_list)
-    
-    for index, matrix_list in enumerate(result_matrix_list):
-        
-        if index is 0:
-            tm = matrix_list[0]
-            
-        elif index < num_matrix_list-1:
-            tm = matrix_list[0]
-            
-             
-        else:
-            tm = matrix_list[-1]
-            print('last')
-            
-        cube = pm.polyCube()[0]
-        cube.setMatrix(tm)
-        cube.scale.set(.2,1.2,1.2)
-        pm.toggle(cube, localAxis=True)
-            
-'''   
+ 
 mesh_list = build_mesh(pos_list)
-#add_pipe_fitting(result_matrix_list)
-#len(result_matrix_list)
+
+add_pipe_fitting(result_matrix_list)
+
+for mesh in mesh_list:
+    pm_mesh = pm.PyNode(mesh.name())
+    pm.sets('initialShadingGroup', forceElement=pm_mesh)
+
