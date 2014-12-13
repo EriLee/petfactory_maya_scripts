@@ -68,7 +68,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     # cluster group
     cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
-    blendshape_grp = pm.group(parent=root_ctrl, em=True, name='{0}_blendshape_grp'.format(name))
+    rig_crv_grp = pm.group(parent=root_ctrl, em=True, name='{0}_rig_crv_grp'.format(name))
     
     # jnt group
     jnt_grp = pm.group(em=True, name='{0}_jnt_grp'.format(name))
@@ -111,7 +111,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
     # if we parent and and set zero out the transforms, the cluster and blendshape curves plays along :)
     # with no offset... hmmm need to check out why this is...
-    pm.parent(blendshape_crv, blendshape_grp)
+    pm.parent(blendshape_crv, rig_crv_grp)
     blendshape_crv.translate.set(0,0,0)
     blendshape_crv.rotate.set(0,0,0)
     
@@ -133,7 +133,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         # add a crv that we can switch between the cluster driven crv and the dynamic output ctv
         pm.connectAttr('{0}.worldSpace[0]'.format(blendshape_crv), '{0}.create'.format(result_spline_crv))
-        pm.parent(result_spline_crv, root_ctrl)
+        pm.parent(result_spline_crv, rig_crv_grp)
         result_spline_crv.translate.set(0,0,0)
         result_spline_crv.rotate.set(0,0,0)
         
@@ -200,25 +200,14 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         print('could not access the hairsystem')
         
     
-    # make curves unselectable
-    crv.overrideEnabled.set(1)
-    crv.overrideDisplayType.set(2)
-    
-    blendshape_crv.overrideEnabled.set(1)
-    blendshape_crv.overrideDisplayType.set(2)
-    
-    output_curve_shape.overrideEnabled.set(1)
-    output_curve_shape.overrideDisplayType.set(2)
-    
+    # make curves unselectable, enable drawing ovewrride and set to template
+    for c in [crv, blendshape_crv, output_curve_shape, result_spline_crv, jnt_grp]:
+        c.overrideEnabled.set(1)
+        c.overrideDisplayType.set(2)
+   
     # hide the hidden group
     root_hidden_grp.visibility.set(0)
-    
-    # make the joint group unselectable
-    jnt_grp.overrideEnabled.set(1)
-    jnt_grp.overrideDisplayType.set(2)
-    
-    
-    
+ 
     # setup the joint stretch
     arc_length = result_spline_info.arcLength.get()
     
