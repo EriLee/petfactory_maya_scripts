@@ -5,7 +5,9 @@ import petfactory.rigging.joint_tools as joint_tools
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 reload(nhair_dynamics)
 
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/flower_pre_rig_v01.ma', f=True)
+
 
 
 # build the joints from the joint ref group
@@ -46,6 +48,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     name = jnt_dict.keys()[0]
     jnt_list = jnt_dict.get(name)
+    num_jnt = len(jnt_list)
     
     # create groups
     root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
@@ -66,6 +69,15 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     pm.addAttr(root_ctrl, longName='sineY', keyable=True)
     pm.addAttr(root_ctrl, longName='time', keyable=True)
+    
+
+    for index in range(num_jnt):
+        pm.addAttr(root_ctrl, longName='timeOffset{0}'.format(index), keyable=True, defaultValue=index*10)
+    
+    pm.addAttr(root_ctrl, longName='sine_global_scale', keyable=True)
+    for index in range(num_jnt):
+        pm.addAttr(root_ctrl, longName='sine_scale_y{0}'.format(index), keyable=True, defaultValue=index)
+        
 
 
  
@@ -232,7 +244,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
             mult_double.output >> jnt.tx
             
         
-        #print(jnt)
+        
         # create a sine offset jnt
         offset_jnt = pm.createNode('joint', name='offset_{0}_jnt'.format(index), ss=True)
         offset_jnt.setMatrix(jnt.getMatrix(ws=True))
@@ -242,20 +254,32 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         # pma to offset the time
         pma = pm.createNode('plusMinusAverage')
         root_ctrl.time >> pma.input1D[0]
-        #pma.input1D[1].set(index*2)
-        pm.addAttr(root_ctrl, longName='timeOffset{0}'.format(index), keyable=True)
-        #root_ctrl.time >> pma.input1D[0]
         pm.connectAttr('{0}.timeOffset{1}'.format(root_ctrl.longName(), index),  pma.input1D[1])
-        
-    
+            
         # create node cache
         cache = pm.createNode('frameCache', name='frameCache_{0}_jnt'.format(index))
         
-        #root_ctrl.time >> cache.varyTime
         pma.output1D >> cache.varyTime
         root_ctrl.sineY >> cache.stream
-        cache.varying >> offset_jnt.ty
         
+        sine_y_scale = pm.createNode('multDoubleLinear', name='sine_y_scale_{0}'.format(index))
+        cache.varying >> sine_y_scale.input1
+        pm.connectAttr('{0}.sine_scale_y{1}'.format(root_ctrl.longName(), index), sine_y_scale.input2)
+        
+        sine_global_scale_md = pm.createNode('multDoubleLinear', name='sine_global_scale_md_{0}'.format(index))
+        
+        root_ctrl.sine_global_scale >> sine_global_scale_md.input1
+        sine_y_scale.output >> sine_global_scale_md.input2
+        
+        sine_global_scale_md.output >> offset_jnt.ty
+    
+    
+    # setup sine animation
+    pm.setKeyframe(root_ctrl, v=-1, attribute='sineY', t=0)
+    pm.setKeyframe(root_ctrl, v=1, attribute='sineY', t=48)
+    pm.setKeyframe(root_ctrl, v=-1, attribute='sineY', t=96)
+    pm.setInfinity(root_ctrl, at='sineY', pri='cycleRelative', poi='cycleRelative')
+    
     # set keyframes of the time attr on the root ctrl, set naim curve properties   
     pm.setKeyframe(root_ctrl, v=0, attribute='time', t=0)
     pm.setKeyframe(root_ctrl, v=1, attribute='time', t=1)
@@ -272,7 +296,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
 #pm.select(['group1', 'group2', 'group3', 'group4'])
 #pm.select(['group1', 'group2', 'group3'])
-pm.select(['group1'])
+#pm.select(['group1'])
+pm.select(['flower_jnt_pos'])
 sel_list = pm.ls(sl=True)
 jnt_dict_list = build_joints(sel_list)
 dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
