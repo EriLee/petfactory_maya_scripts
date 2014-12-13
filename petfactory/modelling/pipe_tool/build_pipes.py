@@ -224,31 +224,45 @@ def build_mesh(pos_list):
     return mesh_list
 
 
-def add_pipe_fitting(result_matrix_list):
+def add_pipe_fitting(result_matrix_list, mesh=None):
     
+    if not isinstance(mesh, pm.nodetypes.Transform):
+        pm.warning('fitting mesh not a vaild Transform, will use default')
+        mesh = None
+
+    mesh_list = []
     for index, matrix_list in enumerate(result_matrix_list):
         
         # just get the matrix list on even index, i.e. the straight pipes
         if not index%2:
 
-            cube_1 = pm.polyCylinder(r=.50, h=.3, axis=(1,0,0))[0]
-            cube_1.setMatrix(matrix_list[0])
-            #pm.toggle(cube_1, localAxis=True)
+            if mesh:
+                mesh_1 = pm.duplicate(mesh)[0]
+                mesh_2 = pm.duplicate(mesh)[0]
+            else:
+                mesh_1 = pm.polyCylinder(r=.50, h=.3, axis=(1,0,0))[0]
+                mesh_2 = pm.duplicate(mesh_1)[0]
+                
+                
+            mesh_1.setMatrix(matrix_list[0])
+            #pm.toggle(mesh_1, localAxis=True)
             
             # flip the rotation of the second pipe fitting
             tm = matrix_list[-1]
             tm.addRotation((0,0,math.pi), order=1, space='preTransform')
             
-            cube_2 = pm.polyCylinder(r=.50, h=.3, axis=(1,0,0))[0]
-            cube_2.setMatrix(tm)
-            #pm.toggle(cube_2, localAxis=True)
+            mesh_2.setMatrix(tm)
+            #pm.toggle(mesh_2, localAxis=True)
+            mesh_list.extend([mesh_1, mesh_2])
+            
+    return mesh_list
             
 
 #crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,10,3), (5,5,0), (0,5,-3)])
 #crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0)])
-#crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
+crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
 
-crv = pm.ls(sl=True)[0]
+#crv = pm.ls(sl=True)[0]
 cv_list = crv.getCVs(space='world')
 
 # get the matrix list
@@ -260,12 +274,26 @@ profile_pos = create_profile_points(radius=.4, num_points=12)
 # get the positions
 pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
 
- 
-mesh_list = build_mesh(pos_list)
+# build mesh 
+mesh_mobj_list = build_mesh(pos_list)
+pm_mesh_list = [ pm.PyNode('|{0}'.format(m.name())) for m in mesh_mobj_list]
+pipe_grp = pm.group(em=True, name='pipe_grp')
+pm.parent(pm_mesh_list, pipe_grp)
 
-add_pipe_fitting(result_matrix_list)
+# add pipe fitting
+dup_mesh=None
+try:
+    dup_mesh = pm.PyNode('fitting_grp')
+except pm.MayaNodeError:
+    pm.warning('could not find fitting mesh')
 
-for mesh in mesh_list:
-    pm_mesh = pm.PyNode(mesh.name())
-    pm.sets('initialShadingGroup', forceElement=pm_mesh)
+fitting_list = add_pipe_fitting(result_matrix_list, mesh=dup_mesh)
+fitting_grp = pm.group(em=True, name='fitting_grp')
+pm.parent(fitting_list, fitting_grp)
+
+# create the main group
+main_pipe_grp = pm.group(em=True, name='main_pipe_grp')
+pm.parent(pipe_grp, fitting_grp, main_pipe_grp)
+
+pm.sets('initialShadingGroup', forceElement=pm_mesh_list)
 
