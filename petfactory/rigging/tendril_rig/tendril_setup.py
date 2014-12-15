@@ -6,7 +6,7 @@ import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 reload(nhair_dynamics)
 
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/flower_pre_rig_v01.ma', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
 
 
 
@@ -90,7 +90,13 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     jnt_grp.setMatrix(jnt_list[0].getMatrix())
     pm.parent(jnt_list[0], jnt_grp)
     pm.parent(jnt_grp, root_ctrl)
-      
+    
+    # bind jnt group
+    main_bind_jnt_grp = pm.group(em=True, name='{0}_main_bind_jnt_grp'.format(name))
+    main_bind_jnt_grp.setMatrix(jnt_list[0].getMatrix())
+    pm.parent(main_bind_jnt_grp, root_ctrl)
+    
+   
     
     # get the joint positions
     pos_list = [pm.joint(jnt, q=True, p=True, a=True) for jnt in jnt_list]
@@ -249,6 +255,15 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         offset_jnt = pm.createNode('joint', name='offset_{0}_jnt'.format(index), ss=True)
         offset_jnt.setMatrix(jnt.getMatrix(ws=True))
         pm.parent(offset_jnt, jnt)
+        
+        # create the bind joints
+        bind_jnt = pm.createNode('joint', name='bind_{0}_jnt'.format(index), ss=True)
+        bind_jnt.setMatrix(jnt.getMatrix(ws=True))
+        bind_jnt_grp = pm.group(em=True, name='bind_jnt_{0}_grp'.format(index))
+        pm.parentConstraint(offset_jnt, bind_jnt_grp)
+        pm.parent(bind_jnt, bind_jnt_grp)
+        
+        pm.parent(bind_jnt_grp, main_bind_jnt_grp)
         
         
         # pma to offset the time
