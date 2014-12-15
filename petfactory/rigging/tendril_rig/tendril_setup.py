@@ -63,6 +63,9 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     root_ctrl_grp.setMatrix(jnt_list[0].getMatrix())
     
     # add attr to ctrl
+    pm.addAttr(root_ctrl, longName='display_rig_joints', at="enum", en="off:on", keyable=True)
+    
+    
     pm.addAttr(root_ctrl, longName='origBlendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
     pm.addAttr(root_ctrl, longName='IkSplineBlendshape', minValue=0.0, maxValue=1.0, defaultValue=0.0, keyable=True)
     pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
@@ -101,6 +104,9 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     # jnt group
     jnt_grp = pm.group(em=True, name='{0}_jnt_grp'.format(name))
+    
+    root_ctrl.display_rig_joints >> jnt_grp.visibility
+    
     jnt_grp.setMatrix(jnt_list[0].getMatrix())
     pm.parent(jnt_list[0], jnt_grp)
     pm.parent(jnt_grp, root_ctrl)
@@ -386,8 +392,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.select(deselect=True)
     bind_jnt_set = pm.sets(name='{0}_bind_joints'.format(name))
     bind_jnt_set.addMembers(bind_jnt_list)
+    
 
-  
     return ret_dict
         
         
