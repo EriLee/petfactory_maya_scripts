@@ -292,33 +292,33 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         # setup the y sine animation
         
         # pma to offset the vary time input
-        pma = pm.createNode('plusMinusAverage')
+        pma_sine_y = pm.createNode('plusMinusAverage', name='pma_sine_y{0}'.format(index))
         
         # connect root ctrl time attr to pma
-        root_ctrl.time >> pma.input1D[0]
+        root_ctrl.time >> pma_sine_y.input1D[0]
         
         # connect the per joint offset to the pma
-        pm.connectAttr('{0}.sine_y_offset{1}'.format(root_ctrl.longName(), index),  pma.input1D[1])
+        pm.connectAttr('{0}.sine_y_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_y.input1D[1])
             
         # create node cache
-        cache = pm.createNode('frameCache', name='frameCache_{0}_jnt'.format(index))
+        cache_sine_y = pm.createNode('frameCache', name='frameCache_sine_y{0}_jnt'.format(index))
         
         # connect the pma offsetted time to varytime ant the attr to use as stream to the stream
-        pma.output1D >> cache.varyTime
-        root_ctrl.sineY >> cache.stream
+        pma_sine_y.output1D >> cache_sine_y.varyTime
+        root_ctrl.sineY >> cache_sine_y.stream
         
         # create a per joint scale to the sine
         sine_y_scale = pm.createNode('multDoubleLinear', name='sine_y_scale_{0}'.format(index))
-        cache.varying >> sine_y_scale.input1
+        cache_sine_y.varying >> sine_y_scale.input1
         pm.connectAttr('{0}.sine_y_scale{1}'.format(root_ctrl.longName(), index), sine_y_scale.input2)
         
         # hook up the gloabal sacle to affect the per joint scale
-        sine_global_scale_md = pm.createNode('multDoubleLinear', name='sine_global_scale_md_{0}'.format(index))       
-        root_ctrl.sine_y_global_scale >> sine_global_scale_md.input1
-        sine_y_scale.output >> sine_global_scale_md.input2
+        sine_y_global_scale_md = pm.createNode('multDoubleLinear', name='sine_y_global_scale_md_{0}'.format(index))       
+        root_ctrl.sine_y_global_scale >> sine_y_global_scale_md.input1
+        sine_y_scale.output >> sine_y_global_scale_md.input2
         
         # fianlly feed that into the jnt
-        sine_global_scale_md.output >> sine_y_jnt.ty
+        sine_y_global_scale_md.output >> sine_y_jnt.ty
         
         
         
