@@ -10,7 +10,7 @@ except ImportError as e:
     import_success = False
 
 
-def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, prefix=None, suffix=None):
+def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, prefix=None, suffix=None, show_axis=False):
     
     if not import_success:
         pm.warning('The script requires module "petfactory.util.vector"')
@@ -85,7 +85,9 @@ def build_joint_hierarchy(info_list, up_vector, aim_axis=0, up_axis=2, invert_ai
     
         jnt.translate.set(start_vec)
         jnt_list.append(jnt)
-        pm.toggle(jnt, localAxis=True)
+        
+        if show_axis:
+            pm.toggle(jnt, localAxis=True)
         
     
     # parent the joints
