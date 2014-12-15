@@ -86,7 +86,13 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     for index in range(num_jnt):
         pm.addAttr(root_ctrl, longName='sine_y_scale{0}'.format(index), keyable=True, defaultValue=index)
         
-
+    
+    for index in range(num_jnt):
+        pm.addAttr(root_ctrl, longName='sine_z_offset{0}'.format(index), keyable=True, defaultValue=index*10)
+    
+    
+    for index in range(num_jnt):
+        pm.addAttr(root_ctrl, longName='sine_z_scale{0}'.format(index), keyable=True, defaultValue=index)
 
  
     # cluster group
@@ -276,8 +282,10 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         bind_jnt_grp = pm.group(em=True, name='bind_jnt_{0}_grp'.format(index))
         pm.parentConstraint(sine_z_jnt, bind_jnt_grp)
         pm.parent(bind_jnt, bind_jnt_grp)
-        
         pm.parent(bind_jnt_grp, main_bind_jnt_grp)
+        
+        
+        
         
         
         
@@ -316,14 +324,59 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         
         
+        # setup the z sine animation
+        
+        # pma to offset the vary time input
+        pma_sine_z = pm.createNode('plusMinusAverage', name='pma_sine_z{0}'.format(index))
+        
+        # connect root ctrl time attr to pma
+        root_ctrl.time >> pma_sine_z.input1D[0]
+        
+        # connect the per joint offset to the pma
+        pm.connectAttr('{0}.sine_z_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_z.input1D[1])
+            
+        # create node cache
+        cache_sine_z = pm.createNode('frameCache', name='frameCache_sine_z{0}_jnt'.format(index))
+        
+        # connect the pma offsetted time to varytime ant the attr to use as stream to the stream
+        pma_sine_z.output1D >> cache_sine_z.varyTime
+        root_ctrl.sineZ >> cache_sine_z.stream
+        
+        # create a per joint scale to the sine
+        sine_z_scale = pm.createNode('multDoubleLinear', name='sine_z_scale_{0}'.format(index))
+        cache_sine_z.varying >> sine_z_scale.input1
+        pm.connectAttr('{0}.sine_z_scale{1}'.format(root_ctrl.longName(), index), sine_z_scale.input2)
+        
+        # hook up the gloabal sacle to affect the per joint scale
+        sine_z_global_scale_md = pm.createNode('multDoubleLinear', name='sine_z_global_scale_md_{0}'.format(index))       
+        root_ctrl.sine_z_global_scale >> sine_z_global_scale_md.input1
+        sine_z_scale.output >> sine_z_global_scale_md.input2
+        
+        # fianlly feed that into the jnt
+        sine_z_global_scale_md.output >> sine_z_jnt.tz
+        
+        
+        
+        
+        
+        
+        
+        
     
     # set key frames and handle the post curve behaviour
     
-    # setup sine animation
+    # setup sine y animation
     pm.setKeyframe(root_ctrl, v=-1, attribute='sineY', t=0)
     pm.setKeyframe(root_ctrl, v=1, attribute='sineY', t=48)
     pm.setKeyframe(root_ctrl, v=-1, attribute='sineY', t=96)
     pm.setInfinity(root_ctrl, at='sineY', pri='cycleRelative', poi='cycleRelative')
+    
+    # setup sine z animation
+    pm.setKeyframe(root_ctrl, v=-1, attribute='sineZ', t=0)
+    pm.setKeyframe(root_ctrl, v=1, attribute='sineZ', t=24)
+    pm.setKeyframe(root_ctrl, v=-1, attribute='sineZ', t=48)
+    pm.setInfinity(root_ctrl, at='sineZ', pri='cycleRelative', poi='cycleRelative')
+    
     
     # set keyframes of the time attr on the root ctrl, set naim curve properties   
     pm.setKeyframe(root_ctrl, v=0, attribute='time', t=0)
