@@ -45,12 +45,29 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.joint_ref_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.joint_ref_horiz_layout)        
         
-        self.add_joint_ref_button = QtGui.QPushButton('Add Joint ref group')
-        self.add_joint_ref_button.setMinimumWidth(125)
-        self.joint_ref_horiz_layout.addStretch()
+        self.add_joint_ref_button = QtGui.QPushButton(' + ')
+        self.add_joint_ref_button.setMinimumWidth(40)
+        
         self.joint_ref_horiz_layout.addWidget(self.add_joint_ref_button)
         self.add_joint_ref_button.clicked.connect(self.add_joint_ref_click)
         
+        self.joint_ref_label = QtGui.QLabel('Add joint ref group')
+        self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
+        self.joint_ref_horiz_layout.addStretch()
+
+        
+        # share hairsystem
+        self.share_hairsystem_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(self.share_hairsystem_horiz_layout)
+        
+        self.share_hairsystem_checkbox = QtGui.QCheckBox()
+        self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_checkbox)
+        
+        self.share_hairsystem_label = QtGui.QLabel('Share Hairsystem')
+        self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
+        self.share_hairsystem_horiz_layout.addStretch()
+          
+        self.vertical_layout.addStretch()
 
         # Setup
         self.setup_horiz_layout = QtGui.QHBoxLayout()
@@ -63,7 +80,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.import_button.clicked.connect(self.import_data)
         
         
-        self.vertical_layout.addStretch()
+        
         
 
     def add_joint_ref_click(self):
@@ -94,6 +111,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         root = self.model.invisibleRootItem()
         num_children = self.model.rowCount()
+        share_hairsystem = self.share_hairsystem_checkbox.isChecked()
     
         for i in range(num_children):
             
@@ -108,6 +126,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         
         # try to convert to a pymel camera node
+        
         '''
         try:
             ref = pm.PyNode(joint_ref_grp)
@@ -117,7 +136,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
             return
         '''
         
-        print(ref_grp_list, name)
+        print(ref_grp_list, name, share_hairsystem)
             
 
 def show():      

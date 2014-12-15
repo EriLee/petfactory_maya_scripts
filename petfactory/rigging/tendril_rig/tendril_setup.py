@@ -1,13 +1,17 @@
 import pymel.core as pm
+from PySide import QtCore, QtGui
+from shiboken import wrapInstance
+import maya.OpenMayaUI as omui
 import maya.cmds as cmds
 import pprint
 import petfactory.rigging.joint_tools as joint_tools
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
-reload(nhair_dynamics)
+#reload(nhair_dynamics)
+
+
 
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
-
 
 
 # build the joints from the joint ref group
@@ -71,11 +75,9 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
     
     pm.addAttr(root_ctrl, longName='sineY', keyable=True)
-    pm.addAttr(root_ctrl, longName='sine_y_global_offset', keyable=True)
     pm.addAttr(root_ctrl, longName='sine_y_global_scale', keyable=True)
     
     pm.addAttr(root_ctrl, longName='sineZ', keyable=True)
-    pm.addAttr(root_ctrl, longName='sine_z_global_offset', keyable=True)
     pm.addAttr(root_ctrl, longName='sine_z_global_scale', keyable=True)
     
     pm.addAttr(root_ctrl, longName='time', keyable=True)
@@ -300,16 +302,11 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         # setup the y sine animation
         
-        # global time offset
-        pma_global_sine_offset_y = pm.createNode('plusMinusAverage', name='pma_global_offset_sine_y{0}'.format(index))
-
-        # connect root ctrl time and global offset attr to pma global offset
-        root_ctrl.time >> pma_global_sine_offset_y.input1D[0]
-        root_ctrl.sine_y_global_offset >> pma_global_sine_offset_y.input1D[1]
-        
-        # per jnt time offset the vary time input
+        # pma to offset the vary time input
         pma_sine_y = pm.createNode('plusMinusAverage', name='pma_sine_y{0}'.format(index))
-        pma_global_sine_offset_y.output1D >> pma_sine_y.input1D[0]
+        
+        # connect root ctrl time attr to pma
+        root_ctrl.time >> pma_sine_y.input1D[0]
         
         # connect the per joint offset to the pma
         pm.connectAttr('{0}.sine_y_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_y.input1D[1])
@@ -339,17 +336,12 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         
         # setup the z sine animation
-
-        # global time offset
-        pma_global_sine_offset_z = pm.createNode('plusMinusAverage', name='pma_global_offset_sine_z{0}'.format(index))
-
-        # connect root ctrl time and global offset attr to pma global offset
-        root_ctrl.time >> pma_global_sine_offset_z.input1D[0]
-        root_ctrl.sine_z_global_offset >> pma_global_sine_offset_z.input1D[1]
         
-        # per jnt time offset the vary time input
+        # pma to offset the vary time input
         pma_sine_z = pm.createNode('plusMinusAverage', name='pma_sine_z{0}'.format(index))
-        pma_global_sine_offset_z.output1D >> pma_sine_z.input1D[0]
+        
+        # connect root ctrl time attr to pma
+        root_ctrl.time >> pma_sine_z.input1D[0]
         
         # connect the per joint offset to the pma
         pm.connectAttr('{0}.sine_z_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_z.input1D[1])
@@ -423,6 +415,7 @@ dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
 
 '''
 
+'''
 node = pm.PyNode('flower_jnt_pos')
 ref_list = [node, node, node, node, node, node]
 
@@ -459,6 +452,202 @@ for output_curve in output_curve_list:
     curve_parent = output_curve.getParent()
     pm.parent(output_curve, output_curve_grp)
     pm.delete(curve_parent)
-    
+'''
 
+
+
+
+
+
+def maya_main_window():
+    main_window_ptr = omui.MQtUtil.mainWindow()
+    return wrapInstance(long(main_window_ptr), QtGui.QWidget)
+    
+    
+class Import_nuke_2d_track_ui(QtGui.QWidget):
+ 
+    def __init__(self, parent=None):
+ 
+        super(Import_nuke_2d_track_ui, self).__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Tool)
+        
+        self.resize(300,100)
+        self.setWindowTitle("Tendril Setup")
+        
+        
+        # layout
+        self.vertical_layout = QtGui.QVBoxLayout()
+        self.setLayout(self.vertical_layout)
+        
+        # tendril name
+        self.name_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(self.name_horiz_layout)
+        
+        self.name_label = QtGui.QLabel('Tendril Name')
+        self.name_horiz_layout.addWidget(self.name_label)
+        
+        self.name_line_edit = QtGui.QLineEdit()
+        self.name_horiz_layout.addWidget(self.name_line_edit)
+          
+        # tree view
+        self.model = QtGui.QStandardItemModel()
+        self.tree_view = QtGui.QTreeView()
+        self.tree_view.setModel(self.model)
+        self.vertical_layout.addWidget(self.tree_view)
+        self.tree_view.header().setVisible(False)
+        
+        # add joint ref
+        self.joint_ref_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(self.joint_ref_horiz_layout)        
+        
+        self.add_joint_ref_button = QtGui.QPushButton(' + ')
+        self.add_joint_ref_button.setMinimumWidth(40)
+        
+        self.joint_ref_horiz_layout.addWidget(self.add_joint_ref_button)
+        self.add_joint_ref_button.clicked.connect(self.add_joint_ref_click)
+        
+        self.joint_ref_label = QtGui.QLabel('Add joint ref group')
+        self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
+        self.joint_ref_horiz_layout.addStretch()
+
+        
+        # share hairsystem
+        self.share_hairsystem_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(self.share_hairsystem_horiz_layout)
+        
+        self.share_hairsystem_checkbox = QtGui.QCheckBox()
+        self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_checkbox)
+        
+        self.share_hairsystem_label = QtGui.QLabel('Share Hairsystem')
+        self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
+        self.share_hairsystem_horiz_layout.addStretch()
+          
+        self.vertical_layout.addStretch()
+
+        # Setup
+        self.setup_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(self.setup_horiz_layout)
+        
+        self.import_button = QtGui.QPushButton('Setup Tendrils')
+        self.import_button.setMinimumWidth(125)
+        self.setup_horiz_layout.addStretch()
+        self.setup_horiz_layout.addWidget(self.import_button)
+        self.import_button.clicked.connect(self.import_data)
+        
+        
+        
+        
+
+    def add_joint_ref_click(self):
+        
+
+        sel_list = pm.ls(sl=True)
+        
+        if not sel_list:
+            pm.warning('Please select a camera!')
+            return
+
+        
+        for sel in sel_list:
+        
+            if not isinstance(sel, pm.nodetypes.Transform):
+                pm.warning('{0} is not a valid transform, skipped'.format(sel.name()))
+                continue
+            
+            item = QtGui.QStandardItem(sel.name())
+            item.setCheckable(True)
+            item.setCheckState(QtCore.Qt.Checked)
+            self.model.appendRow(item) 
+                
+        
+    def import_data(self):
+        
+        ref_grp_list = []
+        
+        root = self.model.invisibleRootItem()
+        num_children = self.model.rowCount()
+        share_hairsystem = self.share_hairsystem_checkbox.isChecked()
+    
+        for i in range(num_children):
+            
+            child = root.child(i)
+            
+            if child.checkState():
+                
+                ref_grp_list.append(child.text())
+                
+
+        name = self.name_line_edit.text()
+        
+        
+        # try to convert to a pymel camera node
+        
+        '''
+        try:
+            ref = pm.PyNode(joint_ref_grp)
+            
+        except pm.general.MayaNodeError as e:
+            pm.warning('Object specified is not a valid transform!')
+            return
+        '''
+        
+        #print(ref_grp_list, name, share_hairsystem)
+        
+        #node = pm.PyNode('flower_jnt_pos')
+        #ref_list = [node, node, node, node, node, node]
+        
+        ref_list = []
+        name_list = []
+        
+        for index, ref_grp in enumerate(ref_grp_list):
+            
+            ref_list.append(pm.PyNode(ref_grp))
+            name_list.append('name_{0}'.format(index))
+            
+            
+        
+        # build the joints
+        jnt_dict_list = build_joints(joint_ref_list=ref_list, name_list=name_list)
+        
+        
+        # set up the nhair dynamics
+        output_curve_list = []
+        output_curve_grp = pm.group(em=True, name='output_curve_grp')
+        
+        
+        print(share_hairsystem)
+        
+        for index, jnt_dict in enumerate(jnt_dict_list):
+
+            if index is 0:
+                dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict)
+                hairsystem = dyn_joint_dict.get('hairsystem')
+    
+            else:
+                
+                if share_hairsystem:
+                    dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=hairsystem)
+                    print('usa sasasa')
+                    
+                else:
+                    dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict)
+                    print('ceratet bew')
+                    
+                
+            output_curve_list.append(dyn_joint_dict.get('output_curve'))
+    
+        
+        for output_curve in output_curve_list:
+            curve_parent = output_curve.getParent()
+            pm.parent(output_curve, output_curve_grp)
+            pm.delete(curve_parent)
+
+            
+
+def show():      
+    win = Import_nuke_2d_track_ui(parent=maya_main_window())
+    win.show()
+    
+show()
+    
 
