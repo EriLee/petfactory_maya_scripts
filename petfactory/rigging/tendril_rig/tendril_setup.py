@@ -9,9 +9,8 @@ import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 #reload(nhair_dynamics)
 
 
-
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
 
 
 # build the joints from the joint ref group
@@ -674,4 +673,4 @@ def show():
     win = Import_nuke_2d_track_ui(parent=maya_main_window())
     win.show()
     
-show()    
+#show()    
