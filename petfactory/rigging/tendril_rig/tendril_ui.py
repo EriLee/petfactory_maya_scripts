@@ -3,6 +3,8 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
+
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -36,22 +38,43 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
           
         # tree view
         self.model = QtGui.QStandardItemModel()
+        
         self.tree_view = QtGui.QTreeView()
+        self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ContiguousSelection)
+        
+        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
+        self.tree_view.setAlternatingRowColors(True)
+ 
+        
         self.tree_view.setModel(self.model)
         self.vertical_layout.addWidget(self.tree_view)
-        self.tree_view.header().setVisible(False)
+        
+        self.model.setHorizontalHeaderLabels(['Ref Group', 'Name'])
+        
+        #header = self.tree_view.header()
+        #header.setResizeMode(QtGui.QHeaderView.Stretch)
+        #header.setVisible(False)
         
         # add joint ref
         self.joint_ref_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.joint_ref_horiz_layout)        
         
+        # add
         self.add_joint_ref_button = QtGui.QPushButton(' + ')
         self.add_joint_ref_button.setMinimumWidth(40)
         
         self.joint_ref_horiz_layout.addWidget(self.add_joint_ref_button)
         self.add_joint_ref_button.clicked.connect(self.add_joint_ref_click)
         
-        self.joint_ref_label = QtGui.QLabel('Add joint ref group')
+        # remove
+        self.remove_joint_ref_button = QtGui.QPushButton(' - ')
+        self.remove_joint_ref_button.setMinimumWidth(40)
+        
+        self.joint_ref_horiz_layout.addWidget(self.remove_joint_ref_button)
+        self.remove_joint_ref_button.clicked.connect(self.remove_joint_ref_click)
+        
+        self.joint_ref_label = QtGui.QLabel('Add / remove joint ref group')
         self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
         self.joint_ref_horiz_layout.addStretch()
 
@@ -67,7 +90,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
         self.share_hairsystem_horiz_layout.addStretch()
           
-        self.vertical_layout.addStretch()
+        #self.vertical_layout.addStretch()
 
         # Setup
         self.setup_horiz_layout = QtGui.QHBoxLayout()
@@ -100,11 +123,29 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
                 continue
             
             item = QtGui.QStandardItem(sel.name())
+            
+            # set flags
+            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            
             item.setCheckable(True)
             item.setCheckState(QtCore.Qt.Checked)
             self.model.appendRow(item) 
                 
+    
+    def remove_joint_ref_click(self):
         
+        selection_model = self.tree_view.selectionModel()
+        
+        # returns QModelIndex
+        selected_rows = selection_model.selectedRows()
+        
+        row_list = [sel.row() for sel in selected_rows]
+        row_list.sort(reverse=True)
+        
+        for row in row_list:
+            self.model.removeRow(row)
+    
+       
     def import_data(self):
         
         ref_grp_list = []
@@ -125,17 +166,6 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         name = self.name_line_edit.text()
         
         
-        # try to convert to a pymel camera node
-        
-        '''
-        try:
-            ref = pm.PyNode(joint_ref_grp)
-            
-        except pm.general.MayaNodeError as e:
-            pm.warning('Object specified is not a valid transform!')
-            return
-        '''
-        
         print(ref_grp_list, name, share_hairsystem)
             
 
@@ -143,4 +173,20 @@ def show():
     win = Import_nuke_2d_track_ui(parent=maya_main_window())
     win.show()
     
-show()
+#show()
+
+cube = pm.polyCube()[0]
+
+try:
+    win.close()
+    
+except NameError:
+    print('No win to close')
+
+win = Import_nuke_2d_track_ui(parent=maya_main_window())
+win.show()
+
+win.add_joint_ref_click()
+win.move(100,250)
+
+

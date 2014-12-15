@@ -402,7 +402,9 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         
 
-    
+# manual setup
+
+   
 #pm.select(['group1', 'group2', 'group3', 'group4'])
 #pm.select(['group1', 'group2', 'group3'])
 #pm.select(['group1'])
@@ -457,8 +459,6 @@ for output_curve in output_curve_list:
 
 
 
-
-
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
@@ -491,22 +491,42 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
           
         # tree view
         self.model = QtGui.QStandardItemModel()
+        
         self.tree_view = QtGui.QTreeView()
+        self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ContiguousSelection)
+        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
+        self.tree_view.setAlternatingRowColors(True)
+ 
+        
         self.tree_view.setModel(self.model)
         self.vertical_layout.addWidget(self.tree_view)
-        self.tree_view.header().setVisible(False)
+        
+        self.model.setHorizontalHeaderLabels(['Ref Group', 'Name'])
+        
+        #header = self.tree_view.header()
+        #header.setResizeMode(QtGui.QHeaderView.Stretch)
+        #header.setVisible(False)
         
         # add joint ref
         self.joint_ref_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.joint_ref_horiz_layout)        
         
+        # add
         self.add_joint_ref_button = QtGui.QPushButton(' + ')
         self.add_joint_ref_button.setMinimumWidth(40)
         
         self.joint_ref_horiz_layout.addWidget(self.add_joint_ref_button)
         self.add_joint_ref_button.clicked.connect(self.add_joint_ref_click)
         
-        self.joint_ref_label = QtGui.QLabel('Add joint ref group')
+        # remove
+        self.remove_joint_ref_button = QtGui.QPushButton(' - ')
+        self.remove_joint_ref_button.setMinimumWidth(40)
+        
+        self.joint_ref_horiz_layout.addWidget(self.remove_joint_ref_button)
+        self.remove_joint_ref_button.clicked.connect(self.remove_joint_ref_click)
+        
+        self.joint_ref_label = QtGui.QLabel('Add / remove joint ref group')
         self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
         self.joint_ref_horiz_layout.addStretch()
 
@@ -522,17 +542,17 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
         self.share_hairsystem_horiz_layout.addStretch()
           
-        self.vertical_layout.addStretch()
+        #self.vertical_layout.addStretch()
 
         # Setup
         self.setup_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.setup_horiz_layout)
         
-        self.import_button = QtGui.QPushButton('Setup Tendrils')
-        self.import_button.setMinimumWidth(125)
+        self.setup_button = QtGui.QPushButton('Setup Tendrils')
+        self.setup_button.setMinimumWidth(125)
         self.setup_horiz_layout.addStretch()
-        self.setup_horiz_layout.addWidget(self.import_button)
-        self.import_button.clicked.connect(self.import_data)
+        self.setup_horiz_layout.addWidget(self.setup_button)
+        self.setup_button.clicked.connect(self.setup_tendril)
         
         
         
@@ -555,18 +575,40 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
                 continue
             
             item = QtGui.QStandardItem(sel.name())
+            
+            # set flags
+            item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            
             item.setCheckable(True)
             item.setCheckState(QtCore.Qt.Checked)
             self.model.appendRow(item) 
                 
+    
+    def remove_joint_ref_click(self):
         
-    def import_data(self):
+        selection_model = self.tree_view.selectionModel()
+        
+        # returns QModelIndex
+        selected_rows = selection_model.selectedRows()
+        
+        row_list = [sel.row() for sel in selected_rows]
+        row_list.sort(reverse=True)
+        
+        for row in row_list:
+            self.model.removeRow(row)
+    
+       
+    def setup_tendril(self):
         
         ref_grp_list = []
         
         root = self.model.invisibleRootItem()
         num_children = self.model.rowCount()
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
+        
+        if num_children < 1:
+            pm.warning('No joint ref are available in the treeview!')
+            return
     
         for i in range(num_children):
             
@@ -580,21 +622,6 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         name = self.name_line_edit.text()
         
         
-        # try to convert to a pymel camera node
-        
-        '''
-        try:
-            ref = pm.PyNode(joint_ref_grp)
-            
-        except pm.general.MayaNodeError as e:
-            pm.warning('Object specified is not a valid transform!')
-            return
-        '''
-        
-        #print(ref_grp_list, name, share_hairsystem)
-        
-        #node = pm.PyNode('flower_jnt_pos')
-        #ref_list = [node, node, node, node, node, node]
         
         ref_list = []
         name_list = []
@@ -642,12 +669,9 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
             pm.parent(output_curve, output_curve_grp)
             pm.delete(curve_parent)
 
-            
 
 def show():      
     win = Import_nuke_2d_track_ui(parent=maya_main_window())
     win.show()
     
-show()
-    
-
+show()    
