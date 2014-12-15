@@ -71,9 +71,11 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
     
     pm.addAttr(root_ctrl, longName='sineY', keyable=True)
+    pm.addAttr(root_ctrl, longName='sine_y_global_offset', keyable=True)
     pm.addAttr(root_ctrl, longName='sine_y_global_scale', keyable=True)
     
     pm.addAttr(root_ctrl, longName='sineZ', keyable=True)
+    pm.addAttr(root_ctrl, longName='sine_z_global_offset', keyable=True)
     pm.addAttr(root_ctrl, longName='sine_z_global_scale', keyable=True)
     
     pm.addAttr(root_ctrl, longName='time', keyable=True)
@@ -222,7 +224,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         if existing_hairsystem is not None:
             print('Delete current hairsystem, use {0}'.format(existing_hairsystem))
             
-            num_connection = len(pm.listConnections('{0}.inputHair'.format(hairsystem_1)))
+            num_connection = len(pm.listConnections('{0}.inputHair'.format(existing_hairsystem)))
             
             follicle.outHair >> existing_hairsystem.inputHair[num_connection]
             existing_hairsystem.outputHair[num_connection] >> follicle.currentPosition
@@ -298,11 +300,16 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         # setup the y sine animation
         
-        # pma to offset the vary time input
-        pma_sine_y = pm.createNode('plusMinusAverage', name='pma_sine_y{0}'.format(index))
+        # global time offset
+        pma_global_sine_offset_y = pm.createNode('plusMinusAverage', name='pma_global_offset_sine_y{0}'.format(index))
+
+        # connect root ctrl time and global offset attr to pma global offset
+        root_ctrl.time >> pma_global_sine_offset_y.input1D[0]
+        root_ctrl.sine_y_global_offset >> pma_global_sine_offset_y.input1D[1]
         
-        # connect root ctrl time attr to pma
-        root_ctrl.time >> pma_sine_y.input1D[0]
+        # per jnt time offset the vary time input
+        pma_sine_y = pm.createNode('plusMinusAverage', name='pma_sine_y{0}'.format(index))
+        pma_global_sine_offset_y.output1D >> pma_sine_y.input1D[0]
         
         # connect the per joint offset to the pma
         pm.connectAttr('{0}.sine_y_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_y.input1D[1])
@@ -332,12 +339,17 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         
         # setup the z sine animation
+
+        # global time offset
+        pma_global_sine_offset_z = pm.createNode('plusMinusAverage', name='pma_global_offset_sine_z{0}'.format(index))
+
+        # connect root ctrl time and global offset attr to pma global offset
+        root_ctrl.time >> pma_global_sine_offset_z.input1D[0]
+        root_ctrl.sine_z_global_offset >> pma_global_sine_offset_z.input1D[1]
         
-        # pma to offset the vary time input
+        # per jnt time offset the vary time input
         pma_sine_z = pm.createNode('plusMinusAverage', name='pma_sine_z{0}'.format(index))
-        
-        # connect root ctrl time attr to pma
-        root_ctrl.time >> pma_sine_z.input1D[0]
+        pma_global_sine_offset_z.output1D >> pma_sine_z.input1D[0]
         
         # connect the per joint offset to the pma
         pm.connectAttr('{0}.sine_z_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_z.input1D[1])
