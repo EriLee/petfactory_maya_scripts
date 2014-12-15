@@ -68,15 +68,23 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
     
     pm.addAttr(root_ctrl, longName='sineY', keyable=True)
+    pm.addAttr(root_ctrl, longName='sine_y_global_scale', keyable=True)
+    
+    pm.addAttr(root_ctrl, longName='sineZ', keyable=True)
+    pm.addAttr(root_ctrl, longName='sine_z_global_scale', keyable=True)
+    
     pm.addAttr(root_ctrl, longName='time', keyable=True)
+    
+    
+    
     
 
     for index in range(num_jnt):
-        pm.addAttr(root_ctrl, longName='timeOffset{0}'.format(index), keyable=True, defaultValue=index*10)
+        pm.addAttr(root_ctrl, longName='sine_y_offset{0}'.format(index), keyable=True, defaultValue=index*10)
     
-    pm.addAttr(root_ctrl, longName='sine_global_scale', keyable=True)
+    
     for index in range(num_jnt):
-        pm.addAttr(root_ctrl, longName='sine_scale_y{0}'.format(index), keyable=True, defaultValue=index)
+        pm.addAttr(root_ctrl, longName='sine_y_scale{0}'.format(index), keyable=True, defaultValue=index)
         
 
 
@@ -251,43 +259,65 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
             
         
         
-        # create a sine offset jnt
-        offset_jnt = pm.createNode('joint', name='offset_{0}_jnt'.format(index), ss=True)
-        offset_jnt.setMatrix(jnt.getMatrix(ws=True))
-        pm.parent(offset_jnt, jnt)
+        # create a y sine offset jnt
+        sine_y_jnt = pm.createNode('joint', name='sine_y_{0}_jnt'.format(index), ss=True)
+        sine_y_jnt.setMatrix(jnt.getMatrix(ws=True))
+        pm.parent(sine_y_jnt, jnt)
         
+        # create a z sine offset jnt
+        sine_z_jnt = pm.createNode('joint', name='sine_z_{0}_jnt'.format(index), ss=True)
+        sine_z_jnt.setMatrix(jnt.getMatrix(ws=True))
+        pm.parent(sine_z_jnt, sine_y_jnt)
+        
+       
         # create the bind joints
         bind_jnt = pm.createNode('joint', name='bind_{0}_jnt'.format(index), ss=True)
         bind_jnt.setMatrix(jnt.getMatrix(ws=True))
         bind_jnt_grp = pm.group(em=True, name='bind_jnt_{0}_grp'.format(index))
-        pm.parentConstraint(offset_jnt, bind_jnt_grp)
+        pm.parentConstraint(sine_z_jnt, bind_jnt_grp)
         pm.parent(bind_jnt, bind_jnt_grp)
         
         pm.parent(bind_jnt_grp, main_bind_jnt_grp)
         
         
-        # pma to offset the time
+        
+        # setup the y sine animation
+        
+        # pma to offset the vary time input
         pma = pm.createNode('plusMinusAverage')
+        
+        # connect root ctrl time attr to pma
         root_ctrl.time >> pma.input1D[0]
-        pm.connectAttr('{0}.timeOffset{1}'.format(root_ctrl.longName(), index),  pma.input1D[1])
+        
+        # connect the per joint offset to the pma
+        pm.connectAttr('{0}.sine_y_offset{1}'.format(root_ctrl.longName(), index),  pma.input1D[1])
             
         # create node cache
         cache = pm.createNode('frameCache', name='frameCache_{0}_jnt'.format(index))
         
+        # connect the pma offsetted time to varytime ant the attr to use as stream to the stream
         pma.output1D >> cache.varyTime
         root_ctrl.sineY >> cache.stream
         
+        # create a per joint scale to the sine
         sine_y_scale = pm.createNode('multDoubleLinear', name='sine_y_scale_{0}'.format(index))
         cache.varying >> sine_y_scale.input1
-        pm.connectAttr('{0}.sine_scale_y{1}'.format(root_ctrl.longName(), index), sine_y_scale.input2)
+        pm.connectAttr('{0}.sine_y_scale{1}'.format(root_ctrl.longName(), index), sine_y_scale.input2)
         
-        sine_global_scale_md = pm.createNode('multDoubleLinear', name='sine_global_scale_md_{0}'.format(index))
-        
-        root_ctrl.sine_global_scale >> sine_global_scale_md.input1
+        # hook up the gloabal sacle to affect the per joint scale
+        sine_global_scale_md = pm.createNode('multDoubleLinear', name='sine_global_scale_md_{0}'.format(index))       
+        root_ctrl.sine_y_global_scale >> sine_global_scale_md.input1
         sine_y_scale.output >> sine_global_scale_md.input2
         
-        sine_global_scale_md.output >> offset_jnt.ty
+        # fianlly feed that into the jnt
+        sine_global_scale_md.output >> sine_y_jnt.ty
+        
+        
+        
+        
+        
     
+    # set key frames and handle the post curve behaviour
     
     # setup sine animation
     pm.setKeyframe(root_ctrl, v=-1, attribute='sineY', t=0)
@@ -300,10 +330,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.setKeyframe(root_ctrl, v=1, attribute='time', t=1)
     pm.setInfinity(root_ctrl, at='time', pri='cycleRelative', poi='cycleRelative')
     
-    #time_anim_crv = root_ctrl.time.listConnections(d=False, s=True)
     pm.keyTangent(root_ctrl, edit=True, attribute='time', itt='linear', ott='linear') 
-
-    
+   
     return ret_dict
         
         
