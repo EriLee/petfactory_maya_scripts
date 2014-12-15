@@ -412,31 +412,35 @@ dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
 '''
 
 node = pm.PyNode('flower_jnt_pos')
-ref_list = [node, node, node, node, node]
+ref_list = [node, node, node, node, node, node]
 
 # build the joints
-jnt_dict_list = build_joints(ref_list, name_list=['tendri_1', 'tendril_2', 'tendril_3', 'tendril_4', 'tendril_5'])
+jnt_dict_list = build_joints(ref_list, name_list=['tendri_0', 'tendril_1', 'tendril_2', 'tendril_3', 'tendril_4', 'tendril_5'])
 
 # set up the nhair dynamics
 output_curve_list = []
 output_curve_grp = pm.group(em=True, name='output_curve_grp')
 
-dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
-hairsystem_1 = dyn_joint_dict_1.get('hairsystem')
+# the first tendril
+dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict_list[0])
+hairsystem_0 = dyn_joint_dict_0.get('hairsystem')
+output_curve_list.append(dyn_joint_dict_0.get('output_curve'))
+
+dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[1], existing_hairsystem=hairsystem_0)
 output_curve_list.append(dyn_joint_dict_1.get('output_curve'))
 
-
-dyn_joint_dict_2 = setup_dynamic_joint_chain(jnt_dict_list[1], existing_hairsystem=hairsystem_1)
+dyn_joint_dict_2 = setup_dynamic_joint_chain(jnt_dict_list[2], existing_hairsystem=hairsystem_0)
 output_curve_list.append(dyn_joint_dict_2.get('output_curve'))
 
-dyn_joint_dict_3 = setup_dynamic_joint_chain(jnt_dict_list[2], existing_hairsystem=hairsystem_1)
+dyn_joint_dict_3 = setup_dynamic_joint_chain(jnt_dict_list[3], existing_hairsystem=hairsystem_0)
 output_curve_list.append(dyn_joint_dict_3.get('output_curve'))
 
-dyn_joint_dict_4 = setup_dynamic_joint_chain(jnt_dict_list[3], existing_hairsystem=hairsystem_1)
+dyn_joint_dict_4 = setup_dynamic_joint_chain(jnt_dict_list[4], existing_hairsystem=hairsystem_0)
 output_curve_list.append(dyn_joint_dict_4.get('output_curve'))
 
-dyn_joint_dict_5 = setup_dynamic_joint_chain(jnt_dict_list[4], existing_hairsystem=hairsystem_1)
+dyn_joint_dict_5 = setup_dynamic_joint_chain(jnt_dict_list[5], existing_hairsystem=hairsystem_0)
 output_curve_list.append(dyn_joint_dict_5.get('output_curve'))
+
 
 
 for output_curve in output_curve_list:
