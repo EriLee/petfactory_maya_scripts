@@ -255,6 +255,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     root_ctrl.stretchScale >> stretch_scale_mult.input2
 
     
+    bind_jnt_list = []
     for index, jnt in enumerate(jnt_list):
         
         if index is not 0:
@@ -278,15 +279,15 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
        
         # create the bind joints
         bind_jnt = pm.createNode('joint', name='bind_{0}_jnt'.format(index), ss=True)
+        bind_jnt_list.append(bind_jnt)
         bind_jnt.setMatrix(jnt.getMatrix(ws=True))
         bind_jnt_grp = pm.group(em=True, name='bind_jnt_{0}_grp'.format(index))
         pm.parentConstraint(sine_z_jnt, bind_jnt_grp)
         pm.parent(bind_jnt, bind_jnt_grp)
         pm.parent(bind_jnt_grp, main_bind_jnt_grp)
         
-        
-        
-        
+
+
         
         
         # setup the y sine animation
@@ -356,11 +357,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         sine_z_global_scale_md.output >> sine_z_jnt.tz
         
         
-        
-        
-        
-        
-        
+      
         
     
     # set key frames and handle the post curve behaviour
@@ -384,7 +381,13 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.setInfinity(root_ctrl, at='time', pri='cycleRelative', poi='cycleRelative')
     
     pm.keyTangent(root_ctrl, edit=True, attribute='time', itt='linear', ott='linear') 
-   
+    
+
+    pm.select(deselect=True)
+    bind_jnt_set = pm.sets(name='{0}_bind_joints'.format(name))
+    bind_jnt_set.addMembers(bind_jnt_list)
+
+  
     return ret_dict
         
         
@@ -394,12 +397,13 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
 #pm.select(['group1', 'group2', 'group3'])
 #pm.select(['group1'])
 
-#pm.select(['flower_jnt_pos'])
-#sel_list = pm.ls(sl=True)
-#jnt_dict_list = build_joints(sel_list)
-#dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
+'''
+pm.select(['flower_jnt_pos'])
+sel_list = pm.ls(sl=True)
+jnt_dict_list = build_joints(sel_list)
+dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
 
-
+'''
 
 node = pm.PyNode('flower_jnt_pos')
 ref_list = [node, node, node, node, node]
@@ -434,6 +438,5 @@ for output_curve in output_curve_list:
     pm.parent(output_curve, output_curve_grp)
     pm.delete(curve_parent)
     
-
 
 
