@@ -17,11 +17,8 @@ class Curve_spreadsheet(QtGui.QWidget):
         self.vertical_layout = QtGui.QVBoxLayout()
         self.setLayout(self.vertical_layout)
         
-        
-        
 
         # add path
-        
         self.path_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.path_horiz_layout)
               
@@ -34,7 +31,6 @@ class Curve_spreadsheet(QtGui.QWidget):
         self.path_horiz_layout.addWidget(self.path_line_edit)
         
         # add mesh
-        
         self.fitting_mesh_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.fitting_mesh_horiz_layout)
                
@@ -47,8 +43,7 @@ class Curve_spreadsheet(QtGui.QWidget):
         self.fitting_mesh_horiz_layout.addWidget(self.fitting_mesh_line_edit)
         
         
-        
-        
+        # table view  
         self.table_view = QtGui.QTableView()
         self.vertical_layout.addWidget(self.table_view)
         
@@ -60,23 +55,55 @@ class Curve_spreadsheet(QtGui.QWidget):
         #v_header = self.table_view.verticalHeader()
         h_header = self.table_view.horizontalHeader()
         h_header.setResizeMode(QtGui.QHeaderView.Stretch)
+           
+        self.axis_div_spinbox = Curve_spreadsheet.add_int_spinbox('Axis Divisions', self.vertical_layout)
+        self.length_div_spinbox = Curve_spreadsheet.add_int_spinbox('Length Divisions', self.vertical_layout)
+        self.radial_div_spinbox = Curve_spreadsheet.add_int_spinbox('Radial Divisions', self.vertical_layout)
         
-        
+        # visualize
+        '''
         self.visualize_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.visualize_horiz_layout)
-        
-        self.visualize_label = QtGui.QLabel('Visualize')
-        self.visualize_horiz_layout.addWidget(self.visualize_label)
         
         self.visualize_checkbox = QtGui.QCheckBox()
         self.visualize_horiz_layout.addWidget(self.visualize_checkbox)
         
+        self.visualize_label = QtGui.QLabel('Visualize')
+        self.visualize_horiz_layout.addWidget(self.visualize_label)
+        self.visualize_horiz_layout.addStretch()
+        '''
+        
+        
+        # build button
+        self.build_button_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(self.build_button_horiz_layout)
+        
+        self.build_button_horiz_layout.addStretch()
         self.build_button = QtGui.QPushButton('Build it!')
-        self.vertical_layout.addWidget(self.build_button)
+        self.build_button.setMinimumWidth(100)
+        self.build_button_horiz_layout.addWidget(self.build_button)
         self.build_button.clicked.connect(self.on_build_click)
     
     
-    
+    @staticmethod
+    def add_int_spinbox(label, parent_layout):
+        
+        horiz_layout = QtGui.QHBoxLayout()
+        parent_layout.addLayout(horiz_layout)
+
+        label = QtGui.QLabel(label)
+        label.setMinimumWidth(100)
+        horiz_layout.addWidget(label)
+        
+        horiz_layout.addStretch()
+         
+        spinbox = QtGui.QSpinBox()
+        horiz_layout.addWidget(spinbox)
+        spinbox.setMinimumWidth(100)
+        
+        return spinbox
+
+        
     def add_fitting_mesh_click(self):
         
         sel_list = pm.ls(sl=True)
@@ -111,6 +138,7 @@ class Curve_spreadsheet(QtGui.QWidget):
     def add_path_click(self):
         
         self.model.clear()
+        self.model.setHorizontalHeaderLabels(['Radius'])
         
         sel_list = pm.ls(sl=True)
         
@@ -123,9 +151,12 @@ class Curve_spreadsheet(QtGui.QWidget):
             return
         
         try:
-            crv = sel_list[0].getShape()
+            crv_shape = sel_list[0].getShape()
             
-            if not isinstance(crv, pm.nodetypes.NurbsCurve):
+            if isinstance(crv_shape, pm.nodetypes.NurbsCurve):
+                crv = sel_list[0]
+                
+            else:
                 pm.warning('Please select a NurbsCurve transform')
                 return
             
@@ -154,10 +185,18 @@ class Curve_spreadsheet(QtGui.QWidget):
         
     def on_build_click(self):
         
-        pos_list = []
         radius_list = []
         
         num_rows = self.model.rowCount()
+        
+        axis_divisions = self.axis_div_spinbox.value()
+        length_divisions = self.length_div_spinbox.value()
+        radial_divisions = self.radial_div_spinbox.value()
+        
+        crv = self.path_line_edit.text()
+        fitting_mesh = self.fitting_mesh_line_edit.text()
+        
+        
         
         for row in range(num_rows):
             
@@ -178,13 +217,15 @@ class Curve_spreadsheet(QtGui.QWidget):
             #print('Outer radius: {0}'.format(outer_radius_text))
             
         #print(radius_list)
-        visualize = self.visualize_checkbox.isChecked()
-        add_smooth_corners(self.curve, radius_list=radius_list, visualize=visualize)
+        #visualize = self.visualize_checkbox.isChecked()
+        #add_smooth_corners(self.curve, radius_list=radius_list, visualize=visualize)
+        
+        print(radius_list, axis_divisions, length_divisions, radial_divisions, fitting_mesh, crv)
 
 
 def show():      
-	win = Curve_spreadsheet(parent=maya_main_window())
-	win.show()
+    win = Curve_spreadsheet(parent=maya_main_window())
+    win.show()
 
 win.close()
 win = Curve_spreadsheet(parent=maya_main_window())
