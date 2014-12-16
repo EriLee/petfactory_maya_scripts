@@ -405,7 +405,7 @@ class Curve_spreadsheet(QtGui.QWidget):
         if not isinstance(sel_list[0], pm.nodetypes.Transform):
             pm.warning('Please select a Mesh transform')
             return
-        
+        '''
         try:
             mesh_shape = sel_list[0].getShape()
 
@@ -420,8 +420,10 @@ class Curve_spreadsheet(QtGui.QWidget):
         except pm.general.MayaNodeError as e:
             pm.warning('Please select a Mesh transform', e)
             return
+        '''
             
-        self.fitting_mesh_line_edit.setText(mesh_name)
+        #self.fitting_mesh_line_edit.setText(mesh_name)
+        self.fitting_mesh_line_edit.setText(sel_list[0].longName())
         
    
     
@@ -548,7 +550,7 @@ class Curve_spreadsheet(QtGui.QWidget):
 def show():      
     win = Curve_spreadsheet(parent=maya_main_window())
     win.show()
-
+'''
 try:
     win.close()
 except NameError as e:
@@ -557,7 +559,7 @@ except NameError as e:
 win = Curve_spreadsheet(parent=maya_main_window())
 win.move(100, 210)
 win.show()
-
+'''
 
 
 
