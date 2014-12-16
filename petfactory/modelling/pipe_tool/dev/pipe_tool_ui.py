@@ -1,3 +1,8 @@
+from PySide import QtCore, QtGui
+from shiboken import wrapInstance
+import maya.OpenMayaUI as omui
+import pymel.core as pm
+
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
@@ -227,7 +232,11 @@ def show():
     win = Curve_spreadsheet(parent=maya_main_window())
     win.show()
 
-win.close()
+try:
+    win.close()
+except NameError as e:
+    print(e)
+    
 win = Curve_spreadsheet(parent=maya_main_window())
 win.move(100, 210)
 win.show()
