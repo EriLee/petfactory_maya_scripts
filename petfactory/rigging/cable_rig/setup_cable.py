@@ -2,7 +2,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pprint
 
-def add_curve_joints(path, num_joints=10, front_axis=2, up_axis=1):
+def add_curve_joints(path, num_joints=10, front_axis=0, up_axis=1):
     
     ''' creates joints that are animated along the specified curve'''
 

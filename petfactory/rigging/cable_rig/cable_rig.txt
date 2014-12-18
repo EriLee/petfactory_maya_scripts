@@ -1,0 +1,28 @@
+select crv to rig, degree 3 , span 2 (7 cv's)
+
+distribute joints along crv, arbitrary number
+
+create start and end nurbs ctrl
+duplicate the orig crv, the duplicate will be the resulting crv
+
+make the orig crv dynamic
+
+create clusters on the orig crv:
+
+for the first and the last cluster include 2 cvs rest (3 clusters) will have 1 cv per cluser.
+
+group the clusters group should be at (0,0,0)
+
+parent (point?) constraint the mid cluster group to first and last cluster.
+
+parent (point?) constraint the cluster closest to the start to first and last cluster groups, but set the weighting to be .75 to the start and .25 to the end. (could add a slider 0 -1 on the main ctrl to contril rthe constraing influence.)
+
+connect the world space of the orgig crv to the creat input on the rexult crv (the result of the duplication of the orig crv)
+
+create a blend shape. select the dynamic crv shift select the result > blendsahpe
+
+add attr to main ctrl to control the blendshape.
+
+
+
+
