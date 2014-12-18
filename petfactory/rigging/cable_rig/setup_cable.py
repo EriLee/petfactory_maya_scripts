@@ -44,7 +44,8 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
         joint_list.append(jnt)
         
         # create the motion path node, if fractionMode is True it will use 0-1 u range
-        motionpath = pm.pathAnimation(jnt, follow=True, bank=True, fractionMode=True, followAxis=u_front_axis, upAxis=u_up_axis, c=crv)
+        #motionpath = pm.pathAnimation(jnt, follow=True, bank=True, fractionMode=True, followAxis=u_front_axis, upAxis=u_up_axis, c=crv)
+        motionpath = pm.pathAnimation(jnt, follow=True, bank=True, fractionMode=True, followAxis=u_front_axis, upAxis=u_up_axis, c=result_crv)
         motionpath_list.append(motionpath)
         
         # break the uvalue anim connection
@@ -58,6 +59,7 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
     
     num_cvs = crv_shape.numCVs()
 
+    cluster_grp_list = []
     for i in range(num_cvs-2):
         
         if i is 0:
@@ -72,6 +74,7 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
         #print(cv) 
         clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(crv.longName(), cv), relative=False, name='{0}_{1}_cluster_'.format(name, i))
         cluster_grp = pm.group(em=True, name='{0}_{1}_cluster_grp'.format(name, i))
+        cluster_grp_list.append(cluster_grp)
         pm.parent(clust_handle, cluster_grp)
 
     
@@ -103,12 +106,35 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
     blendshape = pm.blendShape(output_curve, result_crv, origin='world')[0]
     
     start_ctrl.dynamic_blendshape >> blendshape.weight[0] 
+    
+    
+    
+    mid_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[2])
+    
+  
+    start_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[1])
+    start_weight_list = pm.parentConstraint(start_clust_grp_constraint, q=True, weightAliasList=True)
+    start_weight_list[0].set(.75)
+    start_weight_list[1].set(.25)
+    
+    end_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[3])
+    end_weight_list = pm.parentConstraint(end_clust_grp_constraint, q=True, weightAliasList=True)
+    end_weight_list[0].set(.25)
+    end_weight_list[1].set(.75)
+    
+    
+    
+    # parent const to ctrl
+    
+    pm.parentConstraint(start_ctrl, cluster_grp_list[0], mo=True)
+    pm.parentConstraint(end_ctrl, cluster_grp_list[-1], mo=True)
 
 
     
     return ret_dict
         
 
+#pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
 crv = pm.PyNode('curve1')
 
 add_curve_joints(crv=crv)
