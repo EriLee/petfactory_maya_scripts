@@ -113,7 +113,7 @@ def mesh_from_pos_list(pos_list, name):
     return mesh_depend_node
     
 
-def create_profile_points(radius, axis_divisions):
+def create_profile_points(radius, axis_divisions, axis=1):
     '''Returns a list of positions (pm.datatypes.Vector) on a circle 
     around the origin, in the xz plane, i.e. y axis as normal'''
     
@@ -124,7 +124,15 @@ def create_profile_points(radius, axis_divisions):
     for i in range(axis_divisions):
         u = math.cos(ang_inc*i)*radius
         v = math.sin(ang_inc*i)*radius
-        p_list.append(pm.datatypes.Vector(u, 0, v))
+
+        if axis is 0:
+            p_list.append(pm.datatypes.Vector(0 v, u))
+
+        elif axis is 1:
+            p_list.append(pm.datatypes.Vector(u, 0, v))
+
+        else axis is 2:
+            p_list.append(pm.datatypes.Vector(u, v, 0))
     
     # reverse the positions to end up with normals
     # pointing in the right direction :)
