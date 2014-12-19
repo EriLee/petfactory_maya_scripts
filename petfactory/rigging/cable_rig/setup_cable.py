@@ -5,7 +5,7 @@ import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 reload(pet_extrude)
 
-def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
+def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axis_divisions=12, front_axis=0, up_axis=1):
     
     ''' creates joints that are animated along the specified curve'''
 
@@ -34,30 +34,30 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
     result_crv_shape = result_crv.getShape()
     crv_shape.worldSpace[0] >> result_crv_shape.create
     
+    start_ctrl = pm.circle(name='start_ctrl', normal=(1,0,0))[0]
     
-    #min_u, max_u = crv.getShape().getKnotDomain()
-    #u_inc = max_u/(num_joints-1)
     u_inc = 1.0/(num_joints-1)
 
-    for index in range(num_joints):
+    joint_list = [ pm.createNode('joint', name='mp_joint_{0}'.format(index), ss=True) for index in range(num_joints)]
     
-        # create the joints
-        jnt = pm.createNode('joint', name='mp_joint_{0}'.format(index), ss=True)
-        joint_list.append(jnt)
-        
-        # create the motion path node, if fractionMode is True it will use 0-1 u range
-        #motionpath = pm.pathAnimation(jnt, follow=True, bank=True, fractionMode=True, followAxis=u_front_axis, upAxis=u_up_axis, c=crv)
-        motionpath = pm.pathAnimation(jnt, follow=True, bank=True, fractionMode=True, followAxis=u_front_axis, upAxis=u_up_axis, c=result_crv)
-        motionpath_list.append(motionpath)
-        
-        # break the uvalue anim connection
-        anim_crv = pm.listConnections('{0}.uValue'.format(motionpath))
-        pm.delete(anim_crv)
-        
-        # hook up the value that will drive the motion path
-        pm.setAttr('{0}.uValue'.format(motionpath), u_inc*index)
-  
+    for index, jnt in enumerate(joint_list):
     
+        print(jnt)
+        pm.toggle(jnt, localAxis=True)
+
+        point_on_crv_info = pm.createNode('pointOnCurveInfo', name='point_on_crv_{0}'.format(index))
+        point_on_crv_info.turnOnPercentage.set(True)
+        result_crv_shape.worldSpace >> point_on_crv_info.inputCurve
+        point_on_crv_info.parameter.set(u_inc*index)
+        point_on_crv_info.position >> jnt.translate
+
+        if index < num_joints-1:
+            pm.aimConstraint(joint_list[index+1], joint_list[index], aimVector=(1,0,0), upVector=(0,0,1), worldUpType='objectrotation', worldUpObject=start_ctrl, worldUpVector=(0,0,1))
+            
+        else:
+            pm.aimConstraint(joint_list[index-1], joint_list[index], aimVector=(-1,0,0), upVector=(0,0,1), worldUpType='objectrotation', worldUpObject=start_ctrl, worldUpVector=(0,0,1))
+            
+ 
     
     num_cvs = crv_shape.numCVs()
 
@@ -80,7 +80,7 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
         pm.parent(clust_handle, cluster_grp)
 
     
-    start_ctrl = pm.circle(name='start_ctrl', normal=(1,0,0))[0]
+    #start_ctrl = pm.circle(name='start_ctrl', normal=(1,0,0))[0]
     pm.addAttr(start_ctrl, longName='dynamic_blendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
     
     end_ctrl = pm.circle(name='end_ctrl', normal=(1,0,0))[0]
@@ -132,7 +132,7 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
     pm.parentConstraint(end_ctrl, cluster_grp_list[-1], mo=True)
 
     # create mesh
-    profile_pos = pet_extrude.create_profile_points(radius=.2, axis_divisions=12, axis=0)
+    profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
     
     extrude_pos_list = []
     for jnt in joint_list:
@@ -150,7 +150,9 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
     return ret_dict
         
 
-pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
-crv = pm.PyNode('curve1')
+#pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
+#crv = pm.PyNode('curve1')
 
-add_curve_joints(crv=crv)
+sel_list = pm.ls(sl=True)
+if sel_list:
+    add_curve_joints(crv=sel_list[0], cable_radius=.3, cable_axis_divisions=12)
