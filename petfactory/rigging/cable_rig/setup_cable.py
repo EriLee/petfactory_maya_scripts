@@ -5,42 +5,37 @@ import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 reload(pet_extrude)
 
-def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axis_divisions=12, front_axis=0, up_axis=1):
+def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axis_divisions=12, existing_hairsystem=None):
     
-    ''' creates joints that are animated along the specified curve'''
-
-    if front_axis < 0 or front_axis > 2 or up_axis < 0 or up_axis > 2:
-        pm.warning('the front or the up axis must be in range 0-2')
-        return
-        
-    if front_axis == up_axis:
-        pm.warning('the front axis can not be the same as the up axis')
-        return
-        
-    u_front_axis = ['x', 'y', 'z'][front_axis]
-    u_up_axis = ['x', 'y', 'z'][up_axis]
+    cable_rig_main_grp = pm.group(em=True, name='cable_rig_main_grp')
+    cluster_main_grp = pm.group(em=True, parent=cable_rig_main_grp, name='cluster_main_grp')
+    crv_grp = pm.group(em=True, parent=cable_rig_main_grp, name='crv_grp')
+    jnt_grp = pm.group(em=True, parent=cable_rig_main_grp, name='jnt_grp') 
     
-    
-    cluster_main_grp = pm.group(em=True, name='cluster_main_grp')
     ret_dict = {}
     
     joint_list = []
     motionpath_list = []
     
     ret_dict['joint_list'] = joint_list
-    ret_dict['motionpath_list'] = motionpath_list
 
     crv_shape = crv.getShape()
     result_crv = crv.duplicate(name='result_crv')[0]
     result_crv_shape = result_crv.getShape()
     crv_shape.worldSpace[0] >> result_crv_shape.create
+    
+    pm.parent(crv, crv_grp)
+    pm.parent(result_crv, crv_grp)
    
    
     # strat and end ctrl
     start_ctrl = pm.circle(name='start_ctrl', normal=(1,0,0))[0]
-    pm.addAttr(start_ctrl, longName='dynamic_blendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
+    pm.addAttr(start_ctrl, longName='dynamic_blendshape', minValue=0.0, maxValue=1.0, defaultValue=0.0, keyable=True)
     
     end_ctrl = pm.circle(name='end_ctrl', normal=(1,0,0))[0]
+    
+    pm.parent(end_ctrl, cable_rig_main_grp)
+    pm.parent(start_ctrl, cable_rig_main_grp)
     
 
     # twist nodes    
@@ -58,14 +53,13 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     end_ctrl.worldMatrix[0] >> end_vec_prod.matrix
 
 
+    joint_list = [ pm.createNode('joint', name='mp_joint_{0}'.format(index), ss=True) for index in range(num_joints)]
     
     u_inc = 1.0/(num_joints-1)
-
-    joint_list = [ pm.createNode('joint', name='mp_joint_{0}'.format(index), ss=True) for index in range(num_joints)]
     
     for index, jnt in enumerate(joint_list):
     
-        pm.toggle(jnt, localAxis=True)
+        #pm.toggle(jnt, localAxis=True)
 
         point_on_crv_info = pm.createNode('pointOnCurveInfo', name='point_on_crv_{0}'.format(index))
         point_on_crv_info.turnOnPercentage.set(True)
@@ -73,25 +67,28 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
         point_on_crv_info.parameter.set(u_inc*index)
         point_on_crv_info.position >> jnt.translate
 
-
-        blend_colors = pm.createNode('blendColors', name='test')
-        blend_colors.blender.set(u_inc*index)
-        start_vec_prod.output  >> blend_colors.color2
-        end_vec_prod.output  >> blend_colors.color1
-
-
-
-        if index < num_joints-1:
-            aim_const = pm.aimConstraint(joint_list[index+1], joint_list[index], aimVector=(1,0,0), upVector=(0,0,1), worldUpType='vector', worldUpVector=(0,0,1))
-        
+        if index is 0:
+            temp_const_start = pm.aimConstraint(joint_list[index+1], joint_list[index], aimVector=(1,0,0), upVector=(0,0,1), worldUpType='vector', worldUpVector=(start_vec_prod.output.get()))
+            
+            
+        elif index is num_joints-1:
+            temp_const_end = pm.aimConstraint(joint_list[index-1], joint_list[index], aimVector=(-1,0,0), upVector=(0,0,1), worldUpType='vector', worldUpVector=(start_vec_prod.output.get()))
+                    
         else:
-            aim_const = pm.aimConstraint(joint_list[index-1], joint_list[index], aimVector=(-1,0,0), upVector=(0,0,1), worldUpType='vector', worldUpVector=(0,0,1))
+            
+            blend_colors = pm.createNode('blendColors', name='test')
+            blend_colors.blender.set(u_inc*index)
+            start_vec_prod.output  >> blend_colors.color2
+            end_vec_prod.output  >> blend_colors.color1
             
             
-        blend_colors.output >> aim_const.worldUpVector
+            aim_const = pm.aimConstraint(joint_list[index+1], joint_list[index], aimVector=(1,0,0), upVector=(0,0,1), worldUpType='vector', worldUpVector=(0,0,1))
             
- 
- 
+            blend_colors.output >> aim_const.worldUpVector
+
+    
+    pm.delete(temp_const_start, temp_const_end)
+    
     
     num_cvs = crv_shape.numCVs()
 
@@ -122,7 +119,10 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     start_ctrl.setMatrix(joint_list[0].getMatrix())
     end_ctrl.setMatrix(joint_list[-1].getMatrix())
     
-    jnt_grp = pm.group(em=True, name='jnt_grp') 
+    pm.orientConstraint(start_ctrl, joint_list[0], mo=True)
+    pm.orientConstraint(end_ctrl, joint_list[-1], mo=True)
+    
+    
     pm.parent(joint_list, jnt_grp)
       
       
@@ -136,8 +136,33 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     nucleus = nhair_dict_list.get('nucleus')
     hairsystem = nhair_dict_list.get('hairsystem')
     
-    hairsystem.startCurveAttract.set(0.005)
-    nucleus.spaceScale.set(.1)
+    ret_dict['output_curve'] = output_curve
+    ret_dict['follicle'] = follicle
+    ret_dict['hairsystem'] = hairsystem
+    
+    # if we want to use an existing hair system
+    if existing_hairsystem is not None:
+        print('Delete current hairsystem, use {0}'.format(existing_hairsystem))
+        
+        num_connection = len(pm.listConnections('{0}.inputHair'.format(existing_hairsystem)))
+        
+        follicle.outHair >> existing_hairsystem.inputHair[num_connection]
+        existing_hairsystem.outputHair[num_connection] >> follicle.currentPosition
+        
+        pm.delete(hairsystem)
+        
+    else:         
+        hairsystem.startCurveAttract.set(0.005)
+            
+            
+            
+    
+    # nucleus    
+    if nucleus:
+        nucleus.spaceScale.set(.1)
+        ret_dict['nucleus'] = nucleus
+        
+        
     
     blendshape = pm.blendShape(output_curve, result_crv, origin='world')[0]
     
@@ -182,22 +207,43 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
         tm = pm.datatypes.TransformationMatrix(jnt.getMatrix())
         pos = tm.getTranslation(space='world')
         extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
-        
-    #pprint.pprint(extrude_pos_list)
-    cable_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh')
+
+    mesh_dependnode = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh')
+    cable_mesh = pm.PyNode('|{0}'.format(mesh_dependnode.name()))
+
+    pm.parent(cable_mesh, cable_rig_main_grp)
     
-    pm.skinCluster(joint_list, cable_mesh,tsb=True)
+    pm.skinCluster(joint_list, cable_mesh, tsb=True)
 
     
     return ret_dict
         
 
-pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
-crv = pm.PyNode('curve1')
-add_curve_joints(crv=crv, cable_radius=.3, cable_axis_divisions=12)
+#pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
 
-'''
-sel_list = pm.ls(sl=True)
-if sel_list:
-    add_curve_joints(crv=sel_list[0], cable_radius=.3, cable_axis_divisions=12)
-'''
+#crv_1 = pm.PyNode('curve1')
+#crv_2 = pm.PyNode('curve2')
+
+#cable_dict_1 = add_curve_joints(crv=crv_1, cable_radius=.3, cable_axis_divisions=12)
+#hairsystem_1 = cable_dict_1.get('hairsystem')
+
+#cable_dict_2 = add_curve_joints(crv=crv_2, cable_radius=.3, cable_axis_divisions=12, existing_hairsystem=hairsystem_1)
+
+
+#sel_list = pm.ls(sl=True)
+
+crv_name_list = ['cable_rig_front_right', 'cable_rig_front_left']
+
+for index, crv_name in enumerate(crv_name_list):
+    
+
+    crv = pm.PyNode(crv_name)
+    
+    if index is 0:
+        
+        cable_dict_1 = add_curve_joints(crv=crv, cable_radius=.3, cable_axis_divisions=12)
+        hairsystem_1 = cable_dict_1.get('hairsystem')
+    
+    else:
+        cable_dict_2 = add_curve_joints(crv=crv, cable_radius=.3, cable_axis_divisions=12, existing_hairsystem=hairsystem_1)
+
