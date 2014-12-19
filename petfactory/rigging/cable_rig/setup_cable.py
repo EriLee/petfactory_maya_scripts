@@ -21,6 +21,7 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     u_up_axis = ['x', 'y', 'z'][up_axis]
     
     
+    cluster_main_grp = pm.group(em=True, name='cluster_main_grp')
     ret_dict = {}
     
     joint_list = []
@@ -33,8 +34,30 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     result_crv = crv.duplicate(name='result_crv')[0]
     result_crv_shape = result_crv.getShape()
     crv_shape.worldSpace[0] >> result_crv_shape.create
-    
+   
+   
+    # strat and end ctrl
     start_ctrl = pm.circle(name='start_ctrl', normal=(1,0,0))[0]
+    pm.addAttr(start_ctrl, longName='dynamic_blendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
+    
+    end_ctrl = pm.circle(name='end_ctrl', normal=(1,0,0))[0]
+    
+
+    # twist nodes    
+    start_vec_prod = pm.createNode('vectorProduct', name='start_vector_prod')
+    start_vec_prod.operation.set(3)
+    start_vec_prod.input1.set(0,0,1)
+    start_vec_prod.normalizeOutput.set(True)
+    start_ctrl.worldMatrix[0] >> start_vec_prod.matrix
+    
+    
+    end_vec_prod = pm.createNode('vectorProduct', name='end_vector_prod')
+    end_vec_prod.operation.set(3)
+    end_vec_prod.input1.set(0,0,1)
+    end_vec_prod.normalizeOutput.set(True)
+    end_ctrl.worldMatrix[0] >> end_vec_prod.matrix
+
+
     
     u_inc = 1.0/(num_joints-1)
 
@@ -42,7 +65,6 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     
     for index, jnt in enumerate(joint_list):
     
-        print(jnt)
         pm.toggle(jnt, localAxis=True)
 
         point_on_crv_info = pm.createNode('pointOnCurveInfo', name='point_on_crv_{0}'.format(index))
@@ -51,12 +73,24 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
         point_on_crv_info.parameter.set(u_inc*index)
         point_on_crv_info.position >> jnt.translate
 
+
+        blend_colors = pm.createNode('blendColors', name='test')
+        blend_colors.blender.set(u_inc*index)
+        start_vec_prod.output  >> blend_colors.color2
+        end_vec_prod.output  >> blend_colors.color1
+
+
+
         if index < num_joints-1:
-            pm.aimConstraint(joint_list[index+1], joint_list[index], aimVector=(1,0,0), upVector=(0,0,1), worldUpType='objectrotation', worldUpObject=start_ctrl, worldUpVector=(0,0,1))
-            
+            aim_const = pm.aimConstraint(joint_list[index+1], joint_list[index], aimVector=(1,0,0), upVector=(0,0,1), worldUpType='vector', worldUpVector=(0,0,1))
+        
         else:
-            pm.aimConstraint(joint_list[index-1], joint_list[index], aimVector=(-1,0,0), upVector=(0,0,1), worldUpType='objectrotation', worldUpObject=start_ctrl, worldUpVector=(0,0,1))
+            aim_const = pm.aimConstraint(joint_list[index-1], joint_list[index], aimVector=(-1,0,0), upVector=(0,0,1), worldUpType='vector', worldUpVector=(0,0,1))
             
+            
+        blend_colors.output >> aim_const.worldUpVector
+            
+ 
  
     
     num_cvs = crv_shape.numCVs()
@@ -78,13 +112,13 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
         cluster_grp = pm.group(em=True, name='{0}_{1}_cluster_grp'.format(name, i))
         cluster_grp_list.append(cluster_grp)
         pm.parent(clust_handle, cluster_grp)
+        pm.parent(cluster_grp, cluster_main_grp)
 
-    
-    #start_ctrl = pm.circle(name='start_ctrl', normal=(1,0,0))[0]
-    pm.addAttr(start_ctrl, longName='dynamic_blendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
-    
-    end_ctrl = pm.circle(name='end_ctrl', normal=(1,0,0))[0]
-    
+
+
+
+
+  
     start_ctrl.setMatrix(joint_list[0].getMatrix())
     end_ctrl.setMatrix(joint_list[-1].getMatrix())
     
@@ -111,16 +145,24 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     
     
     
-    mid_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[2])
+    #mid_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[2])
+    mid_clust_grp_constraint = pm.pointConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[2])
     
   
-    start_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[1])
-    start_weight_list = pm.parentConstraint(start_clust_grp_constraint, q=True, weightAliasList=True)
+    #start_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[1])
+    start_clust_grp_constraint = pm.pointConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[1])
+    
+    # get the weight list
+    #start_weight_list = pm.parentConstraint(start_clust_grp_constraint, q=True, weightAliasList=True)
+    start_weight_list = pm.pointConstraint(start_clust_grp_constraint, q=True, weightAliasList=True)
     start_weight_list[0].set(.75)
     start_weight_list[1].set(.25)
     
-    end_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[3])
-    end_weight_list = pm.parentConstraint(end_clust_grp_constraint, q=True, weightAliasList=True)
+    #end_clust_grp_constraint = pm.parentConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[3])
+    end_clust_grp_constraint = pm.pointConstraint(cluster_grp_list[0], cluster_grp_list[-1], cluster_grp_list[3])
+    # get the weight list
+    #end_weight_list = pm.parentConstraint(end_clust_grp_constraint, q=True, weightAliasList=True)
+    end_weight_list = pm.pointConstraint(end_clust_grp_constraint, q=True, weightAliasList=True)
     end_weight_list[0].set(.25)
     end_weight_list[1].set(.75)
     
@@ -150,9 +192,12 @@ def add_curve_joints(crv, num_joints=10, name='name', cable_radius=.2, cable_axi
     return ret_dict
         
 
-#pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
-#crv = pm.PyNode('curve1')
+pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
+crv = pm.PyNode('curve1')
+add_curve_joints(crv=crv, cable_radius=.3, cable_axis_divisions=12)
 
+'''
 sel_list = pm.ls(sl=True)
 if sel_list:
     add_curve_joints(crv=sel_list[0], cable_radius=.3, cable_axis_divisions=12)
+'''
