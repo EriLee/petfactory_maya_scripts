@@ -4,7 +4,7 @@ import math
 import pprint
 
 
-def mesh_from_pos_list(pos_list, name):
+def mesh_from_pos_list(pos_list, name, return_pymel_mesh=True):
 
     height_divisions = len(pos_list)
     axis_divisions = len(pos_list[0])
@@ -110,8 +110,28 @@ def mesh_from_pos_list(pos_list, name):
     
     mesh_depend_node = om.MFnDependencyNode(mesh)
     mesh_depend_node.setName(name)
-    return mesh_depend_node
-    
+
+
+    if return_pymel_mesh:
+
+        # should wrap in a try block
+        # convert to pymel node
+        mesh = pm.PyNode(mesh_depend_node.name()) 
+
+        # assign default shader 
+        pm.sets('initialShadingGroup', forceElement=mesh)
+        # set the normal edga angle
+        pm.polySoftEdge(mesh, angle=15, ch=False)
+        
+        pm.select(deselect=True)
+
+        return mesh
+
+
+    else:
+        return mesh_depend_node
+
+
 
 def create_profile_points(radius, axis_divisions, axis=1):
     '''Returns a list of positions (pm.datatypes.Vector) on a circle 
@@ -126,12 +146,12 @@ def create_profile_points(radius, axis_divisions, axis=1):
         v = math.sin(ang_inc*i)*radius
 
         if axis is 0:
-            p_list.append(pm.datatypes.Vector(0 v, u))
+            p_list.append(pm.datatypes.Vector(0, v, u))
 
         elif axis is 1:
             p_list.append(pm.datatypes.Vector(u, 0, v))
 
-        else axis is 2:
+        else:
             p_list.append(pm.datatypes.Vector(u, v, 0))
     
     # reverse the positions to end up with normals
@@ -151,8 +171,10 @@ def create_pos_list(profile_pos_list, height_divisions):
         pos_list.append(temp_list)
             
     return pos_list
-    
-    
+
+
+
+
 #profile_pos = create_profile_points(radius=2, axis_divisions=12)  
 #pos_list = create_pos_list(profile_pos_list=profile_pos, height_divisions=20)
 #mesh = mesh_from_pos_list(pos_list=pos_list, name='test')

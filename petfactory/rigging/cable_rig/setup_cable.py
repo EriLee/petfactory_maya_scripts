@@ -2,6 +2,8 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pprint
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
+import petfactory.modelling.mesh.extrude_profile as pet_extrude
+reload(pet_extrude)
 
 def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
     
@@ -129,12 +131,26 @@ def add_curve_joints(crv, num_joints=10, name='name', front_axis=0, up_axis=1):
     pm.parentConstraint(start_ctrl, cluster_grp_list[0], mo=True)
     pm.parentConstraint(end_ctrl, cluster_grp_list[-1], mo=True)
 
+    # create mesh
+    profile_pos = pet_extrude.create_profile_points(radius=.2, axis_divisions=12, axis=0)
+    
+    extrude_pos_list = []
+    for jnt in joint_list:
+        
+        tm = pm.datatypes.TransformationMatrix(jnt.getMatrix())
+        pos = tm.getTranslation(space='world')
+        extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
+        
+    #pprint.pprint(extrude_pos_list)
+    cable_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh')
+    
+    pm.skinCluster(joint_list, cable_mesh,tsb=True)
 
     
     return ret_dict
         
 
-#pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
+pm.openFile('/Users/johan/Documents/projects/bot_pustervik/scenes/cable_crv.mb ', force=True)
 crv = pm.PyNode('curve1')
 
 add_curve_joints(crv=crv)
