@@ -246,4 +246,3 @@ for index, crv_name in enumerate(crv_name_list):
     
     else:
         cable_dict_2 = add_curve_joints(crv=crv, cable_radius=.3, cable_axis_divisions=12, existing_hairsystem=hairsystem_1)
-
