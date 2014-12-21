@@ -3,7 +3,7 @@ import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 reload(pet_extrude)
 
-def setup_cable(num_joints, existing_hairsystem=None):
+def setup_cable(crv, num_joints, existing_hairsystem=None):
 
     ret_dict = {}
     
@@ -16,7 +16,7 @@ def setup_cable(num_joints, existing_hairsystem=None):
     jnt_list = []
     
     # the crv, should be 3 degree, with 5 cvs
-    crv = pm.curve(name='orig_crv', d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
+    #crv = pm.curve(name='orig_crv', d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
     
     result_crv = pm.duplicate(crv, name='result_crv')[0]
     crv.worldSpace >> result_crv.create
@@ -187,10 +187,13 @@ def setup_cable(num_joints, existing_hairsystem=None):
 
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
 
+# the crv, should be 3 degree, with 5 cvs
+crv = pm.curve(name='orig_crv', d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
+#crv = pm.PyNode('curve1')
 output_curve_grp = pm.group(em=True, name='output_curve_grp')
 
 # cable rig 0
-cable_dict_0 = setup_cable(10)
+cable_dict_0 = setup_cable(crv=crv, num_joints=10)
 
 output_curve_list = []
 output_curve_list.append(cable_dict_0.get('output_curve'))
@@ -201,8 +204,8 @@ cable_dict_0.get('end_ctrl').translate.set(5,0,10)
 hairsystem_0 = cable_dict_0.get('hairsystem')
 
 
-cable_dict_1 = setup_cable(10, existing_hairsystem=hairsystem_0)
-output_curve_list.append(cable_dict_1.get('output_curve'))
+#cable_dict_1 = setup_cable(10, existing_hairsystem=hairsystem_0)
+#output_curve_list.append(cable_dict_1.get('output_curve'))
 
 
 for output_curve in output_curve_list:
