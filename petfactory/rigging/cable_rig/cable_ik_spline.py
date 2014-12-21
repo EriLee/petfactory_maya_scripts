@@ -1,6 +1,7 @@
 import pymel.core as pm
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
-
+import petfactory.modelling.mesh.extrude_profile as pet_extrude
+reload(pet_extrude)
 
 def setup_cable(num_joints, existing_hairsystem=None):
 
@@ -16,7 +17,6 @@ def setup_cable(num_joints, existing_hairsystem=None):
     
     # the crv, should be 3 degree, with 5 cvs
     crv = pm.curve(name='orig_crv', d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
-    
     
     result_crv = pm.duplicate(crv, name='result_crv')[0]
     crv.worldSpace >> result_crv.create
@@ -90,25 +90,15 @@ def setup_cable(num_joints, existing_hairsystem=None):
     start_ctrl.worldMatrix[0] >> iks_handle.dWorldUpMatrix
     end_ctrl.worldMatrix[0] >> iks_handle.dWorldUpMatrixEnd
     
-    
-    # add cluster to cvs. The first cluster will have first and second cv the mid cv will have one
-    # cluster to it self and the last cluster will have to cvs.
-    cluster_list = []
-    for i in range(num_cvs):
-     
-        clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(crv_shape.longName(), str(i)), relative=False, name='{0}_{1}_cluster_'.format('test', i))
-        cluster_list.append(clust_handle)
-        
-        
-    
-    # make the nhair_target_crv dynamic
-    
+
+    # make the nhair_target_crv dynamic    
     nhair_dict = nhair_dynamics.make_curve_dynamic(crv)
+    
     output_curve = nhair_dict.get('output_curve')
     follicle = nhair_dict.get('follicle')
     nucleus = nhair_dict.get('nucleus')
     hairsystem = nhair_dict.get('hairsystem')
-        
+ 
     if nucleus:
         nucleus.spaceScale.set(.1)
         ret_dict['nucleus'] = nucleus
@@ -135,12 +125,24 @@ def setup_cable(num_joints, existing_hairsystem=None):
         
     else:         
         hairsystem.startCurveAttract.set(0.005)
-        
-            
+    
+
+    
+    # NOTE !!
+    # When i print the crv before the clusters is added i get 'orig_crv' after the clusters are added
+    # the absolute name (long name) is returned if i print the crv '|orig_crv'.
+    # this causes the make dynamic call to not find the crv, so I had to move it before the clusters are created.
+    # add cluster to cvs. The first cluster will have first and second cv the mid cv will have one
+    # cluster to it self and the last cluster will have to cvs.
+    cluster_list = []
+    for i in range(num_cvs):
+     
+        clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(crv_shape.longName(), str(i)), relative=False, name='{0}_{1}_cluster_'.format('test', i))
+        cluster_list.append(clust_handle)
+ 
     blendshape_dynamic = pm.blendShape(output_curve, result_crv, origin='world', weight=(0,0))[0]
     start_ctrl.dynamic_blendshape >> blendshape_dynamic.weight[0]
     
-
         
     # parent the first and last clusters to ctrl   
     pm.parent(cluster_list[0], cluster_list[1], start_ctrl)
@@ -161,14 +163,49 @@ def setup_cable(num_joints, existing_hairsystem=None):
     pm.parent(result_crv, misc_grp)
     
     
+    
+    ret_dict['start_ctrl'] = start_ctrl
+    ret_dict['end_ctrl'] = end_ctrl
+    
+    
+    cable_radius = .25
+    cable_axis_divisions = 12
+    profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
+    
+    extrude_pos_list = []
+    for jnt in jnt_list:
+        tm = pm.datatypes.TransformationMatrix(jnt.getMatrix())
+        pos = pm.xform(jnt, ws=True, t=True, q=True)
+        extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
+    
+    mesh_dependnode = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh')
+    cable_mesh = pm.PyNode('|{0}'.format(mesh_dependnode.name()))
+    #pm.parent(cable_mesh, cable_rig_main_grp)    
+    pm.skinCluster(jnt_list, cable_mesh, tsb=True)
+    
     return ret_dict
 
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
 
 output_curve_grp = pm.group(em=True, name='output_curve_grp')
-cable_dict = setup_cable(10)
 
-output_curve = cable_dict.get('output_curve')
-output_curve_parent = output_curve.getParent()
-pm.parent(output_curve, output_curve_grp)
-pm.delete(output_curve_parent)
+# cable rig 0
+cable_dict_0 = setup_cable(10)
+
+output_curve_list = []
+output_curve_list.append(cable_dict_0.get('output_curve'))
+
+cable_dict_0.get('start_ctrl').translate.set(-5,0,10)
+cable_dict_0.get('end_ctrl').translate.set(5,0,10)
+
+hairsystem_0 = cable_dict_0.get('hairsystem')
+
+
+cable_dict_1 = setup_cable(10, existing_hairsystem=hairsystem_0)
+output_curve_list.append(cable_dict_1.get('output_curve'))
+
+
+for output_curve in output_curve_list:
+    output_curve_parent = output_curve.getParent()
+    pm.parent(output_curve, output_curve_grp)
+    pm.delete(output_curve_parent)
