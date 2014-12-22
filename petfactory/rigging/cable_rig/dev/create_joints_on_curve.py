@@ -4,7 +4,7 @@ import maya.api.OpenMaya as om
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
 
 
-def create_joints_on_curve(crv, num_joints, show_lra=False):
+def create_joints_on_curve(crv, num_joints, parent_joints=True, show_lra=True):
     
     crv_shape = crv.getShape()
     length = crv_shape.length()
@@ -65,6 +65,11 @@ def create_joints_on_curve(crv, num_joints, show_lra=False):
                 
             if show_lra:
                 pm.toggle(jnt, localAxis=True)
+                
+                
+    parent_joint_list(jnt_list)
+    
+    return jnt_list
             
             
             
@@ -72,6 +77,7 @@ def parent_joint_list(joint_list):
     for index, jnt in enumerate(joint_list):
         if index > 0:
             pm.parent(joint_list[index], joint_list[index-1])
+    
     
 
 
@@ -81,6 +87,16 @@ def parent_joint_list(joint_list):
 crv = pm.PyNode('curve1')    
 pm.toggle(crv, hull=True)
 
+# build the joints on curve
+jnt_list = create_joints_on_curve(crv, num_joints=10)
 
-create_joints_on_curve(crv, num_joints=20, show_lra=True)
+# create the ctrl
+start_ctrl = pm.circle(normal=(1,0,0))[0]
+end_ctrl = pm.circle(normal=(1,0,0))[0]
+
+start_ctrl.setMatrix(jnt_list[0].getMatrix(worldSpace=True))
+end_ctrl.setMatrix(jnt_list[-1].getMatrix(worldSpace=True))
+
+pm.duplicate(jnt_list[0])
+iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
 
