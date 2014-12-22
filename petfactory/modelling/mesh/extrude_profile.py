@@ -3,8 +3,8 @@ import pymel.core as pm
 import math
 import pprint
 
-#def mesh_from_pos_list(pos_list, name, return_pymel_mesh=True):
-def mesh_from_pos_list(pos_list, name):
+def mesh_from_pos_list(pos_list, name, as_pm_mesh=True):
+#def mesh_from_pos_list(pos_list, name):
 
     height_divisions = len(pos_list)
     axis_divisions = len(pos_list[0])
@@ -111,13 +111,12 @@ def mesh_from_pos_list(pos_list, name):
     mesh_depend_node = om.MFnDependencyNode(mesh)
     mesh_depend_node.setName(name)
 
-    '''
-    if return_pymel_mesh:
+    if as_pm_mesh:
 
         # should wrap in a try block
         # convert to pymel node
         #name = mesh_depend_node.name()
-        mesh = pm.PyNode(name)
+        mesh = pm.PyNode('|{0}'.format(mesh_depend_node.name()))
 
         # assign default shader 
         pm.sets('initialShadingGroup', forceElement=mesh)
@@ -131,8 +130,6 @@ def mesh_from_pos_list(pos_list, name):
 
     else:
         return mesh_depend_node
-    '''
-    return mesh_depend_node
 
 
 def create_profile_points(radius, axis_divisions, axis=1):
