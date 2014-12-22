@@ -166,6 +166,7 @@ def setup_cable(crv, num_joints, existing_hairsystem=None):
     
     ret_dict['start_ctrl'] = start_ctrl
     ret_dict['end_ctrl'] = end_ctrl
+    ret_dict['cluster_list'] = cluster_list
     
     
     cable_radius = .25
@@ -184,8 +185,38 @@ def setup_cable(crv, num_joints, existing_hairsystem=None):
     pm.skinCluster(jnt_list, cable_mesh, tsb=True)
     
     return ret_dict
-
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+    
+'''    
+def position_cable_rig(rig_dict, ref_crv):
+    
+    ref_cv_pos = ref_crv.getCVs(space='world')
+    
+    ctrl_pos_list = get_ctrl_pos_from_crv(ref_crv)
+    
+    start_ctrl = rig_dict.get('start_ctrl')
+    start_ctrl.setMatrix(ctrl_pos_list[0])
+    
+    end_ctrl = rig_dict.get('end_ctrl')
+    end_ctrl.setMatrix(ctrl_pos_list[1])
+    
+    #clutser_list = rig_dict.get('cluster_list')
+     
+    # the local position in the start ctrl space
+    local_pos = pm.datatypes.Point(ref_cv_pos[1]) * start_ctrl.getMatrix().inverse()
+    
+    #sp = pm.polySphere(r=.1)[0]
+    #pm.parent(sp, start_ctrl)
+    #sp.translate.set(local_pos)
+    
+    print(local_pos)
+    
+'''   
+    
+    
+    
+    
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_crv.mb', f=True)
 
 # the crv, should be 3 degree, with 5 cvs
 crv = pm.curve(name='orig_crv', d=3, ep=[(-5, 0, 0), (0, 0, 0), (5, 0, 0)])
@@ -198,8 +229,8 @@ cable_dict_0 = setup_cable(crv=crv, num_joints=10)
 output_curve_list = []
 output_curve_list.append(cable_dict_0.get('output_curve'))
 
-cable_dict_0.get('start_ctrl').translate.set(-5,0,10)
-cable_dict_0.get('end_ctrl').translate.set(5,0,10)
+#cable_dict_0.get('start_ctrl').translate.set(-5,0,10)
+#cable_dict_0.get('end_ctrl').translate.set(5,0,10)
 
 hairsystem_0 = cable_dict_0.get('hairsystem')
 
@@ -212,3 +243,13 @@ for output_curve in output_curve_list:
     output_curve_parent = output_curve.getParent()
     pm.parent(output_curve, output_curve_grp)
     pm.delete(output_curve_parent)
+    
+#ref_crv = pm.PyNode('ref_crv')
+#position_cable_rig(rig_dict=cable_dict_0, ref_crv=ref_crv)
+        
+#crv = pm.PyNode('test')    
+#ctrl_pos_list = get_ctrl_pos_from_crv(crv)
+
+#cable_dict_0.get('start_ctrl').setMatrix(ctrl_pos_list[0])
+#cable_dict_0.get('end_ctrl').setMatrix(ctrl_pos_list[1])
+#cable_dict_0.get('cluster_list')

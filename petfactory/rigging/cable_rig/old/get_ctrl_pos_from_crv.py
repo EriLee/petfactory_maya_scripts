@@ -1,8 +1,6 @@
 import pymel.core as pm
 
-
-pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_crv.mb', f=True)
-
+#pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_crv.mb', f=True)
 
 
 def get_ctrl_pos_from_crv(crv):
@@ -44,12 +42,10 @@ def get_ctrl_pos_from_crv(crv):
     return [start_tm, end_tm]                            
 
 
-start_ctrl = pm.circle(name='start_ctrl', normal=(1,0,0))[0]
-end_ctrl = pm.circle(name='end_ctrl', normal=(1,0,0))[0]
-crv = pm.PyNode('curve1')
-   
-ctrl_pos_list = get_ctrl_pos_from_crv(crv)
-start_ctrl.setMatrix(ctrl_pos_list[0])
-end_ctrl.setMatrix(ctrl_pos_list[1])
-
-
+def position_cable_rig(rig_dict, ref_crv):
+    
+    ctrl_pos_list = get_ctrl_pos_from_crv(ref_crv)
+    rig_dict.get('start_ctrl').setMatrix(ctrl_pos_list[0])
+    rig_dict.get('end_ctrl').setMatrix(ctrl_pos_list[1])
+    
+    clutser_list = rig_dict.get('cluster_list')
