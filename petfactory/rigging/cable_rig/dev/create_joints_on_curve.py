@@ -1,6 +1,7 @@
 import pymel.core as pm
 import maya.api.OpenMaya as om
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
+import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 reload(pet_extrude)
 
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
@@ -191,6 +192,18 @@ def add_cable_rig(crv, jnt_list):
     
     for jnt in jnt_list:
         strecth_amount_md.outputX >> jnt.scaleX
+        
+    
+    ret_dict['joint_list'] = jnt_list
+    ret_dict['cluster_list'] = cluster_list
+    ret_dict['result_crv'] = result_crv
+    ret_dict['orig_crv'] = orig_crv
+    ret_dict['start_ctrl'] = start_ctrl
+    ret_dict['end_ctrl'] = end_ctrl
+    
+    return ret_dict
+    
+    
 
     
 def add_mesh_to_joints(joint_list, cable_radius=.5, cable_axis_divisions=12):
@@ -209,6 +222,51 @@ def add_mesh_to_joints(joint_list, cable_radius=.5, cable_axis_divisions=12):
     return pm_mesh
 
 
+def make_cable_rig_dynamic(rig_dict, existing_hairsystem=None):
+    
+    ret_dict = {}
+    
+    orig_crv = rig_dict.get('orig_crv')
+    result_crv = rig_dict.get('result_crv')
+    start_ctrl = rig_dict.get('start_ctrl')
+
+    #-----------------
+    # add dynamics
+    #-----------------
+    
+    nhair_dict_list = nhair_dynamics.make_curve_dynamic(orig_crv)
+    
+    ret_dict['output_curve'] = output_curve = nhair_dict_list.get('output_curve')
+    ret_dict['follicle'] = follicle = nhair_dict_list.get('follicle')
+    ret_dict['hairsystem'] = hairsystem = nhair_dict_list.get('hairsystem')
+    ret_dict['nucleus'] = nucleus = nhair_dict_list.get('nucleus')
+    
+    # if we want to use an existing hair system
+    if existing_hairsystem is not None:
+        print('Delete current hairsystem, use {0}'.format(existing_hairsystem))
+        
+        num_connection = len(pm.listConnections('{0}.inputHair'.format(existing_hairsystem)))
+        
+        follicle.outHair >> existing_hairsystem.inputHair[num_connection]
+        existing_hairsystem.outputHair[num_connection] >> follicle.currentPosition
+        
+        pm.delete(hairsystem)
+        
+    else:         
+        hairsystem.startCurveAttract.set(0.005)
+            
+            
+            
+    
+    # nucleus    
+    if nucleus:
+        nucleus.spaceScale.set(.1)
+
+    pm.addAttr(start_ctrl, longName='dynamic_blendshape', minValue=0.0, maxValue=1.0, defaultValue=0.0, keyable=True)
+    blendshape = pm.blendShape(output_curve, result_crv, origin='world')[0]
+    start_ctrl.dynamic_blendshape >> blendshape.weight[0] 
+    
+
 #crv = pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)])
 #crv = pm.ls(sl=True)[0]
 crv = pm.PyNode('curve1')    
@@ -217,7 +275,9 @@ crv = pm.PyNode('curve1')
 # build the joints on curve
 jnt_list = create_joints_on_curve(crv, num_joints=10)
 
-add_cable_rig(crv, jnt_list)
+cable_rig_dict = add_cable_rig(crv, jnt_list)
+
+make_cable_rig_dynamic(cable_rig_dict)
 
 #add_mesh_to_joints(jnt_list)
 
