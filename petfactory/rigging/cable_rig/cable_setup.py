@@ -255,9 +255,7 @@ def make_cable_rig_dynamic(rig_dict, existing_hairsystem=None):
         
     else:         
         hairsystem.startCurveAttract.set(0.005)
-            
-            
-            
+        
     
     # nucleus    
     if nucleus:
@@ -268,6 +266,7 @@ def make_cable_rig_dynamic(rig_dict, existing_hairsystem=None):
     start_ctrl.dynamic_blendshape >> blendshape.weight[0] 
     
     
+    output_curve.getShape().overrideDisplayType.set(2)
     return ret_dict
     
 
