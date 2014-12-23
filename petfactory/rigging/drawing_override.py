@@ -130,4 +130,4 @@ def show():
     win = Pet_drawing_override(parent=maya_main_window())
     win.show()
     
-show()
+#show()
