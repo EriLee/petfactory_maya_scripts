@@ -4,8 +4,6 @@ import petfactory.modelling.mesh.extrude_profile as pet_extrude
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 reload(pet_extrude)
 
-#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
-
 
 def create_joints_on_curve(crv, num_joints, parent_joints=True, show_lra=True):
     
@@ -35,13 +33,13 @@ def create_joints_on_curve(crv, num_joints, parent_joints=True, show_lra=True):
             # will be used as up vector
             if aim_vec.isParallel(up_vec, tol=0.1):
                 
-                up_vec = pm.datatypes.Vector(0,0,-1)
+                up_vec = pm.datatypes.Vector(0,0,1)
                 
                 cross_vec = aim_vec.cross(up_vec)
                 up_vec_ortho = cross_vec.cross(aim_vec)
                 tm = pm.datatypes.TransformationMatrix(    [aim_vec[0], aim_vec[1], aim_vec[2], 0],
-                                                           [cross_vec[0], cross_vec[1], cross_vec[2], 0],
                                                            [up_vec_ortho[0], up_vec_ortho[1], up_vec_ortho[2], 0],
+                                                           [cross_vec[0], cross_vec[1], cross_vec[2], 0],                                                   
                                                            [prev_jnt[0], prev_jnt[1], prev_jnt[2], 1])            
             else:
                 cross_vec = aim_vec.cross(up_vec)
@@ -157,12 +155,13 @@ def add_cable_rig(crv, jnt_list, name):
     
     # parent the joints > jnt_grp, jnt_grp > start_ctrl
     jnt_grp = pm.group(em=True, name='jnt_grp')
-    jnt_grp.visibility.set(False)
+    #jnt_grp.visibility.set(False)
     jnt_grp.setMatrix(jnt_list[0].getMatrix(worldSpace=True))
     pm.parent(jnt_list[0], jnt_grp)
-    
+    # set the translation and rotation of first jnt to 0
+    jnt_list[0].translate.set((0,0,0))
+    jnt_list[0].rotate.set((0,0,0))
     pm.parent(jnt_grp, start_ctrl)
-    jnt_grp.translate.set((0,0,0))
     
 
     # group and point constraint the mid cluster
@@ -218,7 +217,7 @@ def add_mesh_to_joints(joint_list, cable_radius=.5, cable_axis_divisions=12):
         extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
         
     pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
-    pm.skinCluster(jnt_list, pm_mesh, tsb=True)
+    pm.skinCluster(joint_list, pm_mesh, tsb=True)
     
     return pm_mesh
 
@@ -270,46 +269,83 @@ def make_cable_rig_dynamic(rig_dict, existing_hairsystem=None):
     return ret_dict
     
 
+def set_hairsystem_properties(hairsystem):
+    
+    hairsystem.attractionScale[0].attractionScale_Position.set(0.2)
+    hairsystem.attractionScale[0].attractionScale_FloatValue.set(1)
+    
+    hairsystem.attractionScale[1].attractionScale_Position.set(0.5)
+    hairsystem.attractionScale[1].attractionScale_FloatValue.set(0.1)
+    
+    hairsystem.attractionScale[2].attractionScale_Position.set(.8)
+    hairsystem.attractionScale[2].attractionScale_FloatValue.set(1)
+    
+    hairsystem.startCurveAttract.set(0.5)
+    hairsystem.damp.set(0.5)
+
+def setup_selected_curves(sel_list):
+    # create output crv grp
+    output_crv_grp = pm.group(em=True, name='output_curve_grp')
+    pm.select(deselect=True)
+    cable_rig_ctrl_set = pm.sets(name='cable_rig_ctrl_set')
+        
+    for index, crv in enumerate(sel_list):
+        
+        # build the joints on curve
+        jnt_list = create_joints_on_curve(crv, num_joints=10)
+        
+        # create the base rig
+        cable_rig_dict = add_cable_rig(crv, jnt_list, name='cable_rig_{0}'.format(index))
+        misc_grp = cable_rig_dict.get('misc_grp')
+        
+        
+        cable_rig_ctrl_set.add(cable_rig_dict.get('start_ctrl'))
+        
+        # make dynamic
+        
+        
+        if index is 0:
+            dynamic_dict = make_cable_rig_dynamic(cable_rig_dict)
+            existing_hairsystem = dynamic_dict.get('hairsystem')
+                    
+        else:
+            dynamic_dict = make_cable_rig_dynamic(cable_rig_dict, existing_hairsystem=existing_hairsystem)
+        
+        output_crv = dynamic_dict.get('output_curve')
+        output_crv_parent = output_crv.getParent()
+        pm.parent(output_crv, output_crv_grp)
+        pm.delete(output_crv_parent)
+        
+        # add mesh
+        pm_mesh = add_mesh_to_joints(jnt_list)
+        #pm.parent(pm_mesh, misc_grp)
+        #print(jnt_list)
+    
+    
+    pm.select(existing_hairsystem)
+    set_hairsystem_properties(existing_hairsystem)
+
+
+
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+
+
 #crv = pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)])
 #crv = pm.ls(sl=True)[0]
 #crv = pm.PyNode('curve1')    
 #pm.toggle(crv, hull=True)
 
-sel_list = pm.ls(sl=True)
+#sel_list = pm.ls(sl=True)
+sel_list = []
+sel_list.append(pm.PyNode('curve1'))
+sel_list.append(pm.PyNode('curve2'))
 
-# create output crv grp
-output_crv_grp = pm.group(em=True, name='output_curve_grp')
-pm.select(deselect=True)
-cable_rig_ctrl_set = pm.sets(name='cable_rig_ctrl_set')
-    
-for index, crv in enumerate(sel_list):
-    
-    # build the joints on curve
-    jnt_list = create_joints_on_curve(crv, num_joints=10)
-    
-    # create the base rig
-    cable_rig_dict = add_cable_rig(crv, jnt_list, name='cable_rig_{0}'.format(index))
-    misc_grp = cable_rig_dict.get('misc_grp')
-    
-    
-    cable_rig_ctrl_set.add(cable_rig_dict.get('start_ctrl'))
-    
-    # make dynamic
-    
-    
-    if index is 0:
-        dynamic_dict = make_cable_rig_dynamic(cable_rig_dict)
-        existing_hairsystem = dynamic_dict.get('hairsystem')
-    else:
-        dynamic_dict = make_cable_rig_dynamic(cable_rig_dict, existing_hairsystem=existing_hairsystem)
-    
-    output_crv = dynamic_dict.get('output_curve')
-    output_crv_parent = output_crv.getParent()
-    pm.parent(output_crv, output_crv_grp)
-    pm.delete(output_crv_parent)
-    
-    # add mesh
-    pm_mesh = add_mesh_to_joints(jnt_list)
-    pm.parent(pm_mesh, misc_grp)
+# setup joints
+#jnt_list = create_joints_on_curve(sel_list[0], num_joints=10)
 
-
+# create the base rig
+#cable_rig_dict = add_cable_rig(crv=sel_list[0], jnt_list=jnt_list, name='cable_rig_{0}'.format(index))
+#create_joints_on_curve(sel_list[1], num_joints=10)
+    
+setup_selected_curves(sel_list)
