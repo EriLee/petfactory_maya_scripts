@@ -2,7 +2,6 @@ import pymel.core as pm
 import maya.api.OpenMaya as om
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
-reload(pet_extrude)
 
 
 def create_joints_on_curve(crv, num_joints, parent_joints=True, show_lra=True):
@@ -337,9 +336,9 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.
 #pm.toggle(crv, hull=True)
 
 #sel_list = pm.ls(sl=True)
-sel_list = []
-sel_list.append(pm.PyNode('curve1'))
-sel_list.append(pm.PyNode('curve2'))
+sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(4)]
+#sel_list.append(pm.PyNode('curve1'))
+#sel_list.append(pm.PyNode('curve2'))
 
 # setup joints
 #jnt_list = create_joints_on_curve(sel_list[0], num_joints=10)
