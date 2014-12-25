@@ -143,14 +143,20 @@ def add_cable_rig(crv, jnt_list, name):
     #-----------------
     
     cluster_list = []
+    cluster_zero_grp_list = []
     for i in range(num_cvs):
      
         clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(orig_crv_shape.longName(), str(i)), relative=False, name='{0}_{1}_cluster_'.format('test', i))
         cluster_list.append(clust_handle)
         
+        # create a group to zero out the transformation
+        cluster_zero_grp_list.append(pm.group(em=True))
+        pm.parent(clust_handle, cluster_zero_grp_list[i])
+                
+        
     # parent the first and last clusters to ctrl   
-    pm.parent(cluster_list[0], cluster_list[1], start_ctrl)
-    pm.parent(cluster_list[-1], cluster_list[-2], end_ctrl)
+    pm.parent(cluster_zero_grp_list[0], cluster_zero_grp_list[1], start_ctrl)
+    pm.parent(cluster_zero_grp_list[-1], cluster_zero_grp_list[-2], end_ctrl)
     
     # parent the joints > jnt_grp, jnt_grp > start_ctrl
     jnt_grp = pm.group(em=True, name='jnt_grp')
@@ -170,8 +176,8 @@ def add_cable_rig(crv, jnt_list, name):
     mid_clust_grp.translate.set(clust_pos)
 
     pm.pointConstraint(start_ctrl, end_ctrl, mid_clust_grp, mo=True)
-    #pm.toggle(mid_clust_grp, la=True)
-    pm.parent(cluster_list[2], mid_clust_grp)
+
+    pm.parent(cluster_zero_grp_list[2], mid_clust_grp)
     pm.parent(orig_crv, result_crv, hidden_grp)
     pm.parent(mid_clust_grp, misc_grp)
     #pm.parent(orig_crv, result_crv, mid_clust_grp, misc_grp)
@@ -291,7 +297,7 @@ def setup_selected_curves(sel_list):
     for index, crv in enumerate(sel_list):
         
         # build the joints on curve
-        jnt_list = create_joints_on_curve(crv, num_joints=10)
+        jnt_list = create_joints_on_curve(crv, num_joints=5)
         
         # create the base rig
         cable_rig_dict = add_cable_rig(crv, jnt_list, name='cable_rig_{0}'.format(index))
@@ -317,8 +323,7 @@ def setup_selected_curves(sel_list):
         
         # add mesh
         pm_mesh = add_mesh_to_joints(jnt_list)
-        #pm.parent(pm_mesh, misc_grp)
-        #print(jnt_list)
+        pm.parent(pm_mesh, misc_grp)
     
     
     pm.select(existing_hairsystem)
@@ -326,8 +331,8 @@ def setup_selected_curves(sel_list):
 
 
 
-#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 
 #crv = pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)])
@@ -336,7 +341,7 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.
 #pm.toggle(crv, hull=True)
 
 #sel_list = pm.ls(sl=True)
-sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(4)]
+sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(1)]
 #sel_list.append(pm.PyNode('curve1'))
 #sel_list.append(pm.PyNode('curve2'))
 
