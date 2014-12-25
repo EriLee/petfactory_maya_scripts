@@ -80,6 +80,7 @@ def parent_joint_list(joint_list):
 def add_cable_rig(crv, jnt_list, name):
     
     ret_dict = {}
+    num_joints = len(jnt_list)
     
     # organize
     main_cable_grp = pm.group(em=True, name='{0}_main_rig_grp'.format(name))
@@ -87,6 +88,7 @@ def add_cable_rig(crv, jnt_list, name):
     ctrl_grp = pm.group(em=True, name='ctrl_grp', parent=main_cable_grp)
     hidden_grp = pm.group(em=True, name='hidden_grp', parent=misc_grp)
     hidden_grp.visibility.set(False, lock=True)
+    bind_jnt_main_grp = pm.group(em=True, name='bind_jnt_main_grp', parent=main_cable_grp)
 
     # create the ctrl
     start_ctrl = pm.circle(name='{0}_start_ctrl'.format(name), normal=(1,0,0))[0]
@@ -198,7 +200,37 @@ def add_cable_rig(crv, jnt_list, name):
         strecth_amount_md.outputX >> jnt.scaleX
         
     
+    
+    
+    
+    #-----------------
+    # add bind joints
+    #-----------------
+    
+    bind_joint_list = []
+    for index, jnt in enumerate(jnt_list):
+        bind_jnt = pm.createNode('joint', name='bind_joint_{0}'.format(index), ss=True)
+        bind_joint_list.append(bind_jnt)
+        bind_jnt_grp = pm.group(em=True, name='bind_joint_grp{0}'.format(index))
+        pm.parent(bind_jnt, bind_jnt_grp)
+        bind_jnt_grp.setMatrix(jnt.getMatrix(ws=True))
+        pm.parent(bind_jnt_grp, bind_jnt_main_grp)
+        
+        # contstrain the first bind jnt to the start ctrl
+        if index is 0:
+            pm.parentConstraint(start_ctrl, bind_jnt_grp)
+            
+        # contstrain the first bind jnt to the start ctrl            
+        elif index is num_joints-1:
+            pm.parentConstraint(end_ctrl, bind_jnt_grp)
+            
+        # else constrain to the regular joints
+        else:
+            pm.parentConstraint(jnt, bind_jnt_grp)
+    
+    
     ret_dict['joint_list'] = jnt_list
+    ret_dict['bind_joint_list'] = bind_joint_list
     ret_dict['cluster_list'] = cluster_list
     ret_dict['result_crv'] = result_crv
     ret_dict['orig_crv'] = orig_crv
@@ -322,7 +354,9 @@ def setup_selected_curves(sel_list):
         pm.delete(output_crv_parent)
         
         # add mesh
-        pm_mesh = add_mesh_to_joints(jnt_list)
+        bind_jnt_list = cable_rig_dict.get('bind_joint_list')
+        #pm_mesh = add_mesh_to_joints(jnt_list)
+        pm_mesh = add_mesh_to_joints(bind_jnt_list)
         pm.parent(pm_mesh, misc_grp)
     
     
