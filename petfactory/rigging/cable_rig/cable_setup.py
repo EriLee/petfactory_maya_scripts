@@ -216,6 +216,7 @@ def add_cable_rig(crv, jnt_list, name):
         bind_jnt_grp.setMatrix(jnt.getMatrix(ws=True))
         pm.parent(bind_jnt_grp, bind_jnt_main_grp)
         
+        '''
         # contstrain the first bind jnt to the start ctrl
         if index is 0:
             pm.parentConstraint(start_ctrl, bind_jnt_grp)
@@ -227,6 +228,8 @@ def add_cable_rig(crv, jnt_list, name):
         # else constrain to the regular joints
         else:
             pm.parentConstraint(jnt, bind_jnt_grp)
+        '''
+        pm.parentConstraint(jnt, bind_jnt_grp)
     
     
     ret_dict['joint_list'] = jnt_list
@@ -365,8 +368,8 @@ def setup_selected_curves(sel_list):
 
 
 
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 
 #crv = pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)])
@@ -375,7 +378,7 @@ pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/
 #pm.toggle(crv, hull=True)
 
 #sel_list = pm.ls(sl=True)
-sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(1)]
+sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(4)]
 #sel_list.append(pm.PyNode('curve1'))
 #sel_list.append(pm.PyNode('curve2'))
 
