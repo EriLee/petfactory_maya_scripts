@@ -229,7 +229,15 @@ def add_cable_rig(crv, jnt_list, name):
         else:
             pm.parentConstraint(jnt, bind_jnt_grp)
         '''
-        pm.parentConstraint(jnt, bind_jnt_grp)
+        
+        # to avoid the last jnt to "go past" the end ctrl, we get the pos
+        # from the end ctrl and the orienttation from the jnt
+        if index is num_joints-1:
+            pm.pointConstraint(end_ctrl, bind_jnt_grp)
+            pm.orientConstraint(jnt, bind_jnt_grp)
+            
+        else:
+            pm.parentConstraint(jnt, bind_jnt_grp)
     
     
     ret_dict['joint_list'] = jnt_list
