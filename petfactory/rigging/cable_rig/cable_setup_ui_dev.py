@@ -9,18 +9,18 @@ def maya_main_window():
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
     
     
-class Import_nuke_2d_track_ui(QtGui.QWidget):
+class CableSetupWidget(QtGui.QWidget):
  
     def __init__(self, parent=None):
  
-        super(Import_nuke_2d_track_ui, self).__init__(parent)
+        super(CableSetupWidget, self).__init__(parent)
         self.setWindowFlags(QtCore.Qt.Tool)
         
         self.resize(300,100)
         self.setWindowTitle("Cable Setup")
         
         
-        # layout
+        # main vertical layout
         self.vertical_layout = QtGui.QVBoxLayout()
         self.setLayout(self.vertical_layout)
         
@@ -39,9 +39,6 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         self.tree_view = QtGui.QTreeView()
         self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ContiguousSelection)
-        
-        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
         self.tree_view.setAlternatingRowColors(True)
  
         
@@ -50,11 +47,8 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         self.model.setHorizontalHeaderLabels(['Ref curve', 'Name'])
         
-        #header = self.tree_view.header()
-        #header.setResizeMode(QtGui.QHeaderView.Stretch)
-        #header.setVisible(False)
         
-        # add joint ref
+        # add ref curve
         self.joint_ref_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.joint_ref_horiz_layout)        
         
@@ -79,38 +73,28 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         # hairsystem group box
         hairsystem_group_box = QtGui.QGroupBox("Hairsystem")
         self.vertical_layout.addWidget(hairsystem_group_box)
-        
         hairsystem_group_vert_layout = QtGui.QVBoxLayout()
         hairsystem_group_box.setLayout(hairsystem_group_vert_layout)
         
-        # use existing hairsystem
-        use_existing_hairsystem_horiz_layout = QtGui.QHBoxLayout()
-        hairsystem_group_vert_layout.addLayout(use_existing_hairsystem_horiz_layout)
+        # use existing hairsystem group box
+        self.use_existing_group_box = QtGui.QGroupBox("Use existing")
         
-        self.use_existing_hairsystem_checkbox = QtGui.QCheckBox()
-        use_existing_hairsystem_horiz_layout.addWidget(self.use_existing_hairsystem_checkbox)
-        
-        use_existing_hairsystem_label = QtGui.QLabel('Use Existing Hairsystem')
-        use_existing_hairsystem_horiz_layout.addWidget(use_existing_hairsystem_label)
-        use_existing_hairsystem_horiz_layout.addStretch()
-        
-        self.use_existing_hairsystem_checkbox.clicked.connect(self.use_existing_hairsystem_cb_click)
-        
-        
-        
-        
-        # use existing hairsystem qframe
-        self.use_existing_hairsystem_qframe = QtGui.QFrame()
-        self.use_existing_hairsystem_qframe.setLineWidth(1)
-        self.use_existing_hairsystem_qframe.setFrameStyle(1)
-        self.use_existing_hairsystem_qframe.setEnabled(False)
-        
+        hairsystem_group_vert_layout.addWidget(self.use_existing_group_box)
+        self.use_existing_group_box.setCheckable(True)
+        self.use_existing_group_box.setChecked(False)
+        use_existing_group_box_vert_layout = QtGui.QVBoxLayout()
+        self.use_existing_group_box.setLayout(use_existing_group_box_vert_layout)
+        self.use_existing_group_box.clicked.connect(self.hairsystem_groupbox_clicked)
+
+        # use existing hairsystem widget
+        self.use_existing_hairsystem_widget = QtGui.QWidget()
         
         # use existing hairsystem
-        hairsystem_group_vert_layout.addWidget(self.use_existing_hairsystem_qframe)
-        
+        use_existing_group_box_vert_layout.addWidget(self.use_existing_hairsystem_widget)
+
         use_existing_hairsystem_horiz_layout = QtGui.QHBoxLayout()
-        self.use_existing_hairsystem_qframe.setLayout(use_existing_hairsystem_horiz_layout)
+        
+        self.use_existing_hairsystem_widget.setLayout(use_existing_hairsystem_horiz_layout)
         
         add_existing_hairsystem_button = QtGui.QPushButton('Hairsystem >')
         use_existing_hairsystem_horiz_layout.addWidget(add_existing_hairsystem_button)
@@ -121,15 +105,23 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
 
         
         # share hairsystem
-        self.share_hairsystem_qframe = QtGui.QFrame()
-        self.share_hairsystem_qframe.setLineWidth(1)
-        self.share_hairsystem_qframe.setFrameStyle(1)
+        # create new hairsystem group box
+        self.create_new_group_box = QtGui.QGroupBox("Create new")
+        self.create_new_group_box.clicked.connect(self.hairsystem_groupbox_clicked)
+        hairsystem_group_vert_layout.addWidget(self.create_new_group_box)
+        self.create_new_group_box.setCheckable(True)
+        create_new_group_box_vert_layout = QtGui.QVBoxLayout()
+        self.create_new_group_box.setLayout(create_new_group_box_vert_layout)
         
-        self.vertical_layout.addWidget(self.share_hairsystem_qframe)
+        
+        
+        self.share_hairsystem_widget = QtGui.QWidget()
+
+        create_new_group_box_vert_layout.addWidget(self.share_hairsystem_widget)
 
         
         share_hairsystem_horiz_layout = QtGui.QHBoxLayout()
-        self.share_hairsystem_qframe.setLayout(share_hairsystem_horiz_layout)
+        self.share_hairsystem_widget.setLayout(share_hairsystem_horiz_layout)
 
         self.share_hairsystem_checkbox = QtGui.QCheckBox()
         share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_checkbox)
@@ -138,25 +130,48 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
         share_hairsystem_horiz_layout.addStretch()
         
-        
-        
-          
+        self.num_joints_spinbox = CableSetupWidget.add_int_spinbox('Number of joints', self.vertical_layout)
+        self.cable_radius_spinbox = CableSetupWidget.add_int_spinbox('Cable radius', self.vertical_layout)
 
         # Setup
         setup_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(setup_horiz_layout)
         
         self.setup_button = QtGui.QPushButton('Setup Cable')
-        self.setup_button.setMinimumWidth(125)
+        self.setup_button.setMinimumWidth(100)
         setup_horiz_layout.addStretch()
         setup_horiz_layout.addWidget(self.setup_button)
         self.setup_button.clicked.connect(self.setup_clicked)
         
+    @staticmethod
+    def add_int_spinbox(label, parent_layout):
         
-    def use_existing_hairsystem_cb_click(self):
-        self.use_existing_hairsystem_qframe.setEnabled(self.sender().isChecked())
-        self.share_hairsystem_qframe.setEnabled(not self.sender().isChecked()) 
+        horiz_layout = QtGui.QHBoxLayout()
+        parent_layout.addLayout(horiz_layout)
+
+        label = QtGui.QLabel(label)
+        label.setMinimumWidth(100)
+        horiz_layout.addWidget(label)
         
+        horiz_layout.addStretch()
+         
+        spinbox = QtGui.QSpinBox()
+        horiz_layout.addWidget(spinbox)
+        spinbox.setMinimumWidth(100)
+        
+        return spinbox
+            
+    def hairsystem_groupbox_clicked(self):
+
+        is_checked = self.sender().isChecked()
+        
+        if self.sender() is self.use_existing_group_box:
+            self.create_new_group_box.setChecked(not is_checked)
+        
+        else:
+            self.use_existing_group_box.setChecked(not is_checked)
+
+
     def add_hairsystem_clicked(self):
         
         sel_list = pm.ls(sl=True)
@@ -226,12 +241,17 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         ref_crv_list = []
         
-        root = self.model.invisibleRootItem()
+        
+        
         num_children = self.model.rowCount()
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
-        use_existing = self.use_existing_hairsystem_checkbox.isChecked()
+        use_existing = self.use_existing_group_box.isChecked()
         existing_hairsystem = self.existing_hairsystem_line_edit.text()
+        
+        num_joints = self.num_joints_spinbox.value()
+        cable_radius = self.cable_radius_spinbox.value()
     
+        root = self.model.invisibleRootItem()
         for i in range(num_children):
             
             child = root.child(i)
@@ -244,11 +264,11 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         name = self.name_line_edit.text()
         
         
-        print(ref_crv_list, name, share_hairsystem, use_existing, existing_hairsystem)
+        print(ref_crv_list, name, share_hairsystem, use_existing, existing_hairsystem, num_joints, cable_radius)
             
 
 def show():      
-    win = Import_nuke_2d_track_ui(parent=maya_main_window())
+    win = CableSetupWidget(parent=maya_main_window())
     win.show()
     
 
@@ -261,7 +281,7 @@ try:
 except NameError:
     print('No win to close')
 
-win = Import_nuke_2d_track_ui(parent=maya_main_window())
+win = CableSetupWidget(parent=maya_main_window())
 win.show()
 
 win.add_joint_ref_click()
