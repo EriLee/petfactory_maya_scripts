@@ -24,7 +24,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.vertical_layout = QtGui.QVBoxLayout()
         self.setLayout(self.vertical_layout)
         
-        # tendril name
+        # rig name
         self.name_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.name_horiz_layout)
         
@@ -76,10 +76,16 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
         self.joint_ref_horiz_layout.addStretch()
         
-
+        # hairsystem group box
+        hairsystem_group_box = QtGui.QGroupBox("Hairsystem")
+        self.vertical_layout.addWidget(hairsystem_group_box)
+        
+        hairsystem_group_vert_layout = QtGui.QVBoxLayout()
+        hairsystem_group_box.setLayout(hairsystem_group_vert_layout)
+        
         # use existing hairsystem
         use_existing_hairsystem_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(use_existing_hairsystem_horiz_layout)
+        hairsystem_group_vert_layout.addLayout(use_existing_hairsystem_horiz_layout)
         
         self.use_existing_hairsystem_checkbox = QtGui.QCheckBox()
         use_existing_hairsystem_horiz_layout.addWidget(self.use_existing_hairsystem_checkbox)
@@ -92,13 +98,17 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         
         
+        
         # use existing hairsystem qframe
         self.use_existing_hairsystem_qframe = QtGui.QFrame()
         self.use_existing_hairsystem_qframe.setLineWidth(1)
         self.use_existing_hairsystem_qframe.setFrameStyle(1)
         self.use_existing_hairsystem_qframe.setEnabled(False)
         
-        self.vertical_layout.addWidget(self.use_existing_hairsystem_qframe)
+        
+        # use existing hairsystem
+        hairsystem_group_vert_layout.addWidget(self.use_existing_hairsystem_qframe)
+        
         use_existing_hairsystem_horiz_layout = QtGui.QHBoxLayout()
         self.use_existing_hairsystem_qframe.setLayout(use_existing_hairsystem_horiz_layout)
         
@@ -242,7 +252,7 @@ def show():
     win.show()
     
 
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 pm.select('curve0')
 try:
