@@ -344,7 +344,7 @@ def set_hairsystem_properties(hairsystem):
     hairsystem.startCurveAttract.set(0.5)
     hairsystem.damp.set(0.5)
 
-def setup_selected_curves(sel_list):
+def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_divisions=12, existing_hairsystem=None):
     
     # create output crv grp
     pm.select(deselect=True)
@@ -357,7 +357,7 @@ def setup_selected_curves(sel_list):
     for index, crv in enumerate(sel_list):
         
         # build the joints on curve
-        jnt_list = create_joints_on_curve(crv, num_joints=5)
+        jnt_list = create_joints_on_curve(crv, num_joints=num_joints)
         
         # create the cable rig
         cable_rig_dict = add_cable_rig(crv, jnt_list, name='cable_rig_{0}'.format(index))
@@ -383,7 +383,7 @@ def setup_selected_curves(sel_list):
         
 
         # add mesh, parent and add to set
-        pm_mesh = add_mesh_to_joints(bind_jnt_list)
+        pm_mesh = add_mesh_to_joints(bind_jnt_list, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions)
         pm.parent(pm_mesh, misc_grp)
         cable_mesh_set.add(pm_mesh)
 
@@ -422,7 +422,7 @@ sel_list = [crv]
 #bind_jnt_list = cable_rig_dict.get('bind_joint_list')
 #pm_mesh = add_mesh_to_joints(bind_jnt_list)
 
-setup_selected_curves(sel_list)
+setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
 
 
 
