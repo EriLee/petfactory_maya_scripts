@@ -302,10 +302,10 @@ def show():
     win.show()
     
 
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 #pm.select('curve0')
-
+'''
 try:
     win.close()
     
@@ -318,5 +318,5 @@ win.show()
 #win.add_joint_ref_click()
 
 win.move(100,250)
-
+'''
 
