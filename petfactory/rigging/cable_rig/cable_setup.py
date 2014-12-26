@@ -369,8 +369,14 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
         # make dynamic
         # get a reference to the first hairsystem
         if index is 0:
-            dynamic_dict = make_cable_rig_dynamic(cable_rig_dict)
-            existing_hairsystem = dynamic_dict.get('hairsystem')
+            
+            if existing_hairsystem is None:
+                dynamic_dict = make_cable_rig_dynamic(cable_rig_dict)
+                existing_hairsystem = dynamic_dict.get('hairsystem')
+                
+            else:
+                dynamic_dict = make_cable_rig_dynamic(cable_rig_dict, existing_hairsystem=existing_hairsystem)
+                
         
         # pass the second hairsystem to the other rig setup defs          
         else:
@@ -395,13 +401,13 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 
 
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 
 #crv = pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)])
 #crv = pm.ls(sl=True)[0]
-crv = pm.PyNode('curve0')
-sel_list = [crv]   
+#crv = pm.PyNode('curve0')
+#sel_list = [crv]   
 #pm.toggle(crv, hull=True)
 
 #sel_list = pm.ls(sl=True)
@@ -422,7 +428,7 @@ sel_list = [crv]
 #bind_jnt_list = cable_rig_dict.get('bind_joint_list')
 #pm_mesh = add_mesh_to_joints(bind_jnt_list)
 
-setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
+#setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
 
 
 
