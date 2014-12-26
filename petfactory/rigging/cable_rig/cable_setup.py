@@ -332,52 +332,59 @@ def set_hairsystem_properties(hairsystem):
     hairsystem.damp.set(0.5)
 
 def setup_selected_curves(sel_list):
+    
     # create output crv grp
     output_crv_grp = pm.group(em=True, name='output_curve_grp')
     pm.select(deselect=True)
+    
+    # create sets for ctrl and mesh
     cable_rig_ctrl_set = pm.sets(name='cable_rig_ctrl_set')
+    cable_mesh_set = pm.sets(name='cable_mesh_set')
         
     for index, crv in enumerate(sel_list):
         
         # build the joints on curve
         jnt_list = create_joints_on_curve(crv, num_joints=5)
         
-        # create the base rig
+        # create the cable rig
         cable_rig_dict = add_cable_rig(crv, jnt_list, name='cable_rig_{0}'.format(index))
         misc_grp = cable_rig_dict.get('misc_grp')
         
-        
+        # add to ctrl set
         cable_rig_ctrl_set.add(cable_rig_dict.get('start_ctrl'))
         
         # make dynamic
-        
-        
+        # get a reference to the first hairsystem
         if index is 0:
             dynamic_dict = make_cable_rig_dynamic(cable_rig_dict)
             existing_hairsystem = dynamic_dict.get('hairsystem')
-                    
+        
+        # pass the second hairsystem to the other rig setup defs          
         else:
             dynamic_dict = make_cable_rig_dynamic(cable_rig_dict, existing_hairsystem=existing_hairsystem)
         
+        # get a ref to the output crv, reparent and delete the old group
         output_crv = dynamic_dict.get('output_curve')
         output_crv_parent = output_crv.getParent()
         pm.parent(output_crv, output_crv_grp)
         pm.delete(output_crv_parent)
         
-        # add mesh
+        # get the bind joint list
         bind_jnt_list = cable_rig_dict.get('bind_joint_list')
-        #pm_mesh = add_mesh_to_joints(jnt_list)
+
+        # add mesh, parent and add to set
         pm_mesh = add_mesh_to_joints(bind_jnt_list)
         pm.parent(pm_mesh, misc_grp)
+        cable_mesh_set.add(pm_mesh)
     
-    
+    # set hairsystem properties, select the hairsystem (convenience) so we can inspect the properties
     pm.select(existing_hairsystem)
     set_hairsystem_properties(existing_hairsystem)
 
 
 
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 
 #crv = pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)])
@@ -386,7 +393,7 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.
 #pm.toggle(crv, hull=True)
 
 #sel_list = pm.ls(sl=True)
-sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(4)]
+#sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(4)]
 #sel_list.append(pm.PyNode('curve1'))
 #sel_list.append(pm.PyNode('curve2'))
 
@@ -397,4 +404,7 @@ sel_list = [pm.PyNode('curve{0}'.format(n)) for n in range(4)]
 #cable_rig_dict = add_cable_rig(crv=sel_list[0], jnt_list=jnt_list, name='cable_rig_{0}'.format(index))
 #create_joints_on_curve(sel_list[1], num_joints=10)
     
-setup_selected_curves(sel_list)
+#setup_selected_curves(sel_list)
+
+
+
