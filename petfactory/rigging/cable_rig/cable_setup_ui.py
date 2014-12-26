@@ -4,6 +4,7 @@ import maya.OpenMayaUI as omui
 import pymel.core as pm
 
 import petfactory.rigging.cable_rig.cable_setup as cable_setup
+reload(cable_setup)
 
 
 def maya_main_window():
@@ -134,6 +135,8 @@ class CableSetupWidget(QtGui.QWidget):
         
         self.num_joints_spinbox = CableSetupWidget.add_spinbox('Number of joints', self.vertical_layout)
         self.cable_radius_spinbox = CableSetupWidget.add_spinbox('Cable radius', self.vertical_layout, double_spinbox=True)
+        self.cable_axis_divisions_spinbox = CableSetupWidget.add_spinbox('Cable axis divisions', self.vertical_layout)
+        
 
         # Setup
         setup_horiz_layout = QtGui.QHBoxLayout()
@@ -313,10 +316,12 @@ class CableSetupWidget(QtGui.QWidget):
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
         num_joints = self.num_joints_spinbox.value()
         cable_radius = self.cable_radius_spinbox.value()
+        cable_axis_divisions = self.cable_axis_divisions_spinbox.value()
         
         
-        print(ref_crv_list, name, share_hairsystem, use_existing, existing_hairsystem, num_joints, cable_radius)
-        cable_setup.setup_selected_curves(ref_crv_list)
+        #print(ref_crv_list, name, share_hairsystem, use_existing, existing_hairsystem, num_joints, cable_radius)
+        #cable_setup.setup_selected_curves(ref_crv_list)
+        cable_setup.setup_selected_curves(ref_crv_list, num_joints=num_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=existing_hairsystem)
             
 
 def show():      
