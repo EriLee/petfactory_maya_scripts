@@ -214,6 +214,7 @@ class CableSetupWidget(QtGui.QWidget):
             if not isinstance(sel, pm.nodetypes.Transform):
                 pm.warning('{0} is not a valid transform, skipped'.format(sel.name()))
                 continue
+                                
             
             item = QtGui.QStandardItem(sel.name())
             
@@ -278,7 +279,27 @@ class CableSetupWidget(QtGui.QWidget):
             
             if child.checkState():
                 
-                ref_crv_list.append(child.text())
+                name = child.text()
+                
+                try:
+                    py_node = pm.PyNode(name)
+                
+                except pm.general.MayaNodeError as e:
+                    pm.warning('curve not valid, skipped ', e)
+                    continue
+                
+                try:
+                    curve_shape = py_node.getShape()
+                
+                    if not isinstance(curve_shape, pm.nodetypes.NurbsCurve):
+                        pm.warning('curve not valid, skipped')
+                        continue
+                
+                except AttributeError as e:
+                    pm.warning('curve not valid, skipped ', e)
+                    continue
+                    
+                ref_crv_list.append(py_node)
                 
 
         if len(ref_crv_list) < 1:
@@ -295,6 +316,7 @@ class CableSetupWidget(QtGui.QWidget):
         
         
         print(ref_crv_list, name, share_hairsystem, use_existing, existing_hairsystem, num_joints, cable_radius)
+        cable_setup.setup_selected_curves(ref_crv_list)
             
 
 def show():      
