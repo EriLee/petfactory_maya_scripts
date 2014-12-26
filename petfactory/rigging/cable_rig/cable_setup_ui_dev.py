@@ -75,34 +75,102 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.joint_ref_label = QtGui.QLabel('Add / Remove ref curve')
         self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
         self.joint_ref_horiz_layout.addStretch()
+        
+
+        # use existing hairsystem
+        use_existing_hairsystem_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(use_existing_hairsystem_horiz_layout)
+        
+        self.use_existing_hairsystem_checkbox = QtGui.QCheckBox()
+        use_existing_hairsystem_horiz_layout.addWidget(self.use_existing_hairsystem_checkbox)
+        
+        use_existing_hairsystem_label = QtGui.QLabel('Use Existing Hairsystem')
+        use_existing_hairsystem_horiz_layout.addWidget(use_existing_hairsystem_label)
+        use_existing_hairsystem_horiz_layout.addStretch()
+        
+        self.use_existing_hairsystem_checkbox.clicked.connect(self.use_existing_hairsystem_cb_click)
+        
+        
+        
+        # use existing hairsystem qframe
+        self.use_existing_hairsystem_qframe = QtGui.QFrame()
+        self.use_existing_hairsystem_qframe.setLineWidth(1)
+        self.use_existing_hairsystem_qframe.setFrameStyle(1)
+        self.use_existing_hairsystem_qframe.setEnabled(False)
+        
+        self.vertical_layout.addWidget(self.use_existing_hairsystem_qframe)
+        use_existing_hairsystem_horiz_layout = QtGui.QHBoxLayout()
+        self.use_existing_hairsystem_qframe.setLayout(use_existing_hairsystem_horiz_layout)
+        
+        add_existing_hairsystem_button = QtGui.QPushButton('Hairsystem >')
+        use_existing_hairsystem_horiz_layout.addWidget(add_existing_hairsystem_button)
+        add_existing_hairsystem_button.clicked.connect(self.add_hairsystem_clicked)
+                
+        self.existing_hairsystem_line_edit = QtGui.QLineEdit()
+        use_existing_hairsystem_horiz_layout.addWidget(self.existing_hairsystem_line_edit)
 
         
         # share hairsystem
-        self.share_hairsystem_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(self.share_hairsystem_horiz_layout)
+        self.share_hairsystem_qframe = QtGui.QFrame()
+        self.share_hairsystem_qframe.setLineWidth(1)
+        self.share_hairsystem_qframe.setFrameStyle(1)
         
+        self.vertical_layout.addWidget(self.share_hairsystem_qframe)
+
+        
+        share_hairsystem_horiz_layout = QtGui.QHBoxLayout()
+        self.share_hairsystem_qframe.setLayout(share_hairsystem_horiz_layout)
+
         self.share_hairsystem_checkbox = QtGui.QCheckBox()
-        self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_checkbox)
+        share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_checkbox)
         
         self.share_hairsystem_label = QtGui.QLabel('Share Hairsystem')
-        self.share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
-        self.share_hairsystem_horiz_layout.addStretch()
+        share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
+        share_hairsystem_horiz_layout.addStretch()
+        
+        
+        
           
-        #self.vertical_layout.addStretch()
 
         # Setup
-        self.setup_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(self.setup_horiz_layout)
+        setup_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(setup_horiz_layout)
         
-        self.import_button = QtGui.QPushButton('Setup Tendrils')
-        self.import_button.setMinimumWidth(125)
-        self.setup_horiz_layout.addStretch()
-        self.setup_horiz_layout.addWidget(self.import_button)
-        self.import_button.clicked.connect(self.import_data)
-        
-        
+        self.setup_button = QtGui.QPushButton('Setup Cable')
+        self.setup_button.setMinimumWidth(125)
+        setup_horiz_layout.addStretch()
+        setup_horiz_layout.addWidget(self.setup_button)
+        self.setup_button.clicked.connect(self.setup_clicked)
         
         
+    def use_existing_hairsystem_cb_click(self):
+        self.use_existing_hairsystem_qframe.setEnabled(self.sender().isChecked())
+        self.share_hairsystem_qframe.setEnabled(not self.sender().isChecked()) 
+        
+    def add_hairsystem_clicked(self):
+        
+        sel_list = pm.ls(sl=True)
+        
+        if not sel_list:
+            pm.warning('Select a hairsystem!')
+            return
+        
+        try:
+
+            shape = sel_list[0].getShape()
+            
+            if isinstance(shape, pm.nodetypes.HairSystem):
+                self.existing_hairsystem_line_edit.setText(sel_list[0].longName())
+                
+            else:
+                pm.warning('Select a hairsystem!')
+            
+        except AttributeError as e:
+            pm.warning('Please select a Hairsystem ', e)
+            return
+
+        
+ 
 
     def add_joint_ref_click(self):
         
@@ -144,13 +212,15 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
             self.model.removeRow(row)
     
        
-    def import_data(self):
+    def setup_clicked(self):
         
-        ref_grp_list = []
+        ref_crv_list = []
         
         root = self.model.invisibleRootItem()
         num_children = self.model.rowCount()
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
+        use_existing = self.use_existing_hairsystem_checkbox.isChecked()
+        existing_hairsystem = self.existing_hairsystem_line_edit.text()
     
         for i in range(num_children):
             
@@ -158,13 +228,13 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
             
             if child.checkState():
                 
-                ref_grp_list.append(child.text())
+                ref_crv_list.append(child.text())
                 
 
         name = self.name_line_edit.text()
         
         
-        print(ref_grp_list, name, share_hairsystem)
+        print(ref_crv_list, name, share_hairsystem, use_existing, existing_hairsystem)
             
 
 def show():      
@@ -172,7 +242,7 @@ def show():
     win.show()
     
 
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 pm.select('curve0')
 try:
