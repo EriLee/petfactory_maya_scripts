@@ -79,6 +79,18 @@ def parent_joint_list(joint_list):
             
 def add_cable_rig(crv, jnt_list, name):
     
+    '''
+    crv_shape = crv.getShape()
+    if crv_shape.degree() is not 3:
+        pm.warning('the curve must be a degree 3')
+        return None
+        
+    if crv_shape.numCVs() is not 5:
+        pm.warning('the curve must have 5 CVs')
+        return None
+    '''
+    
+    
     ret_dict = {}
     num_joints = len(jnt_list)
     
@@ -354,8 +366,18 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
     cable_mesh_set = pm.sets(name='cable_mesh_set')
     output_curve_set = pm.sets(name='output_curve_set')
         
+    # if the curve is not a 3 degree curve with 5 cvs, continue
     for index, crv in enumerate(sel_list):
         
+        crv_shape = crv.getShape()
+        if crv_shape.degree() is not 3:
+            pm.warning('the curve must be a degree 3, skipped')
+            continue
+            
+        if crv_shape.numCVs() is not 5:
+            pm.warning('the curve must have 5 CVs, skipped')
+            continue
+            
         # build the joints on curve
         jnt_list = create_joints_on_curve(crv, num_joints=num_joints)
         
@@ -404,7 +426,8 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 
-#crv = pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)])
+#pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)], name='curve1')
+
 #crv = pm.ls(sl=True)[0]
 #crv = pm.PyNode('curve0')
 #sel_list = [crv]   
@@ -428,7 +451,8 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 #bind_jnt_list = cable_rig_dict.get('bind_joint_list')
 #pm_mesh = add_mesh_to_joints(bind_jnt_list)
 
-#setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
+#sel_list = [pm.PyNode('curve0')]
+#setup_selected_curves(sel_list, num_joints=10, cable_radius=.3, cable_axis_divisions=12, existing_hairsystem=None)
 
 
 
