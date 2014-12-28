@@ -341,6 +341,7 @@ def show():
 
 #pm.select('curve0')
 
+'''
 try:
     win.close()
     
@@ -353,5 +354,5 @@ win.show()
 #win.add_joint_ref_click()
 
 win.move(100,150)
-
+'''
 

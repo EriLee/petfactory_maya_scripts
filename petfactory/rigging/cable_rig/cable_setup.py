@@ -77,7 +77,7 @@ def parent_joint_list(joint_list):
         if index > 0:
             pm.parent(joint_list[index], joint_list[index-1])
             
-def add_cable_rig(crv, jnt_list, name):
+def add_cable_rig(crv, jnt_list, name, cable_radius):
     
     '''
     crv_shape = crv.getShape()
@@ -103,11 +103,11 @@ def add_cable_rig(crv, jnt_list, name):
     bind_jnt_main_grp = pm.group(em=True, name='bind_jnt_main_grp', parent=main_cable_grp)
 
     # create the ctrl
-    start_ctrl = pm.circle(name='{0}_start_ctrl'.format(name), normal=(1,0,0))[0]
+    start_ctrl = pm.circle(name='{0}_start_ctrl'.format(name), normal=(1,0,0), r=cable_radius+.5)[0]
     start_ctrl_grp = pm.group(em=True, name='{0}_start_ctrl_grp'.format(name), parent=ctrl_grp)
     pm.parent(start_ctrl, start_ctrl_grp)
     
-    end_ctrl = pm.circle(name='{0}_end_ctrl'.format(name), normal=(1,0,0))[0]
+    end_ctrl = pm.circle(name='{0}_end_ctrl'.format(name), normal=(1,0,0), r=cable_radius+.5)[0]
     end_ctrl_grp = pm.group(em=True, name='{0}_end_ctrl_grp'.format(name), parent=ctrl_grp)
     pm.parent(end_ctrl, end_ctrl_grp)
     
@@ -382,7 +382,7 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
         jnt_list = create_joints_on_curve(crv, num_joints=num_joints)
         
         # create the cable rig
-        cable_rig_dict = add_cable_rig(crv, jnt_list, name='cable_rig_{0}'.format(index))
+        cable_rig_dict = add_cable_rig(crv, jnt_list, name='cable_rig_{0}'.format(index), cable_radius=cable_radius)
         misc_grp = cable_rig_dict.get('misc_grp')
         
         # add to ctrl set
@@ -452,7 +452,7 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 #pm_mesh = add_mesh_to_joints(bind_jnt_list)
 
 #sel_list = [pm.PyNode('curve0')]
-#setup_selected_curves(sel_list, num_joints=10, cable_radius=.3, cable_axis_divisions=12, existing_hairsystem=None)
+#setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
 
 
 
