@@ -279,7 +279,8 @@ def add_mesh_to_joints(joint_list, cable_radius=.5, cable_axis_divisions=12):
         extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
         
     pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
-    pm.skinCluster(joint_list, pm_mesh, tsb=True)
+    #pm.skinCluster(joint_list, pm_mesh, tsb=True)
+    pm.skinCluster(joint_list, pm_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
     
     return pm_mesh
 
@@ -422,7 +423,7 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 
 
 
-#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 
@@ -451,8 +452,8 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 #bind_jnt_list = cable_rig_dict.get('bind_joint_list')
 #pm_mesh = add_mesh_to_joints(bind_jnt_list)
 
-#sel_list = [pm.PyNode('curve0')]
-#setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
+sel_list = [pm.PyNode('curve0')]
+setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
 
 
 
