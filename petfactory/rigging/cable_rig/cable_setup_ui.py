@@ -133,9 +133,9 @@ class CableSetupWidget(QtGui.QWidget):
         share_hairsystem_horiz_layout.addWidget(self.share_hairsystem_label)
         share_hairsystem_horiz_layout.addStretch()
         
-        self.num_joints_spinbox = CableSetupWidget.add_spinbox('Number of joints', self.vertical_layout)
-        self.cable_radius_spinbox = CableSetupWidget.add_spinbox('Cable radius', self.vertical_layout, double_spinbox=True)
-        self.cable_axis_divisions_spinbox = CableSetupWidget.add_spinbox('Cable axis divisions', self.vertical_layout)
+        self.num_joints_spinbox = CableSetupWidget.add_spinbox('Number of joints', self.vertical_layout, min=5)
+        self.cable_radius_spinbox = CableSetupWidget.add_spinbox('Cable radius', self.vertical_layout, min=0.01, default=1, double_spinbox=True)
+        self.cable_axis_divisions_spinbox = CableSetupWidget.add_spinbox('Cable axis divisions', self.vertical_layout, min=3, default=8)
         
 
         # Setup
@@ -149,7 +149,7 @@ class CableSetupWidget(QtGui.QWidget):
         self.setup_button.clicked.connect(self.setup_clicked)
         
     @staticmethod
-    def add_spinbox(label, parent_layout, double_spinbox=False):
+    def add_spinbox(label, parent_layout, min=None, max=None, default=None, double_spinbox=False):
         
         horiz_layout = QtGui.QHBoxLayout()
         parent_layout.addLayout(horiz_layout)
@@ -161,6 +161,14 @@ class CableSetupWidget(QtGui.QWidget):
         horiz_layout.addStretch()
          
         spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
+        if min:
+            spinbox.setMinimum(min)
+        if max:
+            spinbox.setMinimum(max)
+        if default:
+            spinbox.setValue(default)
+            
+            
         horiz_layout.addWidget(spinbox)
         spinbox.setMinimumWidth(100)
         
@@ -332,7 +340,7 @@ def show():
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 #pm.select('curve0')
-'''
+
 try:
     win.close()
     
@@ -344,6 +352,6 @@ win.show()
 
 #win.add_joint_ref_click()
 
-win.move(100,250)
-'''
+win.move(100,150)
+
 
