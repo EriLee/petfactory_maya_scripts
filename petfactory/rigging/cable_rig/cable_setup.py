@@ -189,7 +189,8 @@ def add_cable_rig(crv, jnt_list, name, cable_radius):
     clust_pos = pm.xform(cluster_list[2], q=True, rotatePivot=True, ws=True)
     mid_clust_grp.translate.set(clust_pos)
 
-    pm.pointConstraint(start_ctrl, end_ctrl, mid_clust_grp, mo=True)
+    #pm.pointConstraint(start_ctrl, end_ctrl, mid_clust_grp, mo=True)
+    pm.pointConstraint(cluster_list[1], cluster_list[-2], mid_clust_grp, mo=True)
 
     pm.parent(cluster_zero_grp_list[2], mid_clust_grp)
     pm.parent(orig_crv, result_crv, hidden_grp)
@@ -423,7 +424,7 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 
 
 
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/empty_scene.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 
 
@@ -452,8 +453,9 @@ pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/
 #bind_jnt_list = cable_rig_dict.get('bind_joint_list')
 #pm_mesh = add_mesh_to_joints(bind_jnt_list)
 
-sel_list = [pm.PyNode('curve0')]
-setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
+#sel_list = [pm.PyNode('curve0'), pm.PyNode('curve1')]
+#sel_list = [pm.PyNode('curve0')]
+#setup_selected_curves(sel_list, num_joints=10, cable_radius=1, cable_axis_divisions=12, existing_hairsystem=None)
 
 
 
