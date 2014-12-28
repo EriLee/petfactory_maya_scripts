@@ -30,7 +30,8 @@ class MultiConstrainWidget(QtGui.QWidget):
         self.vertical_layout.addLayout(target_horiz_layout)
         
         self.target_button = QtGui.QPushButton('Add Target  > ')
-        target_horiz_layout.addWidget(self.target_button )   
+        target_horiz_layout.addWidget(self.target_button) 
+        self.target_button.clicked.connect(self.target_clicked)  
         
         self.target_line_edit = QtGui.QLineEdit()
         target_horiz_layout.addWidget(self.target_line_edit)
@@ -92,7 +93,36 @@ class MultiConstrainWidget(QtGui.QWidget):
         setup_horiz_layout.addWidget(self.setup_button)
         self.setup_button.clicked.connect(self.setup_clicked)
          
-
+    @staticmethod
+    def validate_pynode_transform(node):
+        
+        try:
+            pynode = pm.PyNode(node)
+            
+            if isinstance(pynode, pm.nodetypes.Transform):
+                return pynode
+            else:
+                return None
+            
+        except pm.MayaNodeError as e:
+            return None
+                                
+        
+    
+    def target_clicked(self):
+        
+        sel_list = pm.ls(sl=True)
+        
+        if not sel_list:
+            pm.warning('Please select a target!')
+            return
+            
+        target = MultiConstrainWidget.validate_pynode_transform(sel_list[0].longName())
+        if target:
+            self.target_line_edit.setText(sel_list[0].longName())
+            
+   
+        
     def add_object_click(self):
         
 
@@ -106,10 +136,10 @@ class MultiConstrainWidget(QtGui.QWidget):
         for sel in sel_list:
         
             if not isinstance(sel, pm.nodetypes.Transform):
-                pm.warning('{0} is not a valid transform, skipped'.format(sel.name()))
+                pm.warning('{0} is not a valid transform, skipped'.format(sel.longName()))
                 continue
             
-            item = QtGui.QStandardItem(sel.name())
+            item = QtGui.QStandardItem(sel.longName())
             
             # set flags
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
@@ -145,15 +175,26 @@ class MultiConstrainWidget(QtGui.QWidget):
             
             if child.checkState():
                 
-                obj_list.append(child.text())
+                node = MultiConstrainWidget.validate_pynode_transform(child.text())
+                if node:
+                    obj_list.append(node)
                 
+                # if we cant create a pynode, uncheck the item  
+                else:
+                    child.setCheckState(QtCore.Qt.Unchecked)
+                                    
 
         if len(obj_list) < 1:
             pm.warning('Please specify 1 or more objects to constrain')
             return
             
         
-        target = self.target_line_edit.text() 
+        target = MultiConstrainWidget.validate_pynode_transform(self.target_line_edit.text())
+        if target is None:
+            pm.warning('The target object is not a valid transform')
+            return
+            
+        
         maintain_offset = self.maintain_offet_checkbox.isChecked()
 
         print(obj_list, target, maintain_offset)
@@ -170,6 +211,7 @@ def show():
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/3deg_5cvs.mb', f=True)
 #pm.select('curve0')
 
+'''
 try:
     win.close()
     
@@ -182,5 +224,4 @@ win.show()
 #win.add_joint_ref_click()
 
 win.move(100,250)
-
-
+'''
