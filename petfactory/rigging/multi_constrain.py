@@ -21,49 +21,67 @@ class MultiConstrainWidget(QtGui.QWidget):
         self.resize(300,100)
         self.setWindowTitle("Multi Constrain")
         
-        
         # main vertical layout
         self.vertical_layout = QtGui.QVBoxLayout()
         self.setLayout(self.vertical_layout)
         
-          
-        # tree view
-        self.model = QtGui.QStandardItemModel()
+        # target
+        target_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(target_horiz_layout)
         
+        self.target_button = QtGui.QPushButton('Add Target  > ')
+        target_horiz_layout.addWidget(self.target_button )   
+        
+        self.target_line_edit = QtGui.QLineEdit()
+        target_horiz_layout.addWidget(self.target_line_edit)
+             
+        
+        
+        # model
+        self.model = QtGui.QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(['Objects to Constrain'])
+        
+        # tree view
         self.tree_view = QtGui.QTreeView()
         self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.tree_view.setAlternatingRowColors(True)
- 
-        
-        self.tree_view.setModel(self.model)
         self.vertical_layout.addWidget(self.tree_view)
+        self.tree_view.setModel(self.model)
         
-        self.model.setHorizontalHeaderLabels(['Objects to Constrain'])
-        
-        
-        
-        # add ref curve
+        # add objects layout
         self.joint_ref_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(self.joint_ref_horiz_layout)        
         
         # add
         self.add_object_button = QtGui.QPushButton(' + ')
         self.add_object_button.setMinimumWidth(40)
-        
         self.joint_ref_horiz_layout.addWidget(self.add_object_button)
         self.add_object_button.clicked.connect(self.add_object_click)
         
         # remove
         self.remove_object_button = QtGui.QPushButton(' - ')
         self.remove_object_button.setMinimumWidth(40)
-        
         self.joint_ref_horiz_layout.addWidget(self.remove_object_button)
         self.remove_object_button.clicked.connect(self.remove_object_click)
         
+        # add / remove label
         self.joint_ref_label = QtGui.QLabel('Add / Remove objects')
         self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
         self.joint_ref_horiz_layout.addStretch()
-                
+        
+        
+        # maintain_offet_checkbox
+        maintain_offset_horiz_layout = QtGui.QHBoxLayout()
+        self.vertical_layout.addLayout(maintain_offset_horiz_layout)
+        
+        self.maintain_offet_checkbox = QtGui.QCheckBox()
+        maintain_offset_horiz_layout.addWidget(self.maintain_offet_checkbox)   
+        
+        self.maintain_offet_label = QtGui.QLabel('Maintain Offset')
+        maintain_offset_horiz_layout.addWidget(self.maintain_offet_label)
+        maintain_offset_horiz_layout.addStretch()
+        
+        
         # Setup
         setup_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(setup_horiz_layout)
@@ -116,62 +134,33 @@ class MultiConstrainWidget(QtGui.QWidget):
     
        
     def setup_clicked(self):
-        
-        use_existing = self.use_existing_group_box.isChecked()
-        existing_hairsystem = None
-        
-        # if we are to use an existing hairsystem, make sure that is is valid, if so get a ref to it
-        if use_existing:
-            existing_hairsystem_name = self.existing_hairsystem_line_edit.text()
             
-            try:
-                existing_hairsystem = pm.PyNode(existing_hairsystem_name)
-                
-            except pm.general.MayaNodeError as e:
-                pm.warning('The hairsystem specified is not valid')
-                return
-                
-            try:
-                
-                shape = existing_hairsystem.getShape()
-                
-                if not isinstance(shape, pm.nodetypes.HairSystem):
-                    pm.warning('Please select a Hairsystem')
-                    return
-                
-            except AttributeError as e:
-                pm.warning('Please select a Hairsystem ', e)
-                return
-                
-    
-    
         root = self.model.invisibleRootItem()
         num_children = self.model.rowCount()
-        ref_crv_list = []
+        obj_list = []
+        
         for i in range(num_children):
             
             child = root.child(i)
             
             if child.checkState():
                 
-                ref_crv_list.append(child.text())
+                obj_list.append(child.text())
                 
 
-        if len(ref_crv_list) < 1:
-            pm.warning('Please specify 1 or more ref curves!')
+        if len(obj_list) < 1:
+            pm.warning('Please specify 1 or more objects to constrain')
             return
             
-
-
-
-        name = self.name_line_edit.text()
-        share_hairsystem = self.share_hairsystem_checkbox.isChecked()
-        num_joints = self.num_joints_spinbox.value()
-        cable_radius = self.cable_radius_spinbox.value()
         
+        target = self.target_line_edit.text() 
+        maintain_offset = self.maintain_offet_checkbox.isChecked()
+
+        print(obj_list, target, maintain_offset)
         
-        print(ref_crv_list, name, share_hairsystem, use_existing, existing_hairsystem, num_joints, cable_radius)
+        for obj in obj_list:
             
+            pm.parentConstraint(pm.PyNode(target), pm.PyNode(obj), mo=maintain_offset)   
 
 def show():      
     win = MultiConstrainWidget(parent=maya_main_window())
