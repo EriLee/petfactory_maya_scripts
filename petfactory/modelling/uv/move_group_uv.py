@@ -40,7 +40,14 @@ def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
     
+
+# custom data
+class MyCustomType(object):
     
+    def __init__(self, data):
+        self.data = data
+        
+           
 class TileGroupUV(QtGui.QWidget):
  
     def __init__(self, parent=None):
@@ -115,6 +122,10 @@ class TileGroupUV(QtGui.QWidget):
               
             item = QtGui.QStandardItem('tile {0}'.format(index))
             
+            custom_data = MyCustomType(tile_list[index])
+            item.setData(custom_data, QtCore.Qt.UserRole + 1)
+                
+            
             # set flags
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             
@@ -130,10 +141,17 @@ class TileGroupUV(QtGui.QWidget):
         # returns QModelIndex
         selected_rows = selection_model.selectedRows()
         
+        pm.select(deselect=True)
+        sel_tile_list = []
         for row_index in selected_rows:
             
             item = self.model.itemFromIndex(row_index)
-            print(item.text())
+            data = item.data(QtCore.Qt.UserRole + 1)
+            #print(item.text(), data.data)
+            sel_tile_list.extend(data.data)
+        
+        pprint.pprint(sel_tile_list)   
+        pm.select(sel_tile_list, add=True)
             
 
            
@@ -168,7 +186,7 @@ def show():
     win.show()
            
 
-
+'''
 try:
     win.close()
     
@@ -184,6 +202,7 @@ win.move(150,250)
 
         
 pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/uv_cube.mb', f=True)
+'''
 
 #grp_list = [pm.PyNode('group{0}'.format(n)) for n in range(15)]
 #pm.select(grp_list)
