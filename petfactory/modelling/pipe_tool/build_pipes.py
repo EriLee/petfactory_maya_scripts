@@ -535,11 +535,12 @@ class Curve_spreadsheet(QtGui.QWidget):
 
 
 
-'''
+
 def show():      
     win = Curve_spreadsheet(parent=maya_main_window())
     win.show()
 
+'''
 try:
     win.close()
 except NameError as e:
