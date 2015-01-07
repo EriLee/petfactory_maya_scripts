@@ -9,10 +9,6 @@ import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 #reload(nhair_dynamics)
 
 
-#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/jnt_ref_v02.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
-
-
 # build the joints from the joint ref group
 def build_joints(joint_ref_list, name_list=None):
     
@@ -31,7 +27,6 @@ def build_joints(joint_ref_list, name_list=None):
         else:
             name = joint_ref.nodeName()
         
-        #joint_info = joint_tools.build_joint_info(joint_ref, override_name='{0}_{1}'.format(name, index))
         joint_info = joint_tools.build_joint_info(joint_ref, override_name='{0}'.format(name))
         up_vec = joint_tools.vec_from_transform(joint_ref, 2)
         jnt_list = joint_tools.build_joint_hierarchy(joint_info, up_vec)
@@ -43,35 +38,33 @@ def build_joints(joint_ref_list, name_list=None):
 
 
 
-def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
+def add_pocedural_wave_anim(info_dict):
     
-    #pprint.pprint(jnt_dict)
+    #pprint.pprint(info_dict)
     
-    ret_dict = {}
-    
-    name = jnt_dict.keys()[0]
-    jnt_list = jnt_dict.get(name)
+    root_ctrl = info_dict.get('root_ctrl')
+    jnt_list = info_dict.get('joint_list')
+    name = info_dict.get('name')
     num_jnt = len(jnt_list)
     
-    # create groups
-    root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
-    root_ctrl_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_ctrl_grp'.format(name))
-    root_misc_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_misc_grp'.format(name))
-    root_hidden_grp = pm.group(parent=root_misc_grp, em=True, name='{0}_root_hidden_grp'.format(name))
+    bind_jnt_list = []
+    
+    if root_ctrl is None:
+        return
+        
+    
+    # create bind jnt group
+    main_bind_jnt_grp = pm.group(em=True, name='{0}_main_bind_jnt_grp'.format(name))
+    main_bind_jnt_grp.setMatrix(jnt_list[0].getMatrix())
+    pm.parent(main_bind_jnt_grp, root_ctrl)
     
     
-    # ctrl
-    root_ctrl = pm.circle(normal=(1,0,0), radius=5, ch=False, name='{0}_root_ctrl'.format(name))[0]
-    pm.parent(root_ctrl, root_ctrl_grp)
-    root_ctrl_grp.setMatrix(jnt_list[0].getMatrix())
     
-    # add attr to ctrl
-    pm.addAttr(root_ctrl, longName='display_rig_joints', at="enum", en="off:on", keyable=True)
+    # add attr
+
+    pm.addAttr(root_ctrl, longName='PROCEDURAL_ANIM', keyable=True)
+    root_ctrl.PROCEDURAL_ANIM.set(lock=True)
     
-    
-    pm.addAttr(root_ctrl, longName='origBlendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
-    pm.addAttr(root_ctrl, longName='IkSplineBlendshape', minValue=0.0, maxValue=1.0, defaultValue=0.0, keyable=True)
-    pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
     
     pm.addAttr(root_ctrl, longName='sineY', keyable=True)
     pm.addAttr(root_ctrl, longName='sine_y_global_scale', keyable=True)
@@ -80,10 +73,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.addAttr(root_ctrl, longName='sine_z_global_scale', keyable=True)
     
     pm.addAttr(root_ctrl, longName='time', keyable=True)
-    
-    
-    
-    
+     
 
     for index in range(num_jnt):
         pm.addAttr(root_ctrl, longName='sine_y_offset{0}'.format(index), keyable=True, defaultValue=index*10)
@@ -99,180 +89,10 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     for index in range(num_jnt):
         pm.addAttr(root_ctrl, longName='sine_z_scale{0}'.format(index), keyable=True, defaultValue=index)
-
- 
-    # cluster group
-    cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
-    rig_crv_grp = pm.group(parent=root_ctrl, em=True, name='{0}_rig_crv_grp'.format(name))
-    
-    # jnt group
-    jnt_grp = pm.group(em=True, name='{0}_jnt_grp'.format(name))
-    
-    root_ctrl.display_rig_joints >> jnt_grp.visibility
-    
-    jnt_grp.setMatrix(jnt_list[0].getMatrix())
-    pm.parent(jnt_list[0], jnt_grp)
-    pm.parent(jnt_grp, root_ctrl)
-    
-    # bind jnt group
-    main_bind_jnt_grp = pm.group(em=True, name='{0}_main_bind_jnt_grp'.format(name))
-    main_bind_jnt_grp.setMatrix(jnt_list[0].getMatrix())
-    pm.parent(main_bind_jnt_grp, root_ctrl)
-    
-   
-    
-    # get the joint positions
-    pos_list = [pm.joint(jnt, q=True, p=True, a=True) for jnt in jnt_list]
-
-
-    # build the curve that we will make dynamic, and drive the ik spline rig 
-    crv = pm.curve(ep=pos_list, name='{0}_orig_curve'.format(name))
-    
-    # duplicate and create a blendshape curve
-    blendshape_crv = pm.duplicate(crv, name='{0}_blendshape_crv'.format(name))[0]
-    blendshape = pm.blendShape(blendshape_crv, crv, origin='world')[0]
-    result_spline_crv = pm.duplicate(crv, name='{0}_result_spline_crv'.format(name))[0]
-
-    root_ctrl.origBlendshape >> blendshape.weight[0]   
-    num_cvs = blendshape_crv.getShape().numCVs()
-    
-  
-    
-    # loop through the cv and add cluster. On cv 0-1 add one cluster,
-    # the rest of the cv will have one cluster each, 
-    # might add one to the second to last and last
-    for i in range(num_cvs):
-        if i is 0:
-            cv = '0:1'
-        elif i is 1:
-            continue
-        else:
-            cv = i
-            
-        clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(blendshape_crv.longName(), cv), relative=True, name='{0}_{1}_cluster_'.format(name, i))
-        pm.parent(clust_handle, cluster_grp)
         
-        
-    # if we parent and and set zero out the transforms, the cluster and blendshape curves plays along :)
-    # with no offset... hmmm need to check out why this is...
-    pm.parent(blendshape_crv, rig_crv_grp)
-    blendshape_crv.translate.set(0,0,0)
-    blendshape_crv.rotate.set(0,0,0)
-    
-    
-    
-    # make the curves dynamic    
-    nhair_dict_list = nhair_dynamics.make_curve_dynamic(crv)
-    
-    output_curve = nhair_dict_list.get('output_curve')
-    follicle = nhair_dict_list.get('follicle')
-    nucleus = nhair_dict_list.get('nucleus')
-    hairsystem = nhair_dict_list.get('hairsystem')
-    
-    
-    # output curve
-    if output_curve:
-        
-        # add a crv that we can switch between the cluster driven crv and the dynamic output ctv
-        pm.connectAttr('{0}.worldSpace[0]'.format(blendshape_crv), '{0}.create'.format(result_spline_crv))
-        pm.parent(result_spline_crv, rig_crv_grp)
-        result_spline_crv.translate.set(0,0,0)
-        result_spline_crv.rotate.set(0,0,0)
-        
-        # blendshape between the cluster driben crv and the dynamic output crv
-        result_blendshape = pm.blendShape(output_curve, result_spline_crv, origin='world')[0]
-        root_ctrl.IkSplineBlendshape >> result_blendshape.weight[0]  
-
-        # create a ik spline
-        iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=result_spline_crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
-        pm.parent(iks_handle, root_hidden_grp)
-        ret_dict['output_curve'] = output_curve
-        output_curve_shape = output_curve.getShape()
-        
-        #output_curve_info = pm.arclen(output_curve, ch=True)
-        result_spline_info = pm.arclen(result_spline_crv, ch=True)
-        
-  
-    
-    else:
-        print('could not access the output curve')  
-          
-      
-    # follicle    
-    if follicle:
-        pm.setAttr('{}.pointLock'.format(follicle.getShape()), 1)
-        pm.parent(follicle.getParent(), root_ctrl)
-        ret_dict['follicle'] = follicle
-        
-    else:
-        print('could not access the follicle')
-      
-      
-    # nucleus    
-    if nucleus:
-        nucleus.timeScale.set(10)
-        ret_dict['nucleus'] = nucleus
-        
-    else:
-        print('could not access the nucleus')
-        
-        
-    
-    # hair system  
-    if hairsystem:
-        
-        # if we want to use an existing hair system
-        if existing_hairsystem is not None:
-            print('Delete current hairsystem, use {0}'.format(existing_hairsystem))
-            
-            num_connection = len(pm.listConnections('{0}.inputHair'.format(existing_hairsystem)))
-            
-            follicle.outHair >> existing_hairsystem.inputHair[num_connection]
-            existing_hairsystem.outputHair[num_connection] >> follicle.currentPosition
-            
-            pm.delete(hairsystem)
-            
-        else:         
-            hairsystem.startCurveAttract.set(0.005)
-            
-        ret_dict['hairsystem'] = hairsystem
-        
-        
-    else:
-        print('could not access the hairsystem')
-        
-    
-    # make curves unselectable, enable drawing ovewrride and set to template
-    for c in [crv, blendshape_crv, output_curve_shape, result_spline_crv, jnt_grp]:
-        c.overrideEnabled.set(1)
-        c.overrideDisplayType.set(2)
-   
-    # hide the hidden group
-    root_hidden_grp.visibility.set(0)
- 
-    # setup the joint stretch
-    arc_length = result_spline_info.arcLength.get()
-    
-    md_global_scale = pm.createNode('multiplyDivide', name='global_scale_compensate')
-    md_global_scale.operation.set(2)
-    
-    result_spline_info.arcLength >> md_global_scale.input1X
-    root_ctrl.sx >> md_global_scale.input2X
-    
-    stretch_scale_mult = pm.createNode('multDoubleLinear', name='stretch_scale_mult')
-    md_global_scale.outputX >> stretch_scale_mult.input1
-    root_ctrl.stretchScale >> stretch_scale_mult.input2
-
-    
-    bind_jnt_list = []
+       
+    # set up nodes
     for index, jnt in enumerate(jnt_list):
-        
-        if index is not 0:
-            mult_double = pm.createNode('multDoubleLinear', name='jnt_{0}_stretch_mult'.format(index))
-            mult_double.input1.set(jnt.tx.get() / arc_length)
-            stretch_scale_mult.output >> mult_double.input2
-            mult_double.output >> jnt.tx
-            
         
         
         # create a y sine offset jnt
@@ -364,10 +184,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
         
         # fianlly feed that into the jnt
         sine_z_global_scale_md.output >> sine_z_jnt.tz
-        
-        
-      
-        
+  
+
     
     # set key frames and handle the post curve behaviour
     
@@ -395,64 +213,258 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     pm.select(deselect=True)
     bind_jnt_set = pm.sets(name='{0}_bind_joints'.format(name))
     bind_jnt_set.addMembers(bind_jnt_list)
+
+  
+    
+    
+def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
+    
+    ret_dict = {}
+    
+    name = jnt_dict.keys()[0]
+    jnt_list = jnt_dict.get(name)
+    num_jnt = len(jnt_list)
+    
+    # create groups
+    root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
+    root_ctrl_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_ctrl_grp'.format(name))
+    root_misc_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_misc_grp'.format(name))
+    root_hidden_grp = pm.group(parent=root_misc_grp, em=True, name='{0}_root_hidden_grp'.format(name))
+    output_curve_grp = pm.group(parent=root_misc_grp, em=True, name='{0}_output_curve_grp'.format(name))
+    
+    
+    # ctrl
+    root_ctrl = pm.circle(normal=(1,0,0), radius=5, ch=False, name='{0}_root_ctrl'.format(name))[0]
+    pm.parent(root_ctrl, root_ctrl_grp)
+    root_ctrl_grp.setMatrix(jnt_list[0].getMatrix())
+    
+    
+    # add attr to ctrl
+    pm.addAttr(root_ctrl, longName='display_rig_joints', at="enum", en="off:on", keyable=True)
+    
+    
+    #pm.addAttr(root_ctrl, longName='origBlendshape', minValue=0.0, maxValue=1.0, defaultValue=1.0, keyable=True)
+    
+    
+    pm.addAttr(root_ctrl, longName='dynamic_blendshape', minValue=0.0, maxValue=1.0, defaultValue=0.0, keyable=True)
+    pm.addAttr(root_ctrl, longName='stretchScale', minValue=0.0, defaultValue=1.0, keyable=True)
+    
+    
+    
+    # cluster group
+    cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
+    rig_crv_grp = pm.group(parent=root_ctrl, em=True, name='{0}_rig_crv_grp'.format(name))
+    
+    # jnt group
+    jnt_grp = pm.group(em=True, name='{0}_jnt_grp'.format(name))
+    
+    # position and hide jnt_grp
+    root_ctrl.display_rig_joints >> jnt_grp.visibility
+    jnt_grp.setMatrix(jnt_list[0].getMatrix())
+    
+    # parent the jnts and the jnt grp
+    pm.parent(jnt_list[0], jnt_grp)
+    pm.parent(jnt_grp, root_ctrl)
+    
+ 
+    # get the joint positions
+    pos_list = [pm.joint(jnt, q=True, p=True, a=True) for jnt in jnt_list]
+    
+    # build the curve that we will make dynamic, and drive the ik spline rig 
+    orig_crv = pm.curve(ep=pos_list, name='orig_curve')
+
+
+    result_crv = pm.duplicate(orig_crv, name='result_curv')[0]
+    orig_crv.worldSpace >> result_crv.create
+    # create a curve info node
+    result_crv_info = pm.arclen(result_crv, ch=True)
+    
+     
+    num_cvs = orig_crv.getShape().numCVs()
+
+    
+    # loop through the cv and add cluster. On cv 0-1 add one cluster,
+    # the rest of the cv will have one cluster each, 
+    # might add one to the second to last and last
+    
+    cluster_list = []
+    cluster_zero_grp_list = []
+    
+    for i in range(num_cvs):
+            
+        clust, clust_handle = pm.cluster('{0}.cv[{1}]'.format(orig_crv.longName(), str(i)), relative=False, name='{0}_{1}_cluster_'.format(name, i))
+        cluster_list.append(clust_handle)
+        
+        # create a group to zero out the transformation
+        cluster_zero_grp_list.append(pm.group(em=True, n='ch_zero_grp_{0}'.format(i)))
+        
+        pm.parent(clust_handle, cluster_zero_grp_list[i])
+        
+    # parent the cluster zero grp
+    pm.parent(cluster_zero_grp_list, cluster_grp)
+
+    
+    # make the curves dynamic    
+    nhair_dict_list = nhair_dynamics.make_curve_dynamic(orig_crv)
+    
+    output_curve = nhair_dict_list.get('output_curve')
+    follicle = nhair_dict_list.get('follicle')
+    nucleus = nhair_dict_list.get('nucleus')
+    hairsystem = nhair_dict_list.get('hairsystem')
+    
+    
+    # output curve
+    if output_curve:
+         
+        # blendshape between the cluster driben crv and the dynamic output crv
+        result_blendshape = pm.blendShape(output_curve, result_crv, origin='world')[0]
+        root_ctrl.dynamic_blendshape >> result_blendshape.weight[0]  
+
+        # create a ik spline
+        iks_handle, effector = pm.ikHandle(solver='ikSplineSolver', curve=result_crv, parentCurve=False, createCurve=False, rootOnCurve=False, twistType='easeInOut', sj=jnt_list[0], ee=jnt_list[-1])
+        pm.parent(iks_handle, root_hidden_grp)
+        ret_dict['output_curve'] = output_curve
+        output_curve_shape = output_curve.getShape()
+        
+        curve_parent = output_curve.getParent()
+        pm.parent(output_curve, output_curve_grp)
+        pm.delete(curve_parent)
+        output_curve.rename('{0}_output_curve'.format(name))
     
 
+    
+    else:
+        print('could not access the output curve')  
+          
+      
+    # follicle    
+    if follicle:
+        pm.setAttr('{}.pointLock'.format(follicle.getShape()), 1)
+        pm.parent(follicle.getParent(), root_ctrl)
+        ret_dict['follicle'] = follicle
+        follicle.inheritsTransform.set(False)
+        
+    else:
+        print('could not access the follicle')
+      
+      
+    # nucleus    
+    if nucleus:
+        nucleus.spaceScale.set(.1)
+        ret_dict['nucleus'] = nucleus
+        
+    else:
+        print('could not access the nucleus')
+        
+        
+    
+    # hair system  
+    if hairsystem:
+        
+        # if we want to use an existing hair system
+        if existing_hairsystem is not None:
+            print('Delete current hairsystem, use {0}'.format(existing_hairsystem))
+            
+            num_connection = len(pm.listConnections('{0}.inputHair'.format(existing_hairsystem)))
+            
+            follicle.outHair >> existing_hairsystem.inputHair[num_connection]
+            existing_hairsystem.outputHair[num_connection] >> follicle.currentPosition
+            
+            pm.delete(hairsystem)
+            
+        else:         
+            hairsystem.startCurveAttract.set(0.005)
+            
+        ret_dict['hairsystem'] = hairsystem
+        
+        
+    else:
+        print('could not access the hairsystem')
+        
+    
+    
+    
+    # make curves unselectable, enable drawing ovewrride and set to template
+    for c in [orig_crv, output_curve_shape, result_crv, jnt_grp]:
+        c.overrideEnabled.set(1)
+        c.overrideDisplayType.set(2)
+
+    
+    
+    pm.parent(result_crv, root_hidden_grp)
+    
+        
+    # hide the hidden group
+    root_hidden_grp.visibility.set(0)
+ 
+    # setup the joint stretch
+    arc_length = result_crv_info.arcLength.get()
+    
+    md_global_scale = pm.createNode('multiplyDivide', name='global_scale_compensate')
+    md_global_scale.operation.set(2)
+    
+    result_crv_info.arcLength >> md_global_scale.input1X
+    root_ctrl.sx >> md_global_scale.input2X
+    
+    stretch_scale_mult = pm.createNode('multDoubleLinear', name='stretch_scale_mult')
+    md_global_scale.outputX >> stretch_scale_mult.input1
+    root_ctrl.stretchScale >> stretch_scale_mult.input2
+
+    
+
+    
+    for index, jnt in enumerate(jnt_list):
+        
+        if index is not 0:
+            mult_double = pm.createNode('multDoubleLinear', name='jnt_{0}_stretch_mult'.format(index))
+            mult_double.input1.set(jnt.tx.get() / arc_length)
+            stretch_scale_mult.output >> mult_double.input2
+            mult_double.output >> jnt.tx
+            
+        
+        
+    
+    ret_dict['root_ctrl'] = root_ctrl
+    ret_dict['joint_list'] = jnt_list
+    ret_dict['name'] = name
+    
     return ret_dict
         
         
 
 # manual setup
 
-   
-#pm.select(['group1', 'group2', 'group3', 'group4'])
-#pm.select(['group1', 'group2', 'group3'])
-#pm.select(['group1'])
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
 
-'''
-pm.select(['flower_jnt_pos'])
-sel_list = pm.ls(sl=True)
-jnt_dict_list = build_joints(sel_list)
-dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[0])
-
-'''
-
-'''
-node = pm.PyNode('flower_jnt_pos')
-ref_list = [node, node, node, node, node, node]
-
-# build the joints
-jnt_dict_list = build_joints(ref_list, name_list=['tendri_0', 'tendril_1', 'tendril_2', 'tendril_3', 'tendril_4', 'tendril_5'])
-
-# set up the nhair dynamics
+# output curve set  
+''' 
+output_curve_set = pm.sets(name='output_curve_set') 
 output_curve_list = []
-output_curve_grp = pm.group(em=True, name='output_curve_grp')
 
-# the first tendril
+
+
+node_0 = pm.PyNode('flower_jnt_pos_0')
+node_1 = pm.PyNode('flower_jnt_pos_1')
+node_2 = pm.PyNode('flower_jnt_pos_2')
+
+ref_list = [node_0, node_1, node_2]
+jnt_dict_list = build_joints(ref_list, name_list=['tendril_a', 'tendril_b', 'tendril_c'])
+
+
 dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict_list[0])
 hairsystem_0 = dyn_joint_dict_0.get('hairsystem')
 output_curve_list.append(dyn_joint_dict_0.get('output_curve'))
+add_pocedural_wave_anim(dyn_joint_dict_0)
+
 
 dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[1], existing_hairsystem=hairsystem_0)
 output_curve_list.append(dyn_joint_dict_1.get('output_curve'))
-
-dyn_joint_dict_2 = setup_dynamic_joint_chain(jnt_dict_list[2], existing_hairsystem=hairsystem_0)
-output_curve_list.append(dyn_joint_dict_2.get('output_curve'))
-
-dyn_joint_dict_3 = setup_dynamic_joint_chain(jnt_dict_list[3], existing_hairsystem=hairsystem_0)
-output_curve_list.append(dyn_joint_dict_3.get('output_curve'))
-
-dyn_joint_dict_4 = setup_dynamic_joint_chain(jnt_dict_list[4], existing_hairsystem=hairsystem_0)
-output_curve_list.append(dyn_joint_dict_4.get('output_curve'))
-
-dyn_joint_dict_5 = setup_dynamic_joint_chain(jnt_dict_list[5], existing_hairsystem=hairsystem_0)
-output_curve_list.append(dyn_joint_dict_5.get('output_curve'))
+add_pocedural_wave_anim(dyn_joint_dict_1)
 
 
 
-for output_curve in output_curve_list:
-    curve_parent = output_curve.getParent()
-    pm.parent(output_curve, output_curve_grp)
-    pm.delete(curve_parent)
+output_curve_set.addMembers(output_curve_list)
+
 '''
 
 
@@ -638,10 +650,11 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         # set up the nhair dynamics
         output_curve_list = []
-        output_curve_grp = pm.group(em=True, name='output_curve_grp')
+        output_curve_set = pm.sets(name='output_curve_set') 
         
         
-        print(share_hairsystem)
+        
+        #print(share_hairsystem)
         
         for index, jnt_dict in enumerate(jnt_dict_list):
 
@@ -653,20 +666,19 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
                 
                 if share_hairsystem:
                     dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=hairsystem)
-                    print('usa sasasa')
+                    print('Use existing hairsystem')
                     
                 else:
                     dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict)
-                    print('ceratet bew')
+                    print('Create new hairsystem')
                     
                 
             output_curve_list.append(dyn_joint_dict.get('output_curve'))
+            add_pocedural_wave_anim(dyn_joint_dict)
     
         
-        for output_curve in output_curve_list:
-            curve_parent = output_curve.getParent()
-            pm.parent(output_curve, output_curve_grp)
-            pm.delete(curve_parent)
+        output_curve_set.addMembers(output_curve_list)
+        
 
 
 def show():      
