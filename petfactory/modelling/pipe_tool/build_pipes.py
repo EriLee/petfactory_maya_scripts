@@ -140,9 +140,14 @@ def add_division_to_straight_pipe(start_matrix, end_matrix, num_divisions):
     return ret_matrix_list
            
 # build a transformation matrix list for the start point, all the radius positions and the last point
-def create_round_corner_matrix_list(cv_list, num_radius_div):
+def create_round_corner_matrix_list(cv_list, radius_list, radial_divisions, length_divisions):
 
     num_cv = len(cv_list)
+    
+    if len(cv_list)-2 != len(radius_list):
+        print('apa')
+        return None
+    
     result_matrix_list = []
     last_matrix = None
     
@@ -154,7 +159,7 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
     for index in range(num_cv-2):
         
         # calculate the radius
-        tm_list = worldspace_radius(cv_list=cv_list[index:index+3], radius=1, num_points=num_radius_div)
+        tm_list = worldspace_radius(cv_list=cv_list[index:index+3], radius=radius_list[index], num_points=radial_divisions)
         
         # first cv
         if index is 0:
@@ -167,7 +172,7 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             temp_m.a32 = cv_list[0].z
             
             # add the to matrices of the first straight pipe, then add the radius matrix list
-            result_matrix_list.append(add_division_to_straight_pipe(temp_m, tm_list[0], 10))
+            result_matrix_list.append(add_division_to_straight_pipe(temp_m, tm_list[0], length_divisions))
             result_matrix_list.append(tm_list)
             
             last_matrix = tm_list[-1]
@@ -185,7 +190,7 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
             temp_m.a32 = pos.z
             
             # add the radius list, then the following straight pipe
-            result_matrix_list.append(add_division_to_straight_pipe(last_matrix, temp_m, 10))
+            result_matrix_list.append(add_division_to_straight_pipe(last_matrix, temp_m, length_divisions))
             result_matrix_list.append(tm_list)
             
             last_matrix = tm_list[-1]
@@ -197,7 +202,7 @@ def create_round_corner_matrix_list(cv_list, num_radius_div):
     temp_m.a31 = cv_list[-1].y
     temp_m.a32 = cv_list[-1].z
                 
-    result_matrix_list.append(add_division_to_straight_pipe(tm_list[-1], temp_m, 10))
+    result_matrix_list.append(add_division_to_straight_pipe(tm_list[-1], temp_m, length_divisions))
 
 
     return result_matrix_list
@@ -260,47 +265,6 @@ def add_pipe_fitting(result_matrix_list, mesh=None):
             
     return mesh_list
             
-'''
-#crv = pm.curve(d=1, p=[(10,2,3), (7, 3, 0), (10, 5, -3), (8,10,3), (5,5,0), (0,5,-3)])
-#crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0)])
-crv = pm.curve(d=1, p=[(10, -5, 0), (0,0,0), (10, 5, 0), (10,10,0), (0,10,0)])
-
-#crv = pm.ls(sl=True)[0]
-cv_list = crv.getCVs(space='world')
-
-# get the matrix list
-result_matrix_list = create_round_corner_matrix_list(cv_list, num_radius_div=10)
-
-# create the profile 
-profile_pos = create_profile_points(radius=.4, num_points=12)
-
-# get the positions
-pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
-
-# build mesh 
-mesh_mobj_list = build_mesh(pos_list)
-pm_mesh_list = [ pm.PyNode('|{0}'.format(m.name())) for m in mesh_mobj_list]
-pipe_grp = pm.group(em=True, name='pipe_grp')
-pm.parent(pm_mesh_list, pipe_grp)
-
-# add pipe fitting
-dup_mesh=None
-try:
-    dup_mesh = pm.PyNode('fitting_grp')
-except pm.MayaNodeError:
-    pm.warning('could not find fitting mesh')
-
-fitting_list = add_pipe_fitting(result_matrix_list, mesh=dup_mesh)
-fitting_grp = pm.group(em=True, name='fitting_grp')
-pm.parent(fitting_list, fitting_grp)
-
-# create the main group
-main_pipe_grp = pm.group(em=True, name='main_pipe_grp')
-pm.parent(pipe_grp, fitting_grp, main_pipe_grp)
-
-pm.sets('initialShadingGroup', forceElement=pm_mesh_list)
-'''
-
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -374,7 +338,8 @@ class Curve_spreadsheet(QtGui.QWidget):
         #v_header = self.table_view.verticalHeader()
         h_header = self.table_view.horizontalHeader()
         h_header.setResizeMode(QtGui.QHeaderView.Stretch)
-           
+        
+        self.pipe_radius_spinbox = Curve_spreadsheet.add_int_spinbox('Pipe radius', self.vertical_layout)
         self.axis_div_spinbox = Curve_spreadsheet.add_int_spinbox('Axis Divisions', self.vertical_layout)
         self.length_div_spinbox = Curve_spreadsheet.add_int_spinbox('Length Divisions', self.vertical_layout)
         self.radial_div_spinbox = Curve_spreadsheet.add_int_spinbox('Radial Divisions', self.vertical_layout)
@@ -495,10 +460,10 @@ class Curve_spreadsheet(QtGui.QWidget):
     
         
     def on_build_click(self):
+
         
-        radius_list = []
         
-        num_rows = self.model.rowCount()
+        pipe_radius = self.pipe_radius_spinbox.value()
         
         axis_divisions = self.axis_div_spinbox.value()
         length_divisions = self.length_div_spinbox.value()
@@ -506,9 +471,11 @@ class Curve_spreadsheet(QtGui.QWidget):
         
         crv_name = self.path_line_edit.text()
         fitting_mesh_name = self.fitting_mesh_line_edit.text()
+
         
         
-        
+        num_rows = self.model.rowCount()
+        corner_radius_list = []
         for row in range(num_rows):
             
             radius_text = self.model.item(row,0).text()
@@ -522,19 +489,21 @@ class Curve_spreadsheet(QtGui.QWidget):
                 return None
                 
             
-            radius_list.append(radius)
+            corner_radius_list.append(radius)
         
-        print(radius_list, axis_divisions, length_divisions, radial_divisions, fitting_mesh_name, crv_name)
+        #print(corner_radius_list, axis_divisions, length_divisions, radial_divisions, fitting_mesh_name, crv_name, pipe_radius)
+        
         
         crv = pm.PyNode(crv_name)
         
         cv_list = crv.getCVs(space='world')
         
         # get the matrix list
-        result_matrix_list = create_round_corner_matrix_list(cv_list, num_radius_div=radial_divisions)
+        #result_matrix_list = create_round_corner_matrix_list(cv_list, num_radius_div=radial_divisions)
+        result_matrix_list = create_round_corner_matrix_list(cv_list, radius_list=corner_radius_list, radial_divisions=radial_divisions, length_divisions=length_divisions)
         
         # create the profile 
-        profile_pos = create_profile_points(radius=radius_list[0], num_points=axis_divisions)
+        profile_pos = create_profile_points(radius=pipe_radius, num_points=axis_divisions)
         
         # get the positions
         pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
@@ -561,15 +530,16 @@ class Curve_spreadsheet(QtGui.QWidget):
         pm.parent(pipe_grp, fitting_grp, main_pipe_grp)
         
         pm.sets('initialShadingGroup', forceElement=pm_mesh_list)
+        
                         
 
 
 
-
+'''
 def show():      
     win = Curve_spreadsheet(parent=maya_main_window())
     win.show()
-'''
+
 try:
     win.close()
 except NameError as e:
@@ -580,6 +550,70 @@ win.move(100, 210)
 win.show()
 '''
 
+'''
+crv = pm.curve(d=1, p=[(30, -15, 0), (0,0,0), (30, 15, 0), (30,30,0), (0,30,0)])
+
+
+cv_list = crv.getCVs(space='world')
+radius_list = [3,2,5]
+radial_divisions = 10
+length_divisions = 5
+pipe_radius = 1
+axial_divisions = 12
+
+# add pipe fitting
+dup_mesh=None
+try:
+    dup_mesh = pm.PyNode('fitting_grp')
+except pm.MayaNodeError:
+    pm.warning('could not find fitting mesh')
+    
+    
+    
+# get the matrix list
+result_matrix_list = create_round_corner_matrix_list(cv_list, radius_list=radius_list, radial_divisions=radial_divisions, length_divisions=length_divisions)
+
+
+def plot_mat_list(result_matrix_list):
+        sp_list = []
+        for m_list in result_matrix_list:
+            for m in m_list:
+                sp = pm.polySphere(r=.1)[0]
+                sp.setMatrix(m)
+                sp_list.append(sp)
+                
+        pm.select(sp_list)
+
+
+#if result_matrix_list:
+    #plot_mat_list(result_matrix_list)
+ 
+
+# create the profile 
+profile_pos = create_profile_points(radius=pipe_radius, num_points=axial_divisions)
+
+# get the positions
+pos_list = transform_profile_list(result_matrix_list=result_matrix_list, profile_pos=profile_pos)
+
+
+
+# build mesh 
+mesh_mobj_list = build_mesh(pos_list)
+pm_mesh_list = [ pm.PyNode('|{0}'.format(m.name())) for m in mesh_mobj_list]
+pipe_grp = pm.group(em=True, name='pipe_grp')
+pm.parent(pm_mesh_list, pipe_grp)
+
+
+fitting_list = add_pipe_fitting(result_matrix_list, mesh=dup_mesh)
+fitting_grp = pm.group(em=True, name='fitting_grp')
+pm.parent(fitting_list, fitting_grp)
+
+# create the main group
+main_pipe_grp = pm.group(em=True, name='main_pipe_grp')
+pm.parent(pipe_grp, fitting_grp, main_pipe_grp)
+
+pm.sets('initialShadingGroup', forceElement=pm_mesh_list)
+'''
 
 
 
