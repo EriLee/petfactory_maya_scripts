@@ -232,12 +232,13 @@ def build_mesh(pos_list):
     return mesh_list
 
 
-def add_pipe_fitting(result_matrix_list, mesh=None):
+def add_pipe_fitting(result_matrix_list, radius, mesh=None):
     
     if not isinstance(mesh, pm.nodetypes.Transform):
         pm.warning('fitting mesh not a vaild Transform, will use default')
         mesh = None
 
+    m_scale = radius*1.1
     mesh_list = []
     for index, matrix_list in enumerate(result_matrix_list):
         
@@ -248,19 +249,21 @@ def add_pipe_fitting(result_matrix_list, mesh=None):
                 mesh_1 = pm.duplicate(mesh)[0]
                 mesh_2 = pm.duplicate(mesh)[0]
             else:
-                mesh_1 = pm.polyCylinder(r=.50, h=.3, axis=(1,0,0))[0]
+                mesh_1 = pm.polyCylinder(r=1, h=.3, axis=(1,0,0))[0]
                 mesh_2 = pm.duplicate(mesh_1)[0]
-                
-                
-            mesh_1.setMatrix(matrix_list[0])
-            #pm.toggle(mesh_1, localAxis=True)
+              
+            # add scale to the transformation matrix              
+            mesh_1_tm = matrix_list[0]
+            mesh_1_tm.addScale((m_scale, m_scale, m_scale), space='object')
+            mesh_1.setMatrix(mesh_1_tm)
+
             
-            # flip the rotation of the second pipe fitting
-            tm = matrix_list[-1]
-            tm.addRotation((0,0,math.pi), order=1, space='preTransform')
+            # add scale and flip the rotation of the second pipe fitting
+            mesh_2_tm = matrix_list[-1]
+            mesh_2_tm.addRotation((0,0,math.pi), order=1, space='preTransform')
+            mesh_2_tm.addScale((m_scale, m_scale, m_scale), space='object')
+            mesh_2.setMatrix(mesh_2_tm)
             
-            mesh_2.setMatrix(tm)
-            #pm.toggle(mesh_2, localAxis=True)
             mesh_list.extend([mesh_1, mesh_2])
             
     return mesh_list
@@ -331,7 +334,7 @@ class Curve_spreadsheet(QtGui.QWidget):
         self.vertical_layout.addWidget(self.table_view)
         
         self.model = QtGui.QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(['Radius'])
+        self.model.setHorizontalHeaderLabels(['Corner radius'])
   
         self.table_view.setModel(self.model)
         
@@ -339,10 +342,10 @@ class Curve_spreadsheet(QtGui.QWidget):
         h_header = self.table_view.horizontalHeader()
         h_header.setResizeMode(QtGui.QHeaderView.Stretch)
         
-        self.pipe_radius_spinbox = Curve_spreadsheet.add_int_spinbox('Pipe radius', self.vertical_layout)
-        self.axis_div_spinbox = Curve_spreadsheet.add_int_spinbox('Axis Divisions', self.vertical_layout)
-        self.length_div_spinbox = Curve_spreadsheet.add_int_spinbox('Length Divisions', self.vertical_layout)
-        self.radial_div_spinbox = Curve_spreadsheet.add_int_spinbox('Radial Divisions', self.vertical_layout)
+        self.pipe_radius_spinbox = Curve_spreadsheet.add_spinbox(label='Pipe radius', min=.05, default=1, parent_layout=self.vertical_layout, double_spinbox=True)
+        self.axis_div_spinbox = Curve_spreadsheet.add_spinbox(label='Axis Divisions', min=3, default=12, parent_layout=self.vertical_layout)
+        self.length_div_spinbox = Curve_spreadsheet.add_spinbox(label='Length Divisions', min=2, default=5, parent_layout=self.vertical_layout)
+        self.radial_div_spinbox = Curve_spreadsheet.add_spinbox(label='Radial Divisions', min=3, default=10, parent_layout=self.vertical_layout)
                 
         # build button
         self.build_button_horiz_layout = QtGui.QHBoxLayout()
@@ -360,7 +363,7 @@ class Curve_spreadsheet(QtGui.QWidget):
     
     
     @staticmethod
-    def add_int_spinbox(label, parent_layout):
+    def add_spinbox(label, parent_layout, min=None, max=None, default=None, double_spinbox=False):
         
         horiz_layout = QtGui.QHBoxLayout()
         parent_layout.addLayout(horiz_layout)
@@ -371,7 +374,15 @@ class Curve_spreadsheet(QtGui.QWidget):
         
         horiz_layout.addStretch()
          
-        spinbox = QtGui.QSpinBox()
+        spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
+        if min:
+            spinbox.setMinimum(min)
+        if max:
+            spinbox.setMinimum(max)
+        if default:
+            spinbox.setValue(default)
+            
+            
         horiz_layout.addWidget(spinbox)
         spinbox.setMinimumWidth(100)
         
@@ -406,7 +417,6 @@ class Curve_spreadsheet(QtGui.QWidget):
             return
         '''
             
-        #self.fitting_mesh_line_edit.setText(mesh_name)
         self.fitting_mesh_line_edit.setText(sel_list[0].longName())
         
    
@@ -521,7 +531,7 @@ class Curve_spreadsheet(QtGui.QWidget):
         except pm.MayaNodeError:
             pm.warning('could not find fitting mesh')
         
-        fitting_list = add_pipe_fitting(result_matrix_list, mesh=dup_mesh)
+        fitting_list = add_pipe_fitting(result_matrix_list, radius=pipe_radius, mesh=dup_mesh)
         fitting_grp = pm.group(em=True, name='fitting_grp')
         pm.parent(fitting_list, fitting_grp)
         
@@ -540,6 +550,8 @@ def show():
     win = Curve_spreadsheet(parent=maya_main_window())
     win.show()
 
+
+
 '''
 try:
     win.close()
@@ -550,6 +562,11 @@ win = Curve_spreadsheet(parent=maya_main_window())
 win.move(100, 210)
 win.show()
 '''
+
+
+
+
+
 
 '''
 crv = pm.curve(d=1, p=[(30, -15, 0), (0,0,0), (30, 15, 0), (30,30,0), (0,30,0)])
@@ -605,7 +622,7 @@ pipe_grp = pm.group(em=True, name='pipe_grp')
 pm.parent(pm_mesh_list, pipe_grp)
 
 
-fitting_list = add_pipe_fitting(result_matrix_list, mesh=dup_mesh)
+fitting_list = add_pipe_fitting(result_matrix_list, radius=pipe_radius, mesh=dup_mesh)
 fitting_grp = pm.group(em=True, name='fitting_grp')
 pm.parent(fitting_list, fitting_grp)
 
