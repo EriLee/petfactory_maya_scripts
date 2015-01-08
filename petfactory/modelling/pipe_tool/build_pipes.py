@@ -238,7 +238,8 @@ def add_pipe_fitting(result_matrix_list, radius, mesh=None):
         pm.warning('fitting mesh not a vaild Transform, will use default')
         mesh = None
 
-    m_scale = radius*1.1
+    #m_scale = radius*1.1
+
     mesh_list = []
     for index, matrix_list in enumerate(result_matrix_list):
         
@@ -249,19 +250,19 @@ def add_pipe_fitting(result_matrix_list, radius, mesh=None):
                 mesh_1 = pm.duplicate(mesh)[0]
                 mesh_2 = pm.duplicate(mesh)[0]
             else:
-                mesh_1 = pm.polyCylinder(r=1, h=.3, axis=(1,0,0))[0]
+                mesh_1 = pm.polyCylinder(r=1.1, h=.3, axis=(1,0,0))[0]
                 mesh_2 = pm.duplicate(mesh_1)[0]
               
             # add scale to the transformation matrix              
             mesh_1_tm = matrix_list[0]
-            mesh_1_tm.addScale((m_scale, m_scale, m_scale), space='object')
+            mesh_1_tm.addScale((radius, radius, radius), space='object')
             mesh_1.setMatrix(mesh_1_tm)
 
             
             # add scale and flip the rotation of the second pipe fitting
             mesh_2_tm = matrix_list[-1]
             mesh_2_tm.addRotation((0,0,math.pi), order=1, space='preTransform')
-            mesh_2_tm.addScale((m_scale, m_scale, m_scale), space='object')
+            mesh_2_tm.addScale((radius, radius, radius), space='object')
             mesh_2.setMatrix(mesh_2_tm)
             
             mesh_list.extend([mesh_1, mesh_2])
