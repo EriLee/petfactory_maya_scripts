@@ -465,9 +465,9 @@ class Curve_spreadsheet(QtGui.QWidget):
         
         for row in range(num_corners):
             
-            item_inner = QtGui.QStandardItem('1')
-
-            self.model.setItem(row, 0, item_inner);
+            item = QtGui.QStandardItem()
+            item.setData(1.0, QtCore.Qt.EditRole)
+            self.model.setItem(row, 0, item)
     
         
     def on_build_click(self):
