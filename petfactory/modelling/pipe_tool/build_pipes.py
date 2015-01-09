@@ -288,7 +288,17 @@ def qCleanupResources():
 qInitResources()
 
 
-
+class MyDelegate(QtGui.QItemDelegate):
+    
+    def __init__(self, parent=None):
+        super(MyDelegate, self).__init__(parent)
+        
+    def createEditor(self, parent, option, index):
+        spinbox = QtGui.QDoubleSpinBox(parent)
+        spinbox.setRange(.05,999)
+        spinbox.setDecimals(3)
+        spinbox.setAlignment(QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        return spinbox
 
 # the main ui class  
 class Curve_spreadsheet(QtGui.QWidget):
@@ -329,14 +339,15 @@ class Curve_spreadsheet(QtGui.QWidget):
         self.fitting_mesh_line_edit = QtGui.QLineEdit()
         self.fitting_mesh_horiz_layout.addWidget(self.fitting_mesh_line_edit)
         
-        
+        # model
+        self.model = QtGui.QStandardItemModel()
+        self.model.dataChanged.connect(self.model_changed)
+        self.model.setHorizontalHeaderLabels(['Corner radius'])
+
         # table view  
         self.table_view = QtGui.QTableView()
+        self.table_view.setItemDelegate(MyDelegate(self.table_view))
         self.vertical_layout.addWidget(self.table_view)
-        
-        self.model = QtGui.QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(['Corner radius'])
-  
         self.table_view.setModel(self.model)
         
         #v_header = self.table_view.verticalHeader()
@@ -361,6 +372,22 @@ class Curve_spreadsheet(QtGui.QWidget):
         self.build_button.setMinimumWidth(100)
         self.build_button_horiz_layout.addWidget(self.build_button)
         self.build_button.clicked.connect(self.on_build_click)
+
+    def model_changed(self, top_left, bottom_right):
+
+        val = self.model.data(top_left)
+        selection_model = self.table_view.selectionModel()
+        
+        # returns QModelIndex
+        selected_rows = selection_model.selectedRows()
+        
+        self.model.blockSignals(True)
+        
+        for row in selected_rows:
+            self.model.setData(row, val)
+
+        self.model.blockSignals(False)
+        #self.tableview.viewport().update() 
     
     
     @staticmethod
