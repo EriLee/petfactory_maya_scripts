@@ -152,7 +152,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         self.resolution_combobox = QtGui.QComboBox(self)
         self.resolution_horiz_layout.addWidget(self.resolution_combobox)
         
-        self.resolution_list = [(1280, 720), (1920, 1080)]
+        self.resolution_list = [(1280, 720), (1920, 1080), (2048, 1152)]
         res_string_list = ['{0} x {1}'.format(res[0], res[1]) for res in self.resolution_list]
         self.resolution_combobox.addItems(res_string_list)
         
