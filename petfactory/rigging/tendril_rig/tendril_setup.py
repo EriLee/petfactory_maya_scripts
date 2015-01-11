@@ -456,7 +456,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
         
 
 # manual setup
-
+'''
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
 
 # output curve set 
@@ -481,7 +481,7 @@ def single_setup():
         add_pocedural_wave_anim(dyn_joint_dict_0)
 
 single_setup()
-
+'''
 
 
 '''
