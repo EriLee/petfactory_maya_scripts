@@ -8,6 +8,10 @@ import petfactory.rigging.joint_tools as joint_tools
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 #reload(nhair_dynamics)
 
+import petfactory.rigging.ctrl.ctrl as pet_ctrl
+#reload(pet_ctrl)
+
+
 
 # build the joints from the joint ref group
 def build_joints(joint_ref_list, name_list=None):
@@ -38,7 +42,7 @@ def build_joints(joint_ref_list, name_list=None):
 
 
 
-def add_pocedural_wave_anim(info_dict):
+def add_pocedural_wave_anim(info_dict, ctrl_size=1):
     
     #pprint.pprint(info_dict)
     
@@ -51,8 +55,26 @@ def add_pocedural_wave_anim(info_dict):
     
     if root_ctrl is None:
         return
-        
+
     
+    # add visibility enum attr to root ctrl
+    pm.addAttr(root_ctrl, longName='show_proc_anim_ctrl', at="enum", en="off:on", keyable=True)
+
+
+    anim_ctrl = pet_ctrl.CreateCtrl.create_circle(name='{0}_sine_anim_ctrl'.format(name), size=ctrl_size)
+    
+    # lock and hide transformation attrs
+    trans_attr = 'tx ty tz rx ry rz sx sy sz'.split(' ')
+    [anim_ctrl.setAttr(attr, l=True, k=False) for attr in trans_attr]
+    
+    root_ctrl.show_proc_anim_ctrl >> anim_ctrl.v
+    anim_ctrl.v.set(l=True, k=False)
+
+    pm.parent(anim_ctrl, root_ctrl)
+    anim_ctrl.setMatrix(root_ctrl.getMatrix(ws=False))
+
+
+
     # create bind jnt group
     main_bind_jnt_grp = pm.group(em=True, name='{0}_main_bind_jnt_grp'.format(name))
     main_bind_jnt_grp.setMatrix(jnt_list[0].getMatrix())
@@ -62,33 +84,31 @@ def add_pocedural_wave_anim(info_dict):
     
     # add attr
 
-    pm.addAttr(root_ctrl, longName='PROCEDURAL_ANIM', keyable=True)
-    root_ctrl.PROCEDURAL_ANIM.set(lock=True)
+
     
+    pm.addAttr(anim_ctrl, longName='sineY', keyable=True)
+    pm.addAttr(anim_ctrl, longName='sine_y_global_scale', keyable=True)
     
-    pm.addAttr(root_ctrl, longName='sineY', keyable=True)
-    pm.addAttr(root_ctrl, longName='sine_y_global_scale', keyable=True)
+    pm.addAttr(anim_ctrl, longName='sineZ', keyable=True)
+    pm.addAttr(anim_ctrl, longName='sine_z_global_scale', keyable=True)
     
-    pm.addAttr(root_ctrl, longName='sineZ', keyable=True)
-    pm.addAttr(root_ctrl, longName='sine_z_global_scale', keyable=True)
-    
-    pm.addAttr(root_ctrl, longName='time', keyable=True)
+    pm.addAttr(anim_ctrl, longName='time', keyable=True)
      
 
     for index in range(num_jnt):
-        pm.addAttr(root_ctrl, longName='sine_y_offset{0}'.format(index), keyable=True, defaultValue=index*10)
+        pm.addAttr(anim_ctrl, longName='sine_y_offset{0}'.format(index), keyable=True, defaultValue=index*10)
     
     
     for index in range(num_jnt):
-        pm.addAttr(root_ctrl, longName='sine_y_scale{0}'.format(index), keyable=True, defaultValue=index)
+        pm.addAttr(anim_ctrl, longName='sine_y_scale{0}'.format(index), keyable=True, defaultValue=index)
         
     
     for index in range(num_jnt):
-        pm.addAttr(root_ctrl, longName='sine_z_offset{0}'.format(index), keyable=True, defaultValue=index*10)
+        pm.addAttr(anim_ctrl, longName='sine_z_offset{0}'.format(index), keyable=True, defaultValue=index*10)
     
     
     for index in range(num_jnt):
-        pm.addAttr(root_ctrl, longName='sine_z_scale{0}'.format(index), keyable=True, defaultValue=index)
+        pm.addAttr(anim_ctrl, longName='sine_z_scale{0}'.format(index), keyable=True, defaultValue=index)
         
        
     # set up nodes
@@ -125,26 +145,26 @@ def add_pocedural_wave_anim(info_dict):
         pma_sine_y = pm.createNode('plusMinusAverage', name='pma_sine_y{0}'.format(index))
         
         # connect root ctrl time attr to pma
-        root_ctrl.time >> pma_sine_y.input1D[0]
+        anim_ctrl.time >> pma_sine_y.input1D[0]
         
         # connect the per joint offset to the pma
-        pm.connectAttr('{0}.sine_y_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_y.input1D[1])
+        pm.connectAttr('{0}.sine_y_offset{1}'.format(anim_ctrl.longName(), index),  pma_sine_y.input1D[1])
             
         # create node cache
         cache_sine_y = pm.createNode('frameCache', name='frameCache_sine_y{0}_jnt'.format(index))
         
         # connect the pma offsetted time to varytime ant the attr to use as stream to the stream
         pma_sine_y.output1D >> cache_sine_y.varyTime
-        root_ctrl.sineY >> cache_sine_y.stream
+        anim_ctrl.sineY >> cache_sine_y.stream
         
         # create a per joint scale to the sine
         sine_y_scale = pm.createNode('multDoubleLinear', name='sine_y_scale_{0}'.format(index))
         cache_sine_y.varying >> sine_y_scale.input1
-        pm.connectAttr('{0}.sine_y_scale{1}'.format(root_ctrl.longName(), index), sine_y_scale.input2)
+        pm.connectAttr('{0}.sine_y_scale{1}'.format(anim_ctrl.longName(), index), sine_y_scale.input2)
         
         # hook up the gloabal sacle to affect the per joint scale
         sine_y_global_scale_md = pm.createNode('multDoubleLinear', name='sine_y_global_scale_md_{0}'.format(index))       
-        root_ctrl.sine_y_global_scale >> sine_y_global_scale_md.input1
+        anim_ctrl.sine_y_global_scale >> sine_y_global_scale_md.input1
         sine_y_scale.output >> sine_y_global_scale_md.input2
         
         # fianlly feed that into the jnt
@@ -160,26 +180,26 @@ def add_pocedural_wave_anim(info_dict):
         pma_sine_z = pm.createNode('plusMinusAverage', name='pma_sine_z{0}'.format(index))
         
         # connect root ctrl time attr to pma
-        root_ctrl.time >> pma_sine_z.input1D[0]
+        anim_ctrl.time >> pma_sine_z.input1D[0]
         
         # connect the per joint offset to the pma
-        pm.connectAttr('{0}.sine_z_offset{1}'.format(root_ctrl.longName(), index),  pma_sine_z.input1D[1])
+        pm.connectAttr('{0}.sine_z_offset{1}'.format(anim_ctrl.longName(), index),  pma_sine_z.input1D[1])
             
         # create node cache
         cache_sine_z = pm.createNode('frameCache', name='frameCache_sine_z{0}_jnt'.format(index))
         
         # connect the pma offsetted time to varytime ant the attr to use as stream to the stream
         pma_sine_z.output1D >> cache_sine_z.varyTime
-        root_ctrl.sineZ >> cache_sine_z.stream
+        anim_ctrl.sineZ >> cache_sine_z.stream
         
         # create a per joint scale to the sine
         sine_z_scale = pm.createNode('multDoubleLinear', name='sine_z_scale_{0}'.format(index))
         cache_sine_z.varying >> sine_z_scale.input1
-        pm.connectAttr('{0}.sine_z_scale{1}'.format(root_ctrl.longName(), index), sine_z_scale.input2)
+        pm.connectAttr('{0}.sine_z_scale{1}'.format(anim_ctrl.longName(), index), sine_z_scale.input2)
         
         # hook up the gloabal sacle to affect the per joint scale
         sine_z_global_scale_md = pm.createNode('multDoubleLinear', name='sine_z_global_scale_md_{0}'.format(index))       
-        root_ctrl.sine_z_global_scale >> sine_z_global_scale_md.input1
+        anim_ctrl.sine_z_global_scale >> sine_z_global_scale_md.input1
         sine_z_scale.output >> sine_z_global_scale_md.input2
         
         # fianlly feed that into the jnt
@@ -190,24 +210,24 @@ def add_pocedural_wave_anim(info_dict):
     # set key frames and handle the post curve behaviour
     
     # setup sine y animation
-    pm.setKeyframe(root_ctrl, v=-1, attribute='sineY', t=0)
-    pm.setKeyframe(root_ctrl, v=1, attribute='sineY', t=48)
-    pm.setKeyframe(root_ctrl, v=-1, attribute='sineY', t=96)
-    pm.setInfinity(root_ctrl, at='sineY', pri='cycleRelative', poi='cycleRelative')
+    pm.setKeyframe(anim_ctrl, v=-1, attribute='sineY', t=0)
+    pm.setKeyframe(anim_ctrl, v=1, attribute='sineY', t=48)
+    pm.setKeyframe(anim_ctrl, v=-1, attribute='sineY', t=96)
+    pm.setInfinity(anim_ctrl, at='sineY', pri='cycleRelative', poi='cycleRelative')
     
     # setup sine z animation
-    pm.setKeyframe(root_ctrl, v=-1, attribute='sineZ', t=0)
-    pm.setKeyframe(root_ctrl, v=1, attribute='sineZ', t=24)
-    pm.setKeyframe(root_ctrl, v=-1, attribute='sineZ', t=48)
-    pm.setInfinity(root_ctrl, at='sineZ', pri='cycleRelative', poi='cycleRelative')
+    pm.setKeyframe(anim_ctrl, v=-1, attribute='sineZ', t=0)
+    pm.setKeyframe(anim_ctrl, v=1, attribute='sineZ', t=24)
+    pm.setKeyframe(anim_ctrl, v=-1, attribute='sineZ', t=48)
+    pm.setInfinity(anim_ctrl, at='sineZ', pri='cycleRelative', poi='cycleRelative')
     
     
     # set keyframes of the time attr on the root ctrl, set naim curve properties   
-    pm.setKeyframe(root_ctrl, v=0, attribute='time', t=0)
-    pm.setKeyframe(root_ctrl, v=1, attribute='time', t=1)
-    pm.setInfinity(root_ctrl, at='time', pri='cycleRelative', poi='cycleRelative')
+    pm.setKeyframe(anim_ctrl, v=0, attribute='time', t=0)
+    pm.setKeyframe(anim_ctrl, v=1, attribute='time', t=1)
+    pm.setInfinity(anim_ctrl, at='time', pri='cycleRelative', poi='cycleRelative')
     
-    pm.keyTangent(root_ctrl, edit=True, attribute='time', itt='linear', ott='linear') 
+    pm.keyTangent(anim_ctrl, edit=True, attribute='time', itt='linear', ott='linear') 
     
 
     pm.select(deselect=True)
@@ -217,7 +237,7 @@ def add_pocedural_wave_anim(info_dict):
   
     
     
-def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
+def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
     
     ret_dict = {}
     
@@ -234,10 +254,13 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
     
     
     # ctrl
-    root_ctrl = pm.circle(normal=(1,0,0), radius=5, ch=False, name='{0}_root_ctrl'.format(name))[0]
+    #root_ctrl = pm.circle(normal=(1,0,0), radius=5, ch=False, name='{0}_root_ctrl'.format(name))[0]
+    root_ctrl = pet_ctrl.CreateCtrl.create_circle_arrow(name='{0}_root_ctrl'.format(name), size=ctrl_size)
+
+    
     pm.parent(root_ctrl, root_ctrl_grp)
     root_ctrl_grp.setMatrix(jnt_list[0].getMatrix())
-    
+
     
     # add attr to ctrl
     pm.addAttr(root_ctrl, longName='display_rig_joints', at="enum", en="off:on", keyable=True)
@@ -434,14 +457,34 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None):
 
 # manual setup
 
-#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
 
-# output curve set  
-''' 
+# output curve set 
+
 output_curve_set = pm.sets(name='output_curve_set') 
 output_curve_list = []
 
+# single setup
+def single_setup():
+    node_0 = pm.PyNode('flower_jnt_pos_0')
+    joint_ref_list = [node_0]
+    name_list = ['tendril_0']
+    
+    # create the joints
+    jnt_dict_list = build_joints(joint_ref_list=joint_ref_list, name_list=name_list)
+    
+    # create the rig
+    dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict=jnt_dict_list[0], ctrl_size=1.2)
+    
+    # add procedural anim
+    if dyn_joint_dict_0:
+        add_pocedural_wave_anim(dyn_joint_dict_0)
 
+single_setup()
+
+
+
+'''
 
 node_0 = pm.PyNode('flower_jnt_pos_0')
 node_1 = pm.PyNode('flower_jnt_pos_1')

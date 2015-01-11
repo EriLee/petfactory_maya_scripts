@@ -95,11 +95,11 @@ class CreateCtrl(object):
 
     @staticmethod 
     def create_circle_arrow(name, size):
-        CreateCtrl._build_ctrl(name=name, pos_list=CreateCtrl._circle_arrow_20_cvs, size=size)
+        return CreateCtrl._build_ctrl(name=name, pos_list=CreateCtrl._circle_arrow_20_cvs, size=size)
 
     @staticmethod 
     def create_circle(name, size):
-        CreateCtrl._build_ctrl(name=name, pos_list=CreateCtrl._circle_20_cvs, size=size)
+        return CreateCtrl._build_ctrl(name=name, pos_list=CreateCtrl._circle_20_cvs, size=size)
 
 #CreateCtrl.cv_pos_from_crv()
 #CreateCtrl.create_circle(name='circle_ctrl', size=1)
