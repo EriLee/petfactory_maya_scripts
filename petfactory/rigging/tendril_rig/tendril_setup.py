@@ -702,13 +702,13 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         for index, jnt_dict in enumerate(jnt_dict_list):
 
             if index is 0:
-                dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict)
+                dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2)
                 hairsystem = dyn_joint_dict.get('hairsystem')
     
             else:
                 
                 if share_hairsystem:
-                    dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=hairsystem)
+                    dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=hairsystem, ctrl_size=1.2)
                     print('Use existing hairsystem')
                     
                 else:
@@ -717,7 +717,7 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
                     
                 
             output_curve_list.append(dyn_joint_dict.get('output_curve'))
-            add_pocedural_wave_anim(dyn_joint_dict)
+            add_pocedural_wave_anim(dyn_joint_dict, ctrl_size=1)
     
         
         output_curve_set.addMembers(output_curve_list)
