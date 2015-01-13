@@ -45,6 +45,7 @@ def build_joints(joint_ref_list, name_list=None):
 def add_pocedural_wave_anim(info_dict, ctrl_size=1):
     
     #pprint.pprint(info_dict)
+    ret_dict = {}
     
     root_ctrl = info_dict.get('root_ctrl')
     jnt_list = info_dict.get('joint_list')
@@ -238,6 +239,9 @@ def add_pocedural_wave_anim(info_dict, ctrl_size=1):
     #root_ctrl.show_proc_anim_ctrl.set(1)
     #anim_ctrl.sine_y_global_scale.set(.2)
     #anim_ctrl.sine_z_global_scale.set(.2)
+    
+    ret_dict['sine_anim_ctrl'] = anim_ctrl
+    return ret_dict
 
   
     
@@ -466,8 +470,13 @@ pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/
 
 # output curve set 
 
-output_curve_set = pm.sets(name='output_curve_set') 
+output_curve_set = pm.sets(name='output_curve_set')
+root_ctrl_set = pm.sets(name='root_ctrl_set') 
+sine_anim_ctrl_set = pm.sets(name='sine_anim_ctrl_set') 
+
 output_curve_list = []
+root_ctrl_list = []
+sine_anim_ctrl_list = []
 
 # single setup
 def single_setup():
@@ -480,10 +489,17 @@ def single_setup():
     
     # create the rig
     dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict=jnt_dict_list[0], ctrl_size=1.2)
+    output_curve_list.append(dyn_joint_dict_0.get('output_curve'))
+    root_ctrl_list.append(dyn_joint_dict_0.get('root_ctrl'))
     
     # add procedural anim
     if dyn_joint_dict_0:
-        add_pocedural_wave_anim(dyn_joint_dict_0)
+        proc_anim_dict = add_pocedural_wave_anim(dyn_joint_dict_0)
+        sine_anim_ctrl_list.append(proc_anim_dict.get('sine_anim_ctrl'))
+        
+    output_curve_set.addMembers(output_curve_list)
+    sine_anim_ctrl_set.addMembers(sine_anim_ctrl_list)
+    root_ctrl_set.addMembers(root_ctrl_list)
 
 single_setup()
 '''
@@ -699,11 +715,16 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
         
         # set up the nhair dynamics
         output_curve_list = []
-        output_curve_set = pm.sets(name='output_curve_set') 
         
         
+        output_curve_set = pm.sets(name='output_curve_set')
+        root_ctrl_set = pm.sets(name='root_ctrl_set') 
+        sine_anim_ctrl_set = pm.sets(name='sine_anim_ctrl_set') 
         
-        #print(share_hairsystem)
+        output_curve_list = []
+        root_ctrl_list = []
+        sine_anim_ctrl_list = []
+
         
         for index, jnt_dict in enumerate(jnt_dict_list):
 
@@ -721,13 +742,18 @@ class Import_nuke_2d_track_ui(QtGui.QWidget):
                     dyn_joint_dict = setup_dynamic_joint_chain(jnt_dict)
                     print('Create new hairsystem')
                     
-                
+            
+            proc_anim_dict = add_pocedural_wave_anim(dyn_joint_dict, ctrl_size=1)
+            
             output_curve_list.append(dyn_joint_dict.get('output_curve'))
-            add_pocedural_wave_anim(dyn_joint_dict, ctrl_size=1)
-    
-        
+            root_ctrl_list.append(dyn_joint_dict.get('root_ctrl'))
+            sine_anim_ctrl_list.append(proc_anim_dict.get('sine_anim_ctrl'))
+
+         
         output_curve_set.addMembers(output_curve_list)
-        
+        root_ctrl_set.addMembers(root_ctrl_list)
+        sine_anim_ctrl_set.addMembers(sine_anim_ctrl_list)
+       
 
 
 def show():      
