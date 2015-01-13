@@ -300,7 +300,8 @@ class TendrilSetupWidget(QtGui.QWidget):
             
         
         #print(ref_list, name_list, existing_hairsystem)
-         
+        
+
         # build the joints
         jnt_dict_list = tendril_setup.build_joints(joint_ref_list=ref_list, name_list=name_list)
         
@@ -317,30 +318,37 @@ class TendrilSetupWidget(QtGui.QWidget):
         root_ctrl_list = []
         sine_anim_ctrl_list = []
 
-        
+  
         for index, jnt_dict in enumerate(jnt_dict_list):
 
             if index is 0:
                 
-                if use_existing:
-                    dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2, existing_hairsystem=existing_hairsystem)
-                    
-                else:
+                if existing_hairsystem is None:
                     dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2)
                     
+                else:
+                    dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2, existing_hairsystem=existing_hairsystem)
+                    
                 
                 
-                hairsystem = dyn_joint_dict.get('hairsystem')
+                existing_hairsystem = dyn_joint_dict.get('hairsystem')
     
             else:
                 
-                if share_hairsystem:
-                    dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=hairsystem, ctrl_size=1.2)
+                if use_existing:
+                    dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=existing_hairsystem, ctrl_size=1.2)
                     print('Use existing hairsystem')
                     
                 else:
-                    dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict)
-                    print('Create new hairsystem')
+                    
+                    if share_hairsystem:
+                        dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=existing_hairsystem, ctrl_size=1.2)
+                        print('Use existing hairsystem')
+                        
+                    
+                    else:
+                        dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict)
+                        print('Create new hairsystem')
                     
             
             proc_anim_dict = tendril_setup.add_pocedural_wave_anim(dyn_joint_dict, ctrl_size=1)
@@ -353,8 +361,6 @@ class TendrilSetupWidget(QtGui.QWidget):
         output_curve_set.addMembers(output_curve_list)
         root_ctrl_set.addMembers(root_ctrl_list)
         sine_anim_ctrl_set.addMembers(sine_anim_ctrl_list)
-
-       
 
 
 def show():      
@@ -376,10 +382,9 @@ win.show()
 
 win.move(100,150)
 
-
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
-
-node = pm.PyNode('flower_jnt_pos_0')
-pm.select(node)
-win.add_joint_ref_click()
 '''
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
+
+#node = pm.PyNode('flower_jnt_pos_0')
+#pm.select(node)
+#win.add_joint_ref_click()
