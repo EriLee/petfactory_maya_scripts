@@ -59,8 +59,7 @@ def add_pocedural_wave_anim(info_dict, ctrl_size=1):
     
     # add visibility enum attr to root ctrl
     pm.addAttr(root_ctrl, longName='show_proc_anim_ctrl', at="enum", en="off:on", keyable=True)
-
-
+    
     anim_ctrl = pet_ctrl.CreateCtrl.create_circle(name='{0}_sine_anim_ctrl'.format(name), size=ctrl_size)
     
     # lock and hide transformation attrs
@@ -96,7 +95,7 @@ def add_pocedural_wave_anim(info_dict, ctrl_size=1):
      
 
     for index in range(num_jnt):
-        pm.addAttr(anim_ctrl, longName='sine_y_offset{0}'.format(index), keyable=True, defaultValue=index*10)
+        pm.addAttr(anim_ctrl, longName='sine_y_offset{0}'.format(index), keyable=True, defaultValue=index*-10)
     
     
     for index in range(num_jnt):
@@ -104,7 +103,7 @@ def add_pocedural_wave_anim(info_dict, ctrl_size=1):
         
     
     for index in range(num_jnt):
-        pm.addAttr(anim_ctrl, longName='sine_z_offset{0}'.format(index), keyable=True, defaultValue=index*10)
+        pm.addAttr(anim_ctrl, longName='sine_z_offset{0}'.format(index), keyable=True, defaultValue=index*-10)
     
     
     for index in range(num_jnt):
@@ -233,6 +232,12 @@ def add_pocedural_wave_anim(info_dict, ctrl_size=1):
     pm.select(deselect=True)
     bind_jnt_set = pm.sets(name='{0}_bind_joints'.format(name))
     bind_jnt_set.addMembers(bind_jnt_list)
+    
+    
+    
+    #root_ctrl.show_proc_anim_ctrl.set(1)
+    #anim_ctrl.sine_y_global_scale.set(.2)
+    #anim_ctrl.sine_z_global_scale.set(.2)
 
   
     
@@ -482,6 +487,7 @@ def single_setup():
 
 single_setup()
 '''
+
 
 
 '''
