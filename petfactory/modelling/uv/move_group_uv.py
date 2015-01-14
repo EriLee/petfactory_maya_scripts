@@ -55,21 +55,32 @@ class TileGroupUV(QtGui.QWidget):
         super(TileGroupUV, self).__init__(parent)
         self.setWindowFlags(QtCore.Qt.Tool)
         
-        self.resize(300,100)
         self.setWindowTitle("Tile group UV")
-        
-        # main vertical layout
         self.vertical_layout = QtGui.QVBoxLayout()
         self.setLayout(self.vertical_layout)
+        self.resize(250,200)
+        
+        self.tab_widget = QtGui.QTabWidget()
+        self.vertical_layout.addWidget(self.tab_widget)
+        
+        ########################
+        # tab 1
+        ########################
+        
+        tab_1 = QtGui.QWidget()
+        self.tab_widget.addTab(tab_1, "Tile square uv")  
+        
+        # vertical layout
+        tab_1_vertical_layout = QtGui.QVBoxLayout(tab_1) 
         
         # options
-        self.items_per_row_spinbox = TileGroupUV.add_spinbox('Items per row', self.vertical_layout, default=3)
-        self.u_start_spinbox = TileGroupUV.add_spinbox('U start', self.vertical_layout)
-        self.v_start_spinbox = TileGroupUV.add_spinbox('V start', self.vertical_layout)
+        self.items_per_row_spinbox = TileGroupUV.add_spinbox('Items per row', tab_1_vertical_layout, default=3)
+        self.u_start_spinbox = TileGroupUV.add_spinbox('U start', tab_1_vertical_layout, double_spinbox=True)
+        self.v_start_spinbox = TileGroupUV.add_spinbox('V start', tab_1_vertical_layout, double_spinbox=True)
         
         # button
         tile_uvs_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(tile_uvs_horiz_layout)
+        tab_1_vertical_layout.addLayout(tile_uvs_horiz_layout)
         
         self.tile_uvs_button = QtGui.QPushButton('Tile UVs')
         self.tile_uvs_button.setMinimumWidth(100)
@@ -77,6 +88,20 @@ class TileGroupUV(QtGui.QWidget):
         tile_uvs_horiz_layout.addWidget(self.tile_uvs_button)
         self.tile_uvs_button.clicked.connect(self.tile_uvs_button_clicked)
         
+        tab_1_vertical_layout.addStretch()
+      
+        
+        ########################
+        # tab 2
+        ########################
+        
+        # vertical layout
+        
+        tab_2 = QtGui.QWidget()
+        self.tab_widget.addTab(tab_2, "Select UVs")
+        
+        tab_2_vertical_layout = QtGui.QVBoxLayout(tab_2)
+          
         
         # tree view
         self.model = QtGui.QStandardItemModel()
@@ -87,13 +112,13 @@ class TileGroupUV(QtGui.QWidget):
  
         
         self.tree_view.setModel(self.model)
-        self.vertical_layout.addWidget(self.tree_view)
+        tab_2_vertical_layout.addWidget(self.tree_view)
         
         self.model.setHorizontalHeaderLabels(['UV Tiles'])
         
         # button
         select_tile_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(select_tile_horiz_layout)
+        tab_2_vertical_layout.addLayout(select_tile_horiz_layout)
         
         self.select_tile_button = QtGui.QPushButton('Select UVs')
         self.select_tile_button.setMinimumWidth(50)
@@ -101,6 +126,9 @@ class TileGroupUV(QtGui.QWidget):
         select_tile_horiz_layout.addWidget(self.select_tile_button)
         select_tile_horiz_layout.addStretch()
         self.select_tile_button.clicked.connect(self.select_tile_button_clicked)
+        
+        
+        
         
  
         
