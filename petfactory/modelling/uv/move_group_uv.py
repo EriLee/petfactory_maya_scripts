@@ -6,6 +6,9 @@ import pprint
 
 import math
 
+import pymel.core as pm
+import math
+
 def tile_uvs(grp_list, padding):
 
     first_grp = grp_list[0]
@@ -26,20 +29,29 @@ def tile_uvs(grp_list, padding):
     max_v_tiles = math.floor(1.0 / uv_height)
     
     # calculate the resulting width and height (with padding)
-    total_u = max_u_tiles * (uv_width + padding) + padding
-    total_v = max_v_tiles * (uv_height + padding) + padding
+    total_u = max_u_tiles * uv_width
+    total_v = max_v_tiles * uv_height
     
-    #print(total_u)
-    #print(total_v)
+    total_u_with_padding = max_u_tiles * (uv_width + padding) + padding
+    total_v_with_padding  = max_v_tiles * (uv_height + padding) + padding
+ 
+    
+    if total_u_with_padding > 1.0:
+
+        max_padding = math.ceil(1 - total_u) / (max_u_tiles+1)
+        print('The padding forces the v to break, To avoid this use a padding less than: {0}'.format(max_padding))
+        
+    if total_v_with_padding > 1.0:
+
+        max_padding = math.ceil(1 - total_v) / (max_v_tiles+1)
+        print('The padding forces the v to break, To avoid this use a padding less than: {0}'.format(max_padding))
+
     
     if max_u_tiles < 1 or max_v_tiles < 1:
         pm.warning('The UVs plus the padding does not fit within 0-1 uv space')
         return
     
-    #print('width fits {0} time(s)'.format(max_u_tiles))
-    #print('height fits {0} time(s)'.format(max_v_tiles))
-    
-    
+
     u_inc = -1        # local u within a patch
     v_inc = -1        # local v within a patch
     u_offset = -1     # gloabal u
@@ -76,12 +88,13 @@ def tile_uvs(grp_list, padding):
             
         pm.polyEditUV(grp_uvs, u=u+u_offset, v=v+v_offset)
         
-       
 '''
-pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/planes_large_u.mb', f=True)
+#pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/planes_large_u.mb', f=True)
+pm.openFile('/Users/johan/Documents/projects/pojkarna/maya/tendril_anim/scenes/pojk_sc18_120/plane_uv_test.ma', f=True)
 
-padding = 0.05
-grp_list = [pm.PyNode('pPlane{0}'.format(n)) for n in range(25)]
+
+padding = 0.0249
+grp_list = [pm.PyNode('pPlane{0}'.format(n)) for n in range(20)]
 
 pm.select(grp_list)
 tile_uvs(grp_list=grp_list, padding=padding)
