@@ -5,6 +5,34 @@ import pymel.core as pm
 import pprint
 
 
+def tile_uvs(grp_list, padding):
+
+    first_grp = grp_list[0]
+    first_grp_uvs = pm.polyListComponentConversion(first_grp, tuv=True)
+    
+    (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(first_grp_uvs, boundingBox2d=True)
+    
+    uv_width = u_max - u_min
+    uv_height = u_max - u_min
+    
+    
+    num_fit_width = 1.0 / (uv_width + (padding*2))
+    
+    #print('Uv fits {0} time(s)'.format(num_fit_width))
+    
+    for index, grp in enumerate(grp_list):
+        
+        grp_uvs = pm.polyListComponentConversion(grp, tuv=True)
+        (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(grp_uvs, boundingBox2d=True)
+        
+        u = (0-u_min) + (uv_width + padding) * index + padding
+        #v = (0-v_min) + uv_height
+        v = (0-v_min) + padding
+        
+            
+        pm.polyEditUV(grp_uvs, u=u, v=v)
+
+
 def tile_group_uv(grp_list, items_per_row, start_u=0, start_v=0):
     
     tile_list = []
@@ -326,4 +354,18 @@ grp_list = [pm.PyNode('|group{0}'.format(n)) for n in range(15)]
 
 pm.select(grp_list)
 win.tile_uvs_button_clicked()
+'''
+
+
+
+'''
+
+padding = .025
+grp_list = [pm.PyNode('pPlane{0}'.format(n)) for n in range(5)]
+
+
+tile_uvs(grp_list=grp_list, padding=padding)
+
+
+
 '''
