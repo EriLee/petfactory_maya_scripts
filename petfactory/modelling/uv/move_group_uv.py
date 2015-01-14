@@ -95,7 +95,7 @@ class TileGroupUV(QtGui.QWidget):
         select_tile_horiz_layout = QtGui.QHBoxLayout()
         self.vertical_layout.addLayout(select_tile_horiz_layout)
         
-        self.select_tile_button = QtGui.QPushButton('Select')
+        self.select_tile_button = QtGui.QPushButton('Select UVs')
         self.select_tile_button.setMinimumWidth(50)
         
         select_tile_horiz_layout.addWidget(self.select_tile_button)
@@ -116,9 +116,13 @@ class TileGroupUV(QtGui.QWidget):
         u_start = self.u_start_spinbox.value()
         v_start = self.v_start_spinbox.value()
         
-        main_tile_list = tile_group_uv(grp_list=grp_list, items_per_row=items_per_row, start_u=u_start, start_v=v_start)
+        with pm.UndoChunk():
+            main_tile_list = tile_group_uv(grp_list=grp_list, items_per_row=items_per_row, start_u=u_start, start_v=v_start)
         
-
+        
+        # clear the model
+        self.model.removeRows(0, self.model.rowCount())
+        
         for index, tile_list in enumerate(main_tile_list):
               
             item = QtGui.QStandardItem('Patch {0}'.format(index))
@@ -223,7 +227,7 @@ def show():
     win.show()
            
 
-'''
+
 try:
     win.close()
     
@@ -237,7 +241,8 @@ win.show()
 
 win.move(150,250)
 
-        
+
+'''       
 pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/uv_cube.mb', f=True)
 
 grp_list = [pm.PyNode('|group{0}'.format(n)) for n in range(15)]
