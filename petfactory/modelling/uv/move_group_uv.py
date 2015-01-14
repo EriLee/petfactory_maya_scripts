@@ -73,12 +73,29 @@ class TileGroupUV(QtGui.QWidget):
         # vertical layout
         tab_1_vertical_layout = QtGui.QVBoxLayout(tab_1) 
         
+        
+        
+        # resize uv group box
+        self.resize_uv_group_box = QtGui.QGroupBox("Resize uv")
+        tab_1_vertical_layout.addWidget(self.resize_uv_group_box)
+        self.resize_uv_group_box.setCheckable(True)
+        resize_uv_group_box_layout = QtGui.QVBoxLayout()
+        self.resize_uv_group_box.setLayout(resize_uv_group_box_layout) 
+        self.items_per_row_spinbox = TileGroupUV.add_spinbox(label='Items per row', min=1, layout=resize_uv_group_box_layout, default=3)
+
+        
+        
+        
         # options
-        self.items_per_row_spinbox = TileGroupUV.add_spinbox('Items per row', tab_1_vertical_layout, default=3)
-        self.u_start_spinbox = TileGroupUV.add_spinbox('U start', tab_1_vertical_layout, double_spinbox=True)
-        self.v_start_spinbox = TileGroupUV.add_spinbox('V start', tab_1_vertical_layout, double_spinbox=True)
+       
+        self.u_start_spinbox = TileGroupUV.add_spinbox(label='U start', layout=tab_1_vertical_layout, double_spinbox=True)
+        self.v_start_spinbox = TileGroupUV.add_spinbox(label='V start', layout=tab_1_vertical_layout, double_spinbox=True)
+        self.padding_spinbox = TileGroupUV.add_spinbox(label='Padding', layout=tab_1_vertical_layout, double_spinbox=True)
+        
+        
         
         # button
+        tab_1_vertical_layout.addStretch()
         tile_uvs_horiz_layout = QtGui.QHBoxLayout()
         tab_1_vertical_layout.addLayout(tile_uvs_horiz_layout)
         
@@ -88,7 +105,7 @@ class TileGroupUV(QtGui.QWidget):
         tile_uvs_horiz_layout.addWidget(self.tile_uvs_button)
         self.tile_uvs_button.clicked.connect(self.tile_uvs_button_clicked)
         
-        tab_1_vertical_layout.addStretch()
+        
       
         
         ########################
@@ -127,26 +144,56 @@ class TileGroupUV(QtGui.QWidget):
         select_tile_horiz_layout.addStretch()
         self.select_tile_button.clicked.connect(self.select_tile_button_clicked)
         
-        
-        
-        
- 
+
         
     def tile_uvs_button_clicked(self):
+
+        resize_uv = self.resize_uv_group_box.isChecked()
+        u_start = self.u_start_spinbox.value()
+        v_start = self.v_start_spinbox.value()
+        padding = self.padding_spinbox.value()
         
+        
+        
+        # Resize the uvs to fit on the row
+        if resize_uv:
+            
+            items_per_row = self.items_per_row_spinbox.value()
+            
+            print('Yupp', items_per_row, u_start, v_start, padding)
+            return
+            
+            
+            
+            
+            
+            
+        
+        # do not resize, calculate how many shels that can fit per width / height
+        else:
+            
+            print('Not', u_start, v_start, padding)
+            return
+    
+
+
+
+
         grp_list = pm.ls(sl=True)
         
         if not grp_list:
             pm.warning('Nothing is selected!')
             return
             
-        items_per_row = self.items_per_row_spinbox.value()
-        u_start = self.u_start_spinbox.value()
-        v_start = self.v_start_spinbox.value()
+       # make sure that we have selected transforms
         
         with pm.UndoChunk():
             main_tile_list = tile_group_uv(grp_list=grp_list, items_per_row=items_per_row, start_u=u_start, start_v=v_start)
         
+        
+        
+        
+        # populate the model
         
         # clear the model
         self.model.removeRows(0, self.model.rowCount())
@@ -225,10 +272,10 @@ class TileGroupUV(QtGui.QWidget):
         
            
     @staticmethod
-    def add_spinbox(label, parent_layout, min=None, max=None, default=None, double_spinbox=False):
+    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False):
         
         horiz_layout = QtGui.QHBoxLayout()
-        parent_layout.addLayout(horiz_layout)
+        layout.addLayout(horiz_layout)
 
         label = QtGui.QLabel(label)
         label.setMinimumWidth(100)
