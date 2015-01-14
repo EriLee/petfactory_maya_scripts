@@ -4,6 +4,7 @@ import maya.OpenMayaUI as omui
 import pymel.core as pm
 import pprint
 
+import math
 
 def tile_uvs(grp_list, padding):
 
@@ -13,25 +14,79 @@ def tile_uvs(grp_list, padding):
     (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(first_grp_uvs, boundingBox2d=True)
     
     uv_width = u_max - u_min
-    uv_height = u_max - u_min
+    uv_height = v_max - v_min
+    
+    # calculate how manu time the uv + padding fits within a uv patch
+    #max_u_tiles = math.floor(1.0 / (uv_width + (2*padding)))
+    #max_v_tiles = math.floor(1.0 / (uv_height + (2*padding)))
+    
+    # we could calculate how many times the fit within a patch
+    # and give a warning if it is the padding that makes the uv patch not fit
+    max_u_tiles = math.floor(1.0 / uv_width)
+    max_v_tiles = math.floor(1.0 / uv_height)
+    
+    # calculate the resulting width and height (with padding)
+    total_u = max_u_tiles * (uv_width + padding) + padding
+    total_v = max_v_tiles * (uv_height + padding) + padding
+    
+    #print(total_u)
+    #print(total_v)
+    
+    if max_u_tiles < 1 or max_v_tiles < 1:
+        pm.warning('The UVs plus the padding does not fit within 0-1 uv space')
+        return
+    
+    #print('width fits {0} time(s)'.format(max_u_tiles))
+    #print('height fits {0} time(s)'.format(max_v_tiles))
     
     
-    num_fit_width = 1.0 / (uv_width + (padding*2))
-    
-    #print('Uv fits {0} time(s)'.format(num_fit_width))
+    u_inc = -1        # local u within a patch
+    v_inc = -1        # local v within a patch
+    u_offset = -1     # gloabal u
+    v_offset = 0      # gloabal v
     
     for index, grp in enumerate(grp_list):
         
         grp_uvs = pm.polyListComponentConversion(grp, tuv=True)
         (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(grp_uvs, boundingBox2d=True)
         
-        u = (0-u_min) + (uv_width + padding) * index + padding
-        #v = (0-v_min) + uv_height
-        v = (0-v_min) + padding
-        
+        # when we reach max_u_tiles:
+        # reset u_inc and increment v_inc
+        if index % max_u_tiles == 0:
+            v_inc += 1
+            u_inc = 0
             
-        pm.polyEditUV(grp_uvs, u=u, v=v)
+        # we have not reached max_u_tiles:
+        # just increment u_inc
+        else:
+            u_inc += 1
+            
+        # if we have reach the maximum number of uv that fits on one patch:
+        # reset the v_inc, increment the u_offset
+        if index % (max_u_tiles * max_v_tiles) == 0:
+            v_inc = 0
+            u_offset += 1
+            
+        if u_offset == 10:
+            u_offset = 0
+            v_offset += 1
+            
+        u = (0-u_min) + (uv_width + padding) * u_inc + padding
+        v = (0-v_min) + (uv_height + padding) * v_inc + padding
+            
+        pm.polyEditUV(grp_uvs, u=u+u_offset, v=v+v_offset)
+        
+       
+'''
+pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/planes_large_u.mb', f=True)
 
+padding = 0.05
+grp_list = [pm.PyNode('pPlane{0}'.format(n)) for n in range(25)]
+
+pm.select(grp_list)
+tile_uvs(grp_list=grp_list, padding=padding)
+
+'''
 
 def tile_group_uv(grp_list, items_per_row, start_u=0, start_v=0):
     
