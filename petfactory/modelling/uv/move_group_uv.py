@@ -20,6 +20,10 @@ def tile_uvs(grp_list, padding, u_start=0, v_start=0):
     max_u_tiles = int(math.floor(1.0 / uv_width))
     max_v_tiles = int(math.floor(1.0 / uv_height))
     
+    max_u_tiles_with_padding = int(math.floor(1.0 / (uv_width + 2*padding)))
+    max_v_tiles_with_padding = int(math.floor(1.0 / (uv_height+ 2*padding)))
+    
+    
     # calculate the resulting width and height (with padding)
     total_u = max_u_tiles * uv_width
     total_v = max_v_tiles * uv_height
@@ -43,14 +47,14 @@ def tile_uvs(grp_list, padding, u_start=0, v_start=0):
     if total_u_with_padding > 1.0:
         padding_warning = True
         max_u_padding = (1.0 - total_u) / (max_u_tiles + 1)
-        max_u_tiles -= 1
+        max_u_tiles = max_u_tiles_with_padding
         
     # if the padding will cause the uv shells to fall outside valid range (0-1)
     # subtract decrement the max_u_tiles
     if total_v_with_padding > 1.0:
         padding_warning = True
         max_v_padding = (1.0 - total_v) / (max_v_tiles + 1)
-        max_v_tiles -= 1
+        max_v_tiles = max_v_tiles_with_padding
         
     # get the maximum padding valid to use
     max_padding = max_u_padding if max_u_padding < max_v_padding else max_v_padding
@@ -70,7 +74,6 @@ def tile_uvs(grp_list, padding, u_start=0, v_start=0):
 
     u_inc = -1        # local u within a patch
     v_inc = -1        # local v within a patch
-    #u_offset = -1     # gloabal u
     u_offset = -1 + u_start
     v_offset = 0      # gloabal v
     tiles_per_patch = max_u_tiles * max_v_tiles
@@ -115,16 +118,15 @@ def tile_uvs(grp_list, padding, u_start=0, v_start=0):
     return tile_list
         
 '''
-pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/planes_to_big.mb', f=True)
-#pm.openFile('/Users/johan/Documents/projects/pojkarna/maya/tendril_anim/scenes/pojk_sc18_120/plane_uv_test.ma', f=True)
+pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/planes_u4_v6.mb', f=True)
 
-
-padding = .049
+padding = 0.02
 grp_list = [pm.PyNode('pPlane{0}'.format(n)) for n in range(20)]
 
 pm.select(grp_list)
 tile_uvs(grp_list=grp_list, padding=padding)
 '''
+
 def tile_group_uv(grp_list, items_per_row, start_u=0, start_v=0):
     
     tile_list = []
