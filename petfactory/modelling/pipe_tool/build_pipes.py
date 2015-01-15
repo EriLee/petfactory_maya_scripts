@@ -372,6 +372,13 @@ class Curve_spreadsheet(QtGui.QWidget):
         self.build_button.setMinimumWidth(100)
         self.build_button_horiz_layout.addWidget(self.build_button)
         self.build_button.clicked.connect(self.on_build_click)
+        
+    # stop keypress event propagation
+    def keyPressEvent(self, event):
+        pass
+        #if event.key() == QtCore.Qt.Key_Escape:
+            #print('ESCAPE')
+          
 
     def model_changed(self, top_left, bottom_right):
 
@@ -590,6 +597,7 @@ win = Curve_spreadsheet(parent=maya_main_window())
 win.move(100, 210)
 win.show()
 '''
+
 
 
 
