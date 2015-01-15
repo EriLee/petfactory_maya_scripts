@@ -3,13 +3,9 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 import pprint
-
 import math
 
-import pymel.core as pm
-import math
-
-def tile_uvs(grp_list, padding):
+def tile_uvs(grp_list, padding, u_start=0, v_start=0):
 
     first_grp = grp_list[0]
     first_grp_uvs = pm.polyListComponentConversion(first_grp, tuv=True)
@@ -19,14 +15,10 @@ def tile_uvs(grp_list, padding):
     uv_width = u_max - u_min
     uv_height = v_max - v_min
     
-    # calculate how manu time the uv + padding fits within a uv patch
-    #max_u_tiles = math.floor(1.0 / (uv_width + (2*padding)))
-    #max_v_tiles = math.floor(1.0 / (uv_height + (2*padding)))
-    
     # we could calculate how many times the fit within a patch
     # and give a warning if it is the padding that makes the uv patch not fit
-    max_u_tiles = math.floor(1.0 / uv_width)
-    max_v_tiles = math.floor(1.0 / uv_height)
+    max_u_tiles = int(math.floor(1.0 / uv_width))
+    max_v_tiles = int(math.floor(1.0 / uv_height))
     
     # calculate the resulting width and height (with padding)
     total_u = max_u_tiles * uv_width
@@ -34,33 +26,58 @@ def tile_uvs(grp_list, padding):
     
     total_u_with_padding = max_u_tiles * (uv_width + padding) + padding
     total_v_with_padding  = max_v_tiles * (uv_height + padding) + padding
- 
-    
-    if total_u_with_padding > 1.0:
 
-        max_padding = math.ceil(1 - total_u) / (max_u_tiles+1)
-        print('The padding forces the v to break, To avoid this use a padding less than: {0}'.format(max_padding))
-        
-    if total_v_with_padding > 1.0:
-
-        max_padding = math.ceil(1 - total_v) / (max_v_tiles+1)
-        print('The padding forces the v to break, To avoid this use a padding less than: {0}'.format(max_padding))
-
-    
     if max_u_tiles < 1 or max_v_tiles < 1:
-        pm.warning('The UVs plus the padding does not fit within 0-1 uv space')
-        return
+        pm.warning('The UVs does not fit within 0-1 uv space')
+        return None
     
+    # Check if the padding will cause the uvs to be outside range 0-1
+    # if they do, inform the user which amount of padding that will let
+    # the maximum number of uv shells per patch 
+    padding_warning = False
+    max_u_padding = 1.0
+    max_v_padding = 1.0
+    
+    # if the padding will cause the uv shells to fall outside valid range (0-1)
+    # subtract decrement the max_u_tiles
+    if total_u_with_padding > 1.0:
+        padding_warning = True
+        max_u_padding = (1.0 - total_u) / (max_u_tiles + 1)
+        max_u_tiles -= 1
+        
+    # if the padding will cause the uv shells to fall outside valid range (0-1)
+    # subtract decrement the max_u_tiles
+    if total_v_with_padding > 1.0:
+        padding_warning = True
+        max_v_padding = (1.0 - total_v) / (max_v_tiles + 1)
+        max_v_tiles -= 1
+        
+    # get the maximum padding valid to use
+    max_padding = max_u_padding if max_u_padding < max_v_padding else max_v_padding
+    
+    # check if the uvs plus the padding fits inside valid range
+    if max_u_tiles == 0 or max_v_tiles == 0:
+        pm.warning('The uvs plus the padding falls outside of valid range. Please use a padding less than: {:.3f}'.format(max_padding))
+        return None
+    
+    # in form the user that the padding used forces one tile to be pushed to the next patch
+    if padding_warning:
+        pm.warning('Please use a padding less than: {:.3f}'.format(max_padding))
+    
+    # Clamp u at 10, the u should never be greater than 10 (Mari style :)
+    if u_start > 10:
+        u_start = 10
 
     u_inc = -1        # local u within a patch
     v_inc = -1        # local v within a patch
-    u_offset = -1     # gloabal u
+    #u_offset = -1     # gloabal u
+    u_offset = -1 + u_start
     v_offset = 0      # gloabal v
+    tiles_per_patch = max_u_tiles * max_v_tiles
+    
+    tile_list = []
     
     for index, grp in enumerate(grp_list):
-        
-        grp_uvs = pm.polyListComponentConversion(grp, tuv=True)
-        (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(grp_uvs, boundingBox2d=True)
         
         # when we reach max_u_tiles:
         # reset u_inc and increment v_inc
@@ -75,32 +92,39 @@ def tile_uvs(grp_list, padding):
             
         # if we have reach the maximum number of uv that fits on one patch:
         # reset the v_inc, increment the u_offset
-        if index % (max_u_tiles * max_v_tiles) == 0:
+        if index % tiles_per_patch == 0:
             v_inc = 0
             u_offset += 1
+            temp_list = []
+            tile_list.append(temp_list)
             
         if u_offset == 10:
             u_offset = 0
             v_offset += 1
             
+        grp_uvs = pm.polyListComponentConversion(grp, tuv=True)
+        (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(grp_uvs, boundingBox2d=True)
+        temp_list.append({grp.shortName():grp_uvs})
+        
+        
         u = (0-u_min) + (uv_width + padding) * u_inc + padding
         v = (0-v_min) + (uv_height + padding) * v_inc + padding
             
-        pm.polyEditUV(grp_uvs, u=u+u_offset, v=v+v_offset)
+        pm.polyEditUV(grp_uvs, u=u+u_offset, v=v+v_offset+v_start)
+        
+    return tile_list
         
 '''
-#pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/planes_large_u.mb', f=True)
-pm.openFile('/Users/johan/Documents/projects/pojkarna/maya/tendril_anim/scenes/pojk_sc18_120/plane_uv_test.ma', f=True)
+pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/planes_to_big.mb', f=True)
+#pm.openFile('/Users/johan/Documents/projects/pojkarna/maya/tendril_anim/scenes/pojk_sc18_120/plane_uv_test.ma', f=True)
 
 
-padding = 0.0249
+padding = .049
 grp_list = [pm.PyNode('pPlane{0}'.format(n)) for n in range(20)]
 
 pm.select(grp_list)
 tile_uvs(grp_list=grp_list, padding=padding)
-
 '''
-
 def tile_group_uv(grp_list, items_per_row, start_u=0, start_v=0):
     
     tile_list = []
@@ -175,18 +199,16 @@ class TileGroupUV(QtGui.QWidget):
         self.resize_uv_group_box = QtGui.QGroupBox("Resize uv")
         tab_1_vertical_layout.addWidget(self.resize_uv_group_box)
         self.resize_uv_group_box.setCheckable(True)
+        self.resize_uv_group_box.setChecked(False)
         resize_uv_group_box_layout = QtGui.QVBoxLayout()
         self.resize_uv_group_box.setLayout(resize_uv_group_box_layout) 
         self.items_per_row_spinbox = TileGroupUV.add_spinbox(label='Items per row', min=1, layout=resize_uv_group_box_layout, default=3)
 
         
-        
-        
         # options
-       
-        self.u_start_spinbox = TileGroupUV.add_spinbox(label='U start', layout=tab_1_vertical_layout, double_spinbox=True)
-        self.v_start_spinbox = TileGroupUV.add_spinbox(label='V start', layout=tab_1_vertical_layout, double_spinbox=True)
-        self.padding_spinbox = TileGroupUV.add_spinbox(label='Padding', layout=tab_1_vertical_layout, double_spinbox=True)
+        self.u_start_spinbox = TileGroupUV.add_spinbox(label='U start', layout=tab_1_vertical_layout, min=-99, max=10, default=0)
+        self.v_start_spinbox = TileGroupUV.add_spinbox(label='V start', layout=tab_1_vertical_layout, min=-99)
+        self.padding_spinbox = TileGroupUV.add_spinbox(label='Padding', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4)
         
         
         
@@ -256,24 +278,19 @@ class TileGroupUV(QtGui.QWidget):
             
             items_per_row = self.items_per_row_spinbox.value()
             
-            print('Yupp', items_per_row, u_start, v_start, padding)
+            #print('Yupp', items_per_row, u_start, v_start, padding)
+            pm.warning('Resize uv not implemented yet')
+            self.resize_uv_group_box.setChecked(False)
             return
             
             
-            
-            
-            
-            
-        
+        '''
         # do not resize, calculate how many shels that can fit per width / height
         else:
             
             print('Not', u_start, v_start, padding)
             return
-    
-
-
-
+        '''
 
         grp_list = pm.ls(sl=True)
         
@@ -284,13 +301,11 @@ class TileGroupUV(QtGui.QWidget):
        # make sure that we have selected transforms
         
         with pm.UndoChunk():
-            main_tile_list = tile_group_uv(grp_list=grp_list, items_per_row=items_per_row, start_u=u_start, start_v=v_start)
+            #main_tile_list = tile_group_uv(grp_list=grp_list, items_per_row=items_per_row, start_u=u_start, start_v=v_start)
+            main_tile_list = tile_uvs(grp_list=grp_list, padding=padding, u_start=u_start, v_start=v_start)
         
-        
-        
-        
+
         # populate the model
-        
         # clear the model
         self.model.removeRows(0, self.model.rowCount())
         
@@ -368,7 +383,7 @@ class TileGroupUV(QtGui.QWidget):
         
            
     @staticmethod
-    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False):
+    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False, decimals=3):
         
         horiz_layout = QtGui.QHBoxLayout()
         layout.addLayout(horiz_layout)
@@ -378,13 +393,18 @@ class TileGroupUV(QtGui.QWidget):
         horiz_layout.addWidget(label)
         
         horiz_layout.addStretch()
-         
-        spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
+        
+        if double_spinbox:
+            spinbox = QtGui.QDoubleSpinBox()
+            spinbox.setDecimals(decimals)
+
+        else:
+            spinbox = QtGui.QSpinBox()
         
         if min:
             spinbox.setMinimum(min)
         if max:
-            spinbox.setMinimum(max)
+            spinbox.setMaximum(max)
         if default:
             spinbox.setValue(default)
               
@@ -398,7 +418,7 @@ def show():
     win.show()
            
 
-
+'''
 try:
     win.close()
     
@@ -411,6 +431,7 @@ win.show()
 #win.add_joint_ref_click()
 
 win.move(150,250)
+'''
 
 
 '''       
@@ -437,3 +458,8 @@ tile_uvs(grp_list=grp_list, padding=padding)
 
 
 '''
+
+
+
+
+
