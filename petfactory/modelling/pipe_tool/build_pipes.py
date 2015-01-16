@@ -538,8 +538,36 @@ class Curve_spreadsheet(QtGui.QWidget):
         
         #print(corner_radius_list, axis_divisions, length_divisions, radial_divisions, fitting_mesh_name, crv_name, pipe_radius)
         
-        
+        # should probably make sure that it actually is a curve...
         crv = pm.PyNode(crv_name)
+
+
+
+        # store the last used curve radius as attr
+        # get the length of the radius list, then delete the attr
+        old_list_length = 0
+        if pm.attributeQuery('radius_list_length', node=crv, exists=True):
+            old_list_length = int(crv.radius_list_length.get())
+            pm.deleteAttr(crv, at='radius_list_length')
+
+        # remove old radius
+        for index in range(old_list_length):
+            try:
+                pm.deleteAttr(crv, at='radius_{0}'.format(index))
+            except RuntimeError:
+                pm.warning('could not delete the radius attr!')
+            
+
+        # add the length of the radius list
+        pm.addAttr(crv, longName='radius_list_length'.format(index), at='long', keyable=True, defaultValue=len(corner_radius_list))
+
+        # add the corner radisu attr
+        for index, radius in enumerate(corner_radius_list):
+                    pm.addAttr(crv, longName='radius_{0}'.format(index), keyable=True, defaultValue=radius)
+                    
+
+
+
         
         cv_list = crv.getCVs(space='world')
         
