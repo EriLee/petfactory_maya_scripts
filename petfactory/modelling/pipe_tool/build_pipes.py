@@ -11,6 +11,32 @@ reload(pet_extrude)
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/empty_scene.mb', f=True)
 
+def add_radius_list_to_crv(crv, corner_radius_list):
+
+        # store the last used curve radius as attr
+        # get the length of the radius list, then delete the attr
+        old_list_length = 0
+        if pm.attributeQuery('corner_radius_list_length', node=crv, exists=True):
+            old_list_length = int(crv.corner_radius_list_length.get())
+            pm.deleteAttr(crv, at='corner_radius_list_length')
+
+        # remove old radius
+        for index in range(old_list_length):
+            try:
+                pm.deleteAttr(crv, at='radius_{0}'.format(index))
+            except RuntimeError:
+                pm.warning('could not delete the radius attr!')
+            
+
+        # add the length of the radius list
+        pm.addAttr(crv, longName='corner_radius_list_length', at='long', keyable=True, defaultValue=len(corner_radius_list))
+
+        # add the corner radisu attr
+        for index, radius in enumerate(corner_radius_list):
+                    pm.addAttr(crv, longName='radius_{0}'.format(index), keyable=True, defaultValue=radius)
+                    
+
+
 def loc(p, size=.2):
     loc = pm.spaceLocator()
     loc.localScale.set((size,size,size))
@@ -541,34 +567,8 @@ class Curve_spreadsheet(QtGui.QWidget):
         # should probably make sure that it actually is a curve...
         crv = pm.PyNode(crv_name)
 
+        add_radius_list_to_crv(crv, corner_radius_list)
 
-
-        # store the last used curve radius as attr
-        # get the length of the radius list, then delete the attr
-        old_list_length = 0
-        if pm.attributeQuery('radius_list_length', node=crv, exists=True):
-            old_list_length = int(crv.radius_list_length.get())
-            pm.deleteAttr(crv, at='radius_list_length')
-
-        # remove old radius
-        for index in range(old_list_length):
-            try:
-                pm.deleteAttr(crv, at='radius_{0}'.format(index))
-            except RuntimeError:
-                pm.warning('could not delete the radius attr!')
-            
-
-        # add the length of the radius list
-        pm.addAttr(crv, longName='radius_list_length'.format(index), at='long', keyable=True, defaultValue=len(corner_radius_list))
-
-        # add the corner radisu attr
-        for index, radius in enumerate(corner_radius_list):
-                    pm.addAttr(crv, longName='radius_{0}'.format(index), keyable=True, defaultValue=radius)
-                    
-
-
-
-        
         cv_list = crv.getCVs(space='world')
         
         # get the matrix list
