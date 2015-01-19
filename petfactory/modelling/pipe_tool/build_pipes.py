@@ -13,28 +13,19 @@ reload(pet_extrude)
 
 def add_radius_list_to_crv(crv, corner_radius_list):
 
-        # store the last used curve radius as attr
-        # get the length of the radius list, then delete the attr
-        old_list_length = 0
-        if pm.attributeQuery('corner_radius_list_length', node=crv, exists=True):
-            old_list_length = int(crv.corner_radius_list_length.get())
-            pm.deleteAttr(crv, at='corner_radius_list_length')
+	num_attr = len(corner_radius_list)
 
-        # remove old radius
-        for index in range(old_list_length):
-            try:
-                pm.deleteAttr(crv, at='radius_{0}'.format(index))
-            except RuntimeError:
-                pm.warning('could not delete the radius attr!')
-            
+	if num_attr < 1:
+		return
 
-        # add the length of the radius list
-        pm.addAttr(crv, longName='corner_radius_list_length', at='long', keyable=True, defaultValue=len(corner_radius_list))
+	if pm.attributeQuery('corner_radius_list', node=crv, exists=True):
+		crv.deleteAttr('corner_radius_list')
 
-        # add the corner radisu attr
-        for index, radius in enumerate(corner_radius_list):
-                    pm.addAttr(crv, longName='radius_{0}'.format(index), keyable=True, defaultValue=radius)
-                    
+	pm.addAttr(crv, longName='corner_radius_list', at='compound', nc=num_attr)
+
+	for index, radius in enumerate(corner_radius_list):
+		crv.addAttr('radius_{0}'.format(index), at='float', parent='corner_radius_list', dv=radius)
+
 
 
 def loc(p, size=.2):
