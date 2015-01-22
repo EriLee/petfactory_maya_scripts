@@ -299,6 +299,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         
         # if we are to use an existing hairsystem, make sure that is is valid, if so get a ref to it
         if use_existing:
+            
             existing_hairsystem_name = self.existing_hairsystem_line_edit.text()
             
             try:
@@ -364,17 +365,16 @@ class TendrilSetupWidget(QtGui.QWidget):
                 
                 if existing_hairsystem is None:
                     dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2)
+                    print('Create new hairsystem')
                     
                 else:
+                    #print('use existing, index'.format(index))
                     dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2, existing_hairsystem=existing_hairsystem)
-                    
-                
-                
-                existing_hairsystem = dyn_joint_dict.get('hairsystem')
     
             else:
                 
                 if use_existing:
+                    #print('use existing, index'.format(index))
                     dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=existing_hairsystem, ctrl_size=1.2)
                     print('Use existing hairsystem')
                     
@@ -382,7 +382,7 @@ class TendrilSetupWidget(QtGui.QWidget):
                     
                     if share_hairsystem:
                         dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=existing_hairsystem, ctrl_size=1.2)
-                        print('Use existing hairsystem')
+                        print('Share hairsystem')
                         
                     
                     else:
@@ -408,7 +408,7 @@ def show():
     
 
 
-'''
+
 try:
     win.close()
     
@@ -420,7 +420,7 @@ win.show()
 
 
 win.move(100,150)
-'''
+
 
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
 
