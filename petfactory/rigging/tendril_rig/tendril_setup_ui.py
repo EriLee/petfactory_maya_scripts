@@ -19,15 +19,34 @@ class TendrilSetupWidget(QtGui.QWidget):
         
         self.resize(300,100)
         self.setWindowTitle("Tendril Setup")
-        
-        
+
+ 
         # layout
-        self.vertical_layout = QtGui.QVBoxLayout()
-        self.setLayout(self.vertical_layout)
+        vertical_layout = QtGui.QVBoxLayout()
+        self.setLayout(vertical_layout)
         
+        tab_widget = QtGui.QTabWidget()
+        vertical_layout.addWidget(tab_widget)
+        
+
+        
+        # tab widgts and layout
+        # tab 1        
+        tab_1 = QtGui.QWidget()
+        tab_widget.addTab(tab_1, "Setup rig")  
+        tab_1_vertical_layout = QtGui.QVBoxLayout(tab_1)
+        
+        # tab 1  
+        tab_2 = QtGui.QWidget()
+        tab_widget.addTab(tab_2, "Edit")  
+        tab_2_vertical_layout = QtGui.QVBoxLayout(tab_2) 
+
+
+
+
         # tendril name
         self.name_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(self.name_horiz_layout)
+        tab_1_vertical_layout.addLayout(self.name_horiz_layout)
         
         self.name_label = QtGui.QLabel('Tendril Name')
         self.name_horiz_layout.addWidget(self.name_label)
@@ -40,23 +59,17 @@ class TendrilSetupWidget(QtGui.QWidget):
         
         self.tree_view = QtGui.QTreeView()
         self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.ContiguousSelection)
-        #self.tree_view.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
         self.tree_view.setAlternatingRowColors(True)
  
-        
+
         self.tree_view.setModel(self.model)
-        self.vertical_layout.addWidget(self.tree_view)
+        tab_1_vertical_layout.addWidget(self.tree_view)
         
         self.model.setHorizontalHeaderLabels(['Ref Group', 'Name'])
-        
-        #header = self.tree_view.header()
-        #header.setResizeMode(QtGui.QHeaderView.Stretch)
-        #header.setVisible(False)
-        
+                
         # add joint ref
         self.joint_ref_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(self.joint_ref_horiz_layout)        
+        tab_1_vertical_layout.addLayout(self.joint_ref_horiz_layout)        
         
         # add
         self.add_joint_ref_button = QtGui.QPushButton(' + ')
@@ -76,12 +89,11 @@ class TendrilSetupWidget(QtGui.QWidget):
         self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
         self.joint_ref_horiz_layout.addStretch()
         
-        
-        
+
         
         # hairsystem group box
         hairsystem_group_box = QtGui.QGroupBox("Hairsystem")
-        self.vertical_layout.addWidget(hairsystem_group_box)
+        tab_1_vertical_layout.addWidget(hairsystem_group_box)
         hairsystem_group_vert_layout = QtGui.QVBoxLayout()
         hairsystem_group_box.setLayout(hairsystem_group_vert_layout)
         
@@ -112,6 +124,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         self.existing_hairsystem_line_edit = QtGui.QLineEdit()
         use_existing_hairsystem_horiz_layout.addWidget(self.existing_hairsystem_line_edit)
 
+
         
         # share hairsystem
         # create new hairsystem group box
@@ -121,6 +134,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         self.create_new_group_box.setCheckable(True)
         create_new_group_box_vert_layout = QtGui.QVBoxLayout()
         self.create_new_group_box.setLayout(create_new_group_box_vert_layout)
+        
         
         
         
@@ -143,7 +157,7 @@ class TendrilSetupWidget(QtGui.QWidget):
 
         # Setup
         self.setup_horiz_layout = QtGui.QHBoxLayout()
-        self.vertical_layout.addLayout(self.setup_horiz_layout)
+        tab_1_vertical_layout.addLayout(self.setup_horiz_layout)
         
         self.setup_button = QtGui.QPushButton('Setup Tendrils')
         self.setup_button.setMinimumWidth(125)
@@ -151,8 +165,33 @@ class TendrilSetupWidget(QtGui.QWidget):
         self.setup_horiz_layout.addWidget(self.setup_button)
         self.setup_button.clicked.connect(self.setup_tendril)
         
-     
+        
+        
+        # edit ui
+        copy_cluster_position_button = QtGui.QPushButton('Copy cluster pos')
+        copy_cluster_position_button.clicked.connect(self.copy_clust_pos_clicked)
+        tab_2_vertical_layout.addWidget(copy_cluster_position_button)
+        
+        tab_2_vertical_layout.addStretch()
+        
+        
 
+     
+    def copy_clust_pos_clicked(self):
+        
+        sel_list = pm.ls(sl=True)
+
+        if len(sel_list) < 2:
+            pm.warning('Please select two transform nodes')
+            
+        source_node_list = get_child_nodes(root_node=sel_list[0])
+        target_node_list = get_child_nodes(root_node=sel_list[1])
+        
+        
+        for index, source_node in enumerate(source_node_list):
+            target_node_list[index].translate.set(source_node.translate.get())
+            
+                
     def add_joint_ref_click(self):
         
 
@@ -381,8 +420,8 @@ win.show()
 
 
 win.move(100,150)
-
 '''
+
 #pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
 
 #node = pm.PyNode('flower_jnt_pos_0')

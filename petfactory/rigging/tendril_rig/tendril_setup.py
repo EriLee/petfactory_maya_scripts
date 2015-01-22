@@ -464,6 +464,35 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
         
         
 
+def get_child_nodes(root_node, nodetype=pm.nodetypes.ClusterHandle, get_parent=True):
+    
+    if not isinstance(root_node, pm.nodetypes.Transform):
+        pm.warning('Please select a Transform node!')
+        return 
+
+    node_list = pm.listRelatives(root_node, children=True, allDescendents=True)
+    
+    ret_list = []
+    for node in node_list:
+        
+        if isinstance(node, nodetype):
+            
+            if get_parent:
+                
+                parent = node.getParent()
+                if parent is not None:
+                    ret_list.append(parent)
+                    
+                else:
+                    pm.warning('parent of {0} not found, skip to next node'.format(node))     
+                                    
+            else:
+                ret_list.append(node)
+                
+    return(ret_list)
+    
+    
+
 # manual setup
 '''
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
