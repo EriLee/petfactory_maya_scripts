@@ -184,8 +184,8 @@ class TendrilSetupWidget(QtGui.QWidget):
         if len(sel_list) < 2:
             pm.warning('Please select two transform nodes')
             
-        source_node_list = get_child_nodes(root_node=sel_list[0])
-        target_node_list = get_child_nodes(root_node=sel_list[1])
+        source_node_list = tendril_setup.get_child_nodes(root_node=sel_list[0])
+        target_node_list = tendril_setup.get_child_nodes(root_node=sel_list[1])
         
         
         for index, source_node in enumerate(source_node_list):
