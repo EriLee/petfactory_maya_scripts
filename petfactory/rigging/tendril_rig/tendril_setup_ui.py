@@ -4,6 +4,7 @@ import maya.OpenMayaUI as omui
 import pymel.core as pm
 
 import petfactory.rigging.tendril_rig.tendril_setup as tendril_setup
+import petfactory.rigging.ribbon.create_ribbon as create_ribbon
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -172,6 +173,11 @@ class TendrilSetupWidget(QtGui.QWidget):
         copy_cluster_position_button.clicked.connect(self.copy_clust_pos_clicked)
         tab_2_vertical_layout.addWidget(copy_cluster_position_button)
         
+        add_ribbon_button = QtGui.QPushButton('Add ribbon button')
+        add_ribbon_button.clicked.connect(self.create_ribbon_for_joint_set)
+        tab_2_vertical_layout.addWidget(add_ribbon_button)
+
+
         tab_2_vertical_layout.addStretch()
         
         
@@ -191,7 +197,35 @@ class TendrilSetupWidget(QtGui.QWidget):
         for index, source_node in enumerate(source_node_list):
             target_node_list[index].translate.set(source_node.translate.get())
             
-                
+    #pm.openFile('/Users/johan/Documents/Projects/python_dev/scenes/jnt_ref.mb', f=True)
+
+def create_ribbon_for_joint_set(self):
+    
+    width = 35
+    depth = 1
+    num_u_patches = 10
+    num_follicles = 50
+    
+    sel_list = pm.ls(sl=True)
+    
+    for sel in sel_list:
+        member_list = sel.members()
+        member_list.sort()
+        
+        # build the ribbon surface
+        ribbon = create_ribbon.build_ribbon(width=width, depth=depth, num_u_patches=num_u_patches)
+        
+        # add follicles
+        follicle_dict = create_ribbon.add_follicles(nurbs_surface=ribbon, num_follicles=num_follicles)
+        
+        # add joint to the follicles
+        create_ribbon.add_follicle_joints(follicle_dict.get('follicle_transform_list'))
+        
+        #skinMethod 0 : linear, 1 : dual quaternion
+        # ignoreHierarchy : Disregard the place of the joints in the skeleton hierarchy
+        pm.skinCluster(member_list, ribbon, skinMethod=1, ignoreHierarchy=True)
+
+
     def add_joint_ref_click(self):
         
 
