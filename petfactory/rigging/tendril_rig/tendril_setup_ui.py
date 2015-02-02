@@ -53,20 +53,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         
         self.name_line_edit = QtGui.QLineEdit()
         self.name_horiz_layout.addWidget(self.name_line_edit)
-         
-        
-        
-        self.num_joints_spinbox = TendrilSetupWidget.add_spinbox(label='Number of joints', min=3, max=99, layout=tab_1_vertical_layout, default=10)
-        self.tendril_length_spinbox = TendrilSetupWidget.add_spinbox(label='Tendril length', min=.1, max=9999, layout=tab_1_vertical_layout, default=35, double_spinbox=True)
-        
-        
-        # comment out the treeview (which btw really should be a tableView)
-        # i will nstead duild along the positive x-axis based on some spinBoxes
-        # liwe length, and num joints
-        # since it makes more sense to build it flat on the x, z plane
-        # makes it easier to add the ribbon etc
-        
-        '''
+          
         # tree view
         self.model = QtGui.QStandardItemModel()
         
@@ -102,7 +89,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         self.joint_ref_horiz_layout.addWidget(self.joint_ref_label)
         self.joint_ref_horiz_layout.addStretch()
         
-        '''
+
         
         # hairsystem group box
         hairsystem_group_box = QtGui.QGroupBox("Hairsystem")
@@ -188,33 +175,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         tab_2_vertical_layout.addStretch()
         
         
-    
-    @staticmethod
-    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False):
-        
-        horiz_layout = QtGui.QHBoxLayout()
-        layout.addLayout(horiz_layout)
 
-        label = QtGui.QLabel(label)
-        label.setMinimumWidth(100)
-        horiz_layout.addWidget(label)
-        
-        horiz_layout.addStretch()
-         
-        spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
-        if min:
-            spinbox.setMinimum(min)
-        if max:
-            spinbox.setMaximum(max)
-        if default:
-            spinbox.setValue(default)
-            
-        horiz_layout.addWidget(spinbox)
-        spinbox.setMinimumWidth(100)
-        
-        return spinbox
-        
-        
      
     def copy_clust_pos_clicked(self):
         
@@ -230,8 +191,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         for index, source_node in enumerate(source_node_list):
             target_node_list[index].translate.set(source_node.translate.get())
             
-    # comment out methos related to the ref treeview
-    '''
+                
     def add_joint_ref_click(self):
         
 
@@ -270,7 +230,6 @@ class TendrilSetupWidget(QtGui.QWidget):
         
         for row in row_list:
             self.model.removeRow(row)
-    '''
             
             
     def hairsystem_groupbox_clicked(self):
@@ -308,33 +267,17 @@ class TendrilSetupWidget(QtGui.QWidget):
             
             
     
-     
+    
+    
        
     def setup_tendril(self):
         
-        num_joints = self.num_joints_spinbox.value()
-        tendril_length = self.tendril_length_spinbox.value()
-        
-        # should check if the name is valid...
-        # a string of spaces is possiple to enter: '       ' but not valid
-        # can not start with a number... regex here ...
-        name = self.name_line_edit.text()
-        if name == '':
-            pm.warning('Please specify a name!')
-            return
-                        
-        
-        print(num_joints,tendril_length, name)
-        
-        
-        return
         ref_grp_list = []
         
         root = self.model.invisibleRootItem()
         num_children = self.model.rowCount()
         
         
-        '''
         # the ref grp
         if num_children < 1:
             pm.warning('No joint ref are available in the treeview!')
@@ -347,7 +290,7 @@ class TendrilSetupWidget(QtGui.QWidget):
             if child.checkState():
                 
                 ref_grp_list.append(child.text())
-        '''       
+                
                 
         # hairsystem        
         use_existing = self.use_existing_group_box.isChecked()
@@ -382,7 +325,10 @@ class TendrilSetupWidget(QtGui.QWidget):
                 
                 
                 
-        
+        # get the name
+        name = self.name_line_edit.text()
+        if name == '':
+            name = 'tendril'
         
         ref_list = []
         name_list = []
@@ -469,7 +415,7 @@ def show():
     
 
 
-
+'''
 try:
     win.close()
     
@@ -482,7 +428,7 @@ win.show()
 
 win.move(100,150)
 
-'''
+
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_design_v005_script_base.mb', f=True)
 
 node = pm.PyNode('rig_ref')
