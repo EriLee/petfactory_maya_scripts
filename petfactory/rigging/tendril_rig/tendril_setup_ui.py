@@ -269,6 +269,10 @@ class TendrilSetupWidget(QtGui.QWidget):
             pm.addAttr(sel, longName='show_ribbon_joints', at="enum", en="off:on", keyable=True)
             sel.show_ribbon_joints >> follicle_grp.visibility
 
+            mesh_grp = pm.group(em=True, n='mesh_grp')
+            pm.parent(mesh_grp, main_grp)
+            pm.parent(dup_mesh, mesh_grp)
+
 
         '''
         sel_list = pm.ls(sl=True)
