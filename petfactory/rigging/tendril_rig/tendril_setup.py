@@ -241,6 +241,13 @@ def add_pocedural_wave_anim(info_dict, ctrl_size=1):
     #anim_ctrl.sine_z_global_scale.set(.2)
     
     ret_dict['sine_anim_ctrl'] = anim_ctrl
+
+
+    pm.addAttr(root_ctrl, longName="bind_jnt_grp", attributeType="message")
+    main_bind_jnt_grp.message >> root_ctrl.bind_jnt_grp
+
+
+
     return ret_dict
 
   
@@ -460,6 +467,10 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
     ret_dict['joint_list'] = jnt_list
     ret_dict['name'] = name
     
+    
+    pm.addAttr(root_ctrl, longName="main_grp", attributeType="message")
+    root_main_grp.message >> root_ctrl.main_grp
+        
     return ret_dict
         
         
