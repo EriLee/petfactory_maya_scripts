@@ -72,10 +72,14 @@ def add_follicles(nurbs_surface, num_follicles=10, direction='u', name='ribbon')
 
 def add_follicle_joints(follicle_transform_list):
 
+    jnt_list = []
     for index, follicle_transform in enumerate(follicle_transform_list):
         jnt = pm.createNode('joint', ss=True, n='follicle_jnt_{0}'.format(index))
         pm.parent(jnt, follicle_transform)
         jnt.translate.set(0,0,0)
+        jnt_list.append(jnt)
+
+    return jnt_list
     
 
 

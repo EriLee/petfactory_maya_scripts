@@ -198,11 +198,52 @@ class TendrilSetupWidget(QtGui.QWidget):
 
     def create_ribbon_for_joint_set(self):
         
+        sel_list = pm.ls(sl=True)
+
         width = 35
         depth = 1
         num_u_patches = 10
         num_follicles = 50
-        
+
+        for sel in sel_list:
+
+            main_grp = sel.main_grp.get()
+            bind_jnt_grp = sel.bind_jnt_grp.get()
+
+
+            jnt_list = bind_jnt_grp.listRelatives(allDescendents=True, type='joint')
+            print(jnt_list)
+            jnt_list.sort()
+
+
+             # build the ribbon surface
+            ribbon = create_ribbon.build_ribbon(width=width, depth=depth, num_u_patches=num_u_patches)
+            
+            # add follicles
+            follicle_dict = create_ribbon.add_follicles(nurbs_surface=ribbon, num_follicles=num_follicles)
+            
+            # add joint to the follicles
+            follicle_jnt_list = create_ribbon.add_follicle_joints(follicle_dict.get('follicle_transform_list'))
+            
+            #skinMethod 0 : linear, 1 : dual quaternion
+            # ignoreHierarchy : Disregard the place of the joints in the skeleton hierarchy
+            pm.skinCluster(jnt_list, ribbon, skinMethod=1, ignoreHierarchy=True)
+
+            # duplicate the mesh
+            mesh = pm.PyNode('tendril_design_mesh')
+            dup_mesh = pm.duplicate(mesh)[0]
+
+            # bind to follicle joints
+            pm.skinCluster(follicle_jnt_list, dup_mesh, skinMethod=1, ignoreHierarchy=True)
+            
+            # organize
+            ribbon_grp = pm.group(em=True, n='ribbon_grp')
+            pm.parent(ribbon, ribbon_grp)
+            pm.parent(follicle_dict.get('follicle_grp'), ribbon_grp)
+            pm.parent(ribbon_grp, main_grp)
+
+
+        '''
         sel_list = pm.ls(sl=True)
         
         for sel in sel_list:
@@ -221,6 +262,9 @@ class TendrilSetupWidget(QtGui.QWidget):
             #skinMethod 0 : linear, 1 : dual quaternion
             # ignoreHierarchy : Disregard the place of the joints in the skeleton hierarchy
             pm.skinCluster(member_list, ribbon, skinMethod=1, ignoreHierarchy=True)
+
+        '''
+        
 
 
     def add_joint_ref_click(self):
