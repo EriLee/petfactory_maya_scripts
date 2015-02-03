@@ -173,6 +173,9 @@ class TendrilSetupWidget(QtGui.QWidget):
         copy_cluster_position_button.clicked.connect(self.copy_clust_pos_clicked)
         tab_2_vertical_layout.addWidget(copy_cluster_position_button)
         
+        self.bind_mesh_line_edit = QtGui.QLineEdit()
+        tab_2_vertical_layout.addWidget(self.bind_mesh_line_edit )
+
         add_ribbon_button = QtGui.QPushButton('Add ribbon button')
         add_ribbon_button.clicked.connect(self.create_ribbon_for_joint_set)
         tab_2_vertical_layout.addWidget(add_ribbon_button)
@@ -198,6 +201,27 @@ class TendrilSetupWidget(QtGui.QWidget):
 
     def create_ribbon_for_joint_set(self):
         
+        mesh_name = self.bind_mesh_line_edit.text()
+
+        # get a ref to the node
+        try:
+            mesh_node = pm.PyNode(mesh_name)
+            
+        except pm.general.MayaNodeError as e:
+            pm.warning('Not a valid node!', e)
+            return
+            
+        # check that it is a mesh
+        try:
+            if not isinstance(mesh_node.getShape(), pm.nodetypes.Mesh):
+                pm.warning('Not a valid node!', e)
+                return
+                
+        except AttributeError as e:
+            pm.warning('Not a valid node!', e)
+            return
+
+
         sel_list = pm.ls(sl=True)
 
         width = 35
@@ -212,16 +236,17 @@ class TendrilSetupWidget(QtGui.QWidget):
 
 
             jnt_list = bind_jnt_grp.listRelatives(allDescendents=True, type='joint')
-            print(jnt_list)
             jnt_list.sort()
 
 
              # build the ribbon surface
             ribbon = create_ribbon.build_ribbon(width=width, depth=depth, num_u_patches=num_u_patches)
+            ribbon.setAttr('visibility', 0, lock=True)
             
             # add follicles
             follicle_dict = create_ribbon.add_follicles(nurbs_surface=ribbon, num_follicles=num_follicles)
-            
+            follicle_grp = follicle_dict.get('follicle_grp')
+
             # add joint to the follicles
             follicle_jnt_list = create_ribbon.add_follicle_joints(follicle_dict.get('follicle_transform_list'))
             
@@ -230,8 +255,7 @@ class TendrilSetupWidget(QtGui.QWidget):
             pm.skinCluster(jnt_list, ribbon, skinMethod=1, ignoreHierarchy=True)
 
             # duplicate the mesh
-            mesh = pm.PyNode('tendril_design_mesh')
-            dup_mesh = pm.duplicate(mesh)[0]
+            dup_mesh = pm.duplicate(mesh_node)[0]
 
             # bind to follicle joints
             pm.skinCluster(follicle_jnt_list, dup_mesh, skinMethod=1, ignoreHierarchy=True)
@@ -239,8 +263,11 @@ class TendrilSetupWidget(QtGui.QWidget):
             # organize
             ribbon_grp = pm.group(em=True, n='ribbon_grp')
             pm.parent(ribbon, ribbon_grp)
-            pm.parent(follicle_dict.get('follicle_grp'), ribbon_grp)
+            pm.parent(follicle_grp, ribbon_grp)
             pm.parent(ribbon_grp, main_grp)
+
+            pm.addAttr(sel, longName='show_ribbon_joints', at="enum", en="off:on", keyable=True)
+            sel.show_ribbon_joints >> follicle_grp.visibility
 
 
         '''
