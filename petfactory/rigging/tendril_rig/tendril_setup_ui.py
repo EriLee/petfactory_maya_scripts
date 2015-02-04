@@ -257,7 +257,7 @@ class TendrilSetupWidget(QtGui.QWidget):
         width = 35
         depth = 1
         num_u_patches = 10
-        num_follicles = 50
+        num_follicles = 145
 
         for sel in sel_list:
 
