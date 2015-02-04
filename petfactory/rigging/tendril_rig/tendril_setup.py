@@ -470,11 +470,17 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
     
     pm.addAttr(root_ctrl, longName="main_grp", attributeType="message")
     root_main_grp.message >> root_ctrl.main_grp
+
+    pm.addAttr(root_ctrl, longName="cluster_grp", attributeType="message")
+    cluster_grp.message >> root_ctrl.cluster_grp
+
+
+    
         
     return ret_dict
         
         
-
+'''
 def get_child_nodes(root_node, nodetype=pm.nodetypes.ClusterHandle, get_parent=True):
     
     if not isinstance(root_node, pm.nodetypes.Transform):
@@ -501,8 +507,7 @@ def get_child_nodes(root_node, nodetype=pm.nodetypes.ClusterHandle, get_parent=T
                 ret_list.append(node)
                 
     return(ret_list)
-    
-    
+'''
 
 # manual setup
 '''

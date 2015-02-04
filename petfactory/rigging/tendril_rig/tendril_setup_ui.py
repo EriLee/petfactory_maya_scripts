@@ -190,14 +190,44 @@ class TendrilSetupWidget(QtGui.QWidget):
         sel_list = pm.ls(sl=True)
 
         if len(sel_list) < 2:
-            pm.warning('Please select two transform nodes')
+            pm.warning('Please select at least two transform nodes')
+            return
             
-        source_node_list = tendril_setup.get_child_nodes(root_node=sel_list[0])
-        target_node_list = tendril_setup.get_child_nodes(root_node=sel_list[1])
-        
-        
-        for index, source_node in enumerate(source_node_list):
-            target_node_list[index].translate.set(source_node.translate.get())
+        try:
+            source_cluster_grp = sel_list[0].cluster_grp.get()
+            source_cluster_list = source_cluster_grp.listRelatives(ad=True, type='clusterHandle')
+            source_cluster_list.sort()
+
+        except AttributeError as e:
+            print(e)
+            return
+
+
+        num_sel = len(sel_list)
+        index = 1
+        while index < num_sel:
+
+            try:
+                target_cluster_grp = sel_list[index].cluster_grp.get()
+                target_cluster_list = target_cluster_grp.listRelatives(ad=True, type='clusterHandle')
+                target_cluster_list.sort()
+
+            except AttributeError as e:
+                print(e)
+                continue
+
+            #print(target_cluster_list)
+            index += 1
+
+            if len(target_cluster_list) != len(source_cluster_list):
+                pm.warning('the cluster list is not of the same length, skipping')
+                continue
+
+            # the cluster lists are a list of the clusterHandleShapes, we call getParent 
+            # method on them to be able set the translation
+            for cls_index, source_cluster in enumerate(source_cluster_list):
+                target_cluster_list[cls_index].getParent().translate.set(source_cluster.getParent().translate.get())
+
 
     def create_ribbon_for_joint_set(self):
         
