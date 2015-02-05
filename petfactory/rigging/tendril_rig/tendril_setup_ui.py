@@ -341,6 +341,8 @@ class TendrilSetupWidget(QtGui.QWidget):
             pm.parent(dup_mesh, mesh_grp)
 
 
+        print('{0} follicles / joints were created.'.format(num_follicles))
+        
         '''
         sel_list = pm.ls(sl=True)
         
@@ -588,7 +590,7 @@ def show():
     
 
 
-
+'''
 try:
     win.close()
     
@@ -600,6 +602,9 @@ win.show()
 
 
 win.move(100,150)
+'''
+
+
 
 '''
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_design_v005_script_base.mb', f=True)
