@@ -176,6 +176,8 @@ class TendrilSetupWidget(QtGui.QWidget):
         self.bind_mesh_line_edit = QtGui.QLineEdit()
         tab_2_vertical_layout.addWidget(self.bind_mesh_line_edit )
 
+        self.num_follicles_per_patch_spinbox = TendrilSetupWidget.add_spinbox('Num follicles per patch', layout=tab_2_vertical_layout, min=2 )
+        
         add_ribbon_button = QtGui.QPushButton('Add ribbon button')
         add_ribbon_button.clicked.connect(self.create_ribbon_for_joint_set)
         tab_2_vertical_layout.addWidget(add_ribbon_button)
@@ -183,7 +185,33 @@ class TendrilSetupWidget(QtGui.QWidget):
         tab_2_vertical_layout.addStretch()
         
         
+    
+    @staticmethod
+    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False):
+        
+        horiz_layout = QtGui.QHBoxLayout()
+        layout.addLayout(horiz_layout)
 
+        label = QtGui.QLabel(label)
+        label.setMinimumWidth(100)
+        horiz_layout.addWidget(label)
+        
+        horiz_layout.addStretch()
+         
+        spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
+        if min:
+            spinbox.setMinimum(min)
+        if max:
+            spinbox.setMaximum(max)
+        if default:
+            spinbox.setValue(default)
+            
+        horiz_layout.addWidget(spinbox)
+        spinbox.setMinimumWidth(100)
+        
+        return spinbox
+        
+        
      
     def copy_clust_pos_clicked(self):
         
@@ -231,6 +259,7 @@ class TendrilSetupWidget(QtGui.QWidget):
 
     def create_ribbon_for_joint_set(self):
         
+
         mesh_name = self.bind_mesh_line_edit.text()
 
         # get a ref to the node
@@ -253,11 +282,19 @@ class TendrilSetupWidget(QtGui.QWidget):
 
 
         sel_list = pm.ls(sl=True)
-
+        
         width = 35
         depth = 1
+        # note that u pathces is really 9, it is ten divisions in u that equal 9 patches.
+        # var name is a bit cpunter intuative ...
         num_u_patches = 10
-        num_follicles = 145
+        #num_u_patches = 5
+        num_follicles_per_u_patch = self.num_follicles_per_patch_spinbox.value()
+        
+        num_follicles = ((num_follicles_per_u_patch-1) * (num_u_patches-1)) + 1
+        #num_follicles = 145
+        #print(num_follicles)
+        
 
         for sel in sel_list:
 
@@ -551,7 +588,7 @@ def show():
     
 
 
-'''
+
 try:
     win.close()
     
@@ -564,7 +601,7 @@ win.show()
 
 win.move(100,150)
 
-
+'''
 pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_design_v005_script_base.mb', f=True)
 
 node = pm.PyNode('rig_ref')
