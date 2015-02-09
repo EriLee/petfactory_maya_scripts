@@ -66,21 +66,22 @@ def set_uvs(node_list):
     #print(max_num_items_u, max_num_items_v)
     
     
-    left_edge_offset = 0.015
-    bottom_edge_offset = 0.015
+    spacing = 0.1
+    left_edge_offset = 0.1
+    bottom_edge_offset = 0.1
     
     
     num_items = len(node_list)
     
     # hardcoded values, change later
-    num_items_u = 5
-    num_items_v = 5
+    num_items_u = 3
+    num_items_v = 3
     num_items_per_patch = num_items_u * num_items_v
     start_index = 0
     num_random = None
     
-    #diff_u = (1.0 / num_items_u) -uv_width
-    #diff_v = (1.0 / num_items_v) -uv_height
+    diff_u = (1.0 / num_items_u) -uv_width
+    diff_v = (1.0 / num_items_v) -uv_height
     
     
     udim_dict = udim_from_index(num_items_u=num_items_u, num_items_v=num_items_v, num_items=num_items, start_index=start_index, num_random=num_random)
@@ -96,14 +97,26 @@ def set_uvs(node_list):
     index = 0
     for udim in sorted(udim_dict):
                 
-        for uv in udim_dict[udim]:
+        for local_index, uv in enumerate(udim_dict[udim]):
             
+            # calculate the spacing by removing the diff value (the difference between the
+            # grid size and the actual uv shell) from a spacing value of our choice. This result is then
+            # multiplied with the result of the calculation to find which "u column" we are in and which
+            # " v row" we are in
+            
+            # this works when no random value is used, but does not work when we use a random value, 
+            # maybe look at the actual uv values stored in the uv list to determine the the row and col
+            
+            #spacing_u = (spacing - diff_u) * (local_index % num_items_u)
+            #spacing_v = (spacing - diff_v) * (local_index / num_items_v)
+                        
             node_uvs = pm.polyListComponentConversion(node_list[index], tuv=True)
             (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(node_uvs, boundingBox2d=True)
-            
+                        
+            #u = -u_min + uv[0] + spacing_u + left_edge_offset
+            #v = -v_min + uv[1] + spacing_v + bottom_edge_offset
             u = -u_min + uv[0] + left_edge_offset
             v = -v_min + uv[1] + bottom_edge_offset
-            
             pm.polyEditUV(node_uvs, u=u, v=v)
                                    
             index += 1
@@ -139,7 +152,7 @@ pprint.pprint(uv_dict)
 '''
 
 pm.openFile("/Users/johan/Documents/Projects/python_dev/scenes/plane_grid.mb", f=True)
-node_list = [pm.PyNode('pPlane{0}'.format(n+1)) for n in range(50)]
+node_list = [pm.PyNode('pPlane{0}'.format(n+1)) for n in range(128)]
 pm.select(node_list)
 
 set_uvs(node_list)
