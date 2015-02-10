@@ -20,13 +20,15 @@ def add_hud(node, attr, action):
 node = pm.PyNode('hairSystemShape1')
 
 hud_list = []
-hud_list.append(add_hud(node, 'damp', print_attr))
-hud_list.append(add_hud(node, 'mass', print_attr))
 hud_list.append(add_hud(node, 'startCurveAttract', print_attr))
+hud_list.append(add_hud(node, 'damp', print_attr))
+hud_list.append(add_hud(node, 'stretchDamp', print_attr))
 
 
-for hud in hud_list:
-    pm.headsUpDisplay(hud, rem=True)
+def remove_hud(hud_list):
+    for hud in hud_list:
+        pm.headsUpDisplay(hud, rem=True)
+        
     
 
-
+remove_hud(hud_list)
