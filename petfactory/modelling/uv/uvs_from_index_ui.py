@@ -51,6 +51,17 @@ class TileGroupUV(QtGui.QWidget):
         self.left_offset_spinbox = TileGroupUV.add_spinbox(label='Left offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4)
         self.bottom_offset_spinbox = TileGroupUV.add_spinbox(label='Bottom offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4)
         
+        # use existing hairsystem group box
+        self.randomize_groupbox = QtGui.QGroupBox("Randomize")
+        
+        tab_1_vertical_layout.addWidget(self.randomize_groupbox)
+        self.randomize_groupbox.setCheckable(True)
+        self.randomize_groupbox.setChecked(False)
+        randomize_groupbox_vert_layout = QtGui.QVBoxLayout()
+        self.randomize_groupbox.setLayout(randomize_groupbox_vert_layout)
+        
+        self.max_random_index_spinbox = TileGroupUV.add_spinbox(label='Max random index', layout=randomize_groupbox_vert_layout, min=1, max=999, default=16)
+  
         
         
         # button
