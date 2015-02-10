@@ -118,11 +118,16 @@ class TileGroupUV(QtGui.QWidget):
         
     def tile_uvs_button_clicked(self):
 
-        #u_start = self.u_start_spinbox.value()
-        #v_start = self.v_start_spinbox.value()
+        num_u = self.num_u_spinbox.value()
+        num_v = self.num_v_spinbox.value()
+        left_offset = self.left_offset_spinbox.value()
+        bottom_offset = self.bottom_offset_spinbox.value()
+        randomize = self.randomize_groupbox.isChecked()
+        max_random_index = self.max_random_index_spinbox.value()
         spacing = self.spacing_spinbox.value()
 
-          
+        print(num_u, num_v, left_offset, bottom_offset, randomize, max_random_index, spacing)
+        
         grp_list = pm.ls(sl=True)
         
         if not grp_list:
