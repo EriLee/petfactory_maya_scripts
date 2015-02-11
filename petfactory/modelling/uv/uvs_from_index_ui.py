@@ -89,15 +89,20 @@ def set_uvs(node_list, num_items_u, num_items_v, spacing=0, left_offset=0, botto
     udim_dict = udim_from_index(num_items_u=num_items_u, num_items_v=num_items_v, num_items=num_items, start_index=start_index, num_random=num_random)
     #pprint.pprint(uv_dict)
     
+    ret_dict = {}
     # step through the udim dict. The dict has the udim as keys with a list of the uv coords as value
     # note that the uvs are returned in the uv list as a uniform grid.
     index = 0
     for udim in sorted(udim_dict):
         
+        uv_list = []
+        ret_dict[udim] = uv_list
+        
         # iterate through the uv_list
         for uv in (udim_dict[udim]):
                                     
             node_uvs = pm.polyListComponentConversion(node_list[index], tuv=True)
+            uv_list.append(node_uvs)
             (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(node_uvs, boundingBox2d=True)
             
             # the uv are stored in a uniform grid, i.e. if we have 4 shells on one u row
@@ -122,6 +127,9 @@ def set_uvs(node_list, num_items_u, num_items_v, spacing=0, left_offset=0, botto
             pm.polyEditUV(node_uvs, u=u, v=v)
                                    
             index += 1
+        
+        
+    return ret_dict
 
 
 
@@ -248,10 +256,10 @@ class TileGroupUV(QtGui.QWidget):
         
         if randomize:
             num_random = self.max_random_index_spinbox.value()
-            print(num_random)
+            #print(num_random)
             
 
-        print(num_items_u, num_items_v, left_offset, bottom_offset, randomize, num_random, spacing, start_index)
+        #print(num_items_u, num_items_v, left_offset, bottom_offset, randomize, num_random, spacing, start_index)
         
         node_list = pm.ls(sl=True)
         
@@ -264,48 +272,43 @@ class TileGroupUV(QtGui.QWidget):
         with pm.UndoChunk():
             
             # node_list, num_items_u, num_items_v, spacing=0, left_offset=0, bottom_offset=0, start_index=0, num_random=None):
-            set_uvs(node_list, num_items_u, num_items_v, spacing, left_offset, bottom_offset, start_index, num_random)
+            uv_dict = set_uvs(node_list, num_items_u, num_items_v, spacing, left_offset, bottom_offset, start_index, num_random)
              
-        '''
+             
         # populate the model
         # clear the model
         self.model.removeRows(0, self.model.rowCount())
         
-        for index, tile_list in enumerate(main_tile_list):
-              
-            item = QtGui.QStandardItem('Patch {0}'.format(index))
-            main_uv_list = []
+        #pprint.pprint(uv_dict)
+        
+        for udim, uv_list in uv_dict.iteritems():
+            
+            #print(udim)
+            #print(uv_list)
+            
+            item = QtGui.QStandardItem(str(udim))
             
             # set flags
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             
-
-            for row_index, tile_dict in enumerate(tile_list):
+            uvs_on_udim_list = []
+            for index, uv in enumerate(uv_list):
                 
-                
-                grp_name = tile_dict.keys()[0]
-                uv_map = tile_dict.get(grp_name)
-                main_uv_list.extend(uv_map)
-                
+                grp_name = str(uv)
+                uvs_on_udim_list.extend(uv)
                 
                 child_item = QtGui.QStandardItem(grp_name)
-                
-                
-                custom_data = MyCustomType(uv_map)
-                
+                custom_data = MyCustomType(uv)                
                 child_item.setData(custom_data, QtCore.Qt.UserRole + 1)
 
-                item.setChild(row_index, 0, child_item)
-
-
-        
-            custom_data = MyCustomType(main_uv_list)
+                item.setChild(index, 0, child_item)                         
+            
+            
+            custom_data = MyCustomType(uvs_on_udim_list)
             item.setData(custom_data, QtCore.Qt.UserRole + 1)
             
             self.model.appendRow(item)
-        '''
 
-            
     
     def select_tile_button_clicked(self):
         
@@ -340,7 +343,7 @@ class TileGroupUV(QtGui.QWidget):
                         sel_uv_list.append(data.data)
                         #sel_uv_list.append(child.text())
                 
-        pprint.pprint(sel_uv_list)
+        #pprint.pprint(sel_uv_list)
         pm.select(deselect=True)
         pm.select(sel_uv_list, add=True)
         
@@ -381,6 +384,7 @@ def show():
     win.show()
            
 
+'''
 try:
     win.close()
     
@@ -393,8 +397,9 @@ win.show()
 
 win.move(150,250)
 
+'''
             
-pm.openFile("/Users/johan/Documents/Projects/python_dev/scenes/plane_grid.mb", f=True)
+#pm.openFile("/Users/johan/Documents/Projects/python_dev/scenes/plane_grid.mb", f=True)
 #node_list = [pm.PyNode('pPlane{0}'.format(n+1)) for n in range(128)]
 #pm.select(node_list)
 
