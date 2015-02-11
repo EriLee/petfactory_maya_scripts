@@ -3,7 +3,126 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 import pprint
-import math
+import math, random
+
+#import petfactory.util.dev as dev
+
+'''
+Let the user worry about the padding etc?
+just tile the number of specified shells?
+
+add a pre estimate number of shells in u and v?
+and margin estimate.
+
+'''
+
+
+# delete transforms
+#dev.del_transform()
+
+def udim_from_index(num_items_u, num_items_v, num_items, start_index=0, num_random=None):
+    '''returns a dict with the UDIM number as key and a list of uv values as the value.
+    Note that the uvs are in the form of a grid in that we can only pass in integers that 
+    defines the number of items in each direction (u and v) and based on those numbers it
+    creates a "grid" with the first value at uv (0,0).'''
+
+    num_items_per_patch = num_items_u * num_items_v
+    max_patches_u = 10
+
+    udim_dict = {}
+    for index in range(start_index, (num_items + start_index)):
+        
+        # if num_random is specified (int) set the index to be a random
+        # number between start_index -> start_index + num_random
+        if num_random is not None:
+            index = start_index + random.randint(0, (num_random-1))
+            
+        # local uv (to each patch)
+        local_u = (index % num_items_u) / float(num_items_u)
+        local_v = ((index / num_items_u) % num_items_v) / float(num_items_v)
+        
+        #print(local_u, local_v)
+        
+        # patch index
+        patch_index_u = (index / num_items_per_patch) % max_patches_u
+        patch_index_v = index / (num_items_per_patch * max_patches_u)
+        
+        u = patch_index_u + local_u
+        v = patch_index_v + local_v
+                
+        udim = 1000 + (patch_index_u + 1) + (max_patches_u * patch_index_v)
+
+        # create a key in the dict using the udim
+        if udim not in udim_dict:
+            udim_dict[udim] = []
+
+        udim_dict[udim].append((u,v))
+                
+    return udim_dict
+
+
+def set_uvs(node_list, num_items_u, num_items_v, spacing=0, left_offset=0, bottom_offset=0, start_index=0, num_random=None):
+    
+    (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(pm.polyListComponentConversion(node_list[0], tuv=True), boundingBox2d=True)
+    uv_width = u_max - u_min
+    uv_height = v_max - v_min
+    
+    max_num_items_u = int(math.floor(1.0 / uv_width))
+    max_num_items_v = int(math.floor(1.0 / uv_height))
+    #print(max_num_items_u, max_num_items_v)
+    
+    
+    #spacing = .03
+    #left_offset = .02
+    #bottom_offset = .02
+    
+    
+    num_items = len(node_list)
+    
+    # hardcoded values, change later
+    #num_items_u = 4
+    #num_items_v = 4
+    num_items_per_patch = num_items_u * num_items_v
+    #start_index = 0
+    #num_random = None
+    
+    udim_dict = udim_from_index(num_items_u=num_items_u, num_items_v=num_items_v, num_items=num_items, start_index=start_index, num_random=num_random)
+    #pprint.pprint(uv_dict)
+    
+    # step through the udim dict. The dict has the udim as keys with a list of the uv coords as value
+    # note that the uvs are returned in the uv list as a uniform grid.
+    index = 0
+    for udim in sorted(udim_dict):
+        
+        # iterate through the uv_list
+        for uv in (udim_dict[udim]):
+                                    
+            node_uvs = pm.polyListComponentConversion(node_list[index], tuv=True)
+            (u_min, u_max), (v_min, v_max) = pm.polyEvaluate(node_uvs, boundingBox2d=True)
+            
+            # the uv are stored in a uniform grid, i.e. if we have 4 shells on one u row
+            # the uv stored in the uv list will be [0, 25, 5, 75] on patch u 0 v 0
+            # on patch u1 v0 it will be [1.0, 1.25, 1.5, 1.75]
+            # here get the remainder of the uv to get the "fraction part"
+            # this will later be used to multiply with the combined width all the uv shells per row.
+            percent_u = uv[0] % 1
+            percent_v = uv[1] % 1
+            
+            # here we get the patch "index" i.e. which patch we are on. this will be used to offset the
+            # local uv shell to the global "position"
+            patch_u = math.floor(uv[0] / 1.0)
+            patch_v = math.floor(uv[1] / 1.0)
+            
+            spacing_u = spacing * (percent_u * num_items_u)
+            spacing_v = spacing * (percent_v * num_items_v)
+            
+            u = -u_min + percent_u * (uv_width * num_items_u) + patch_u + spacing_u + left_offset
+            v = -v_min + percent_v * (uv_height * num_items_v) + patch_v + spacing_v + bottom_offset
+            
+            pm.polyEditUV(node_uvs, u=u, v=v)
+                                   
+            index += 1
+
 
 
 def maya_main_window():
@@ -118,31 +237,35 @@ class TileGroupUV(QtGui.QWidget):
         
     def tile_uvs_button_clicked(self):
 
-        num_u = self.num_u_spinbox.value()
-        num_v = self.num_v_spinbox.value()
+        num_items_u = self.num_u_spinbox.value()
+        num_items_v = self.num_v_spinbox.value()
         left_offset = self.left_offset_spinbox.value()
         bottom_offset = self.bottom_offset_spinbox.value()
         randomize = self.randomize_groupbox.isChecked()
-        max_random_index = self.max_random_index_spinbox.value()
+        num_random = None
         spacing = self.spacing_spinbox.value()
+        start_index = 0
+        
+        if randomize:
+            num_random = self.max_random_index_spinbox.value()
+            print(num_random)
+            
 
-        print(num_u, num_v, left_offset, bottom_offset, randomize, max_random_index, spacing)
+        print(num_items_u, num_items_v, left_offset, bottom_offset, randomize, num_random, spacing, start_index)
         
-        grp_list = pm.ls(sl=True)
+        node_list = pm.ls(sl=True)
         
-        if not grp_list:
+        if not node_list:
             pm.warning('Nothing is selected!')
             return
             
        # make sure that we have selected transforms
         
         with pm.UndoChunk():
-            #main_tile_list = tile_group_uv(grp_list=grp_list, items_per_row=items_per_row, start_u=u_start, start_v=v_start)
-            #main_tile_list = tile_uvs(grp_list=grp_list, padding=padding, u_start=u_start, v_start=v_start)
-            pass
             
-        
-        
+            # node_list, num_items_u, num_items_v, spacing=0, left_offset=0, bottom_offset=0, start_index=0, num_random=None):
+            set_uvs(node_list, num_items_u, num_items_v, spacing, left_offset, bottom_offset, start_index, num_random)
+             
         '''
         # populate the model
         # clear the model
@@ -270,5 +393,12 @@ win.show()
 
 win.move(150,250)
 
+            
+pm.openFile("/Users/johan/Documents/Projects/python_dev/scenes/plane_grid.mb", f=True)
+#node_list = [pm.PyNode('pPlane{0}'.format(n+1)) for n in range(128)]
+#pm.select(node_list)
 
+
+
+       
 
