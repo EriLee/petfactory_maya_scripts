@@ -174,9 +174,9 @@ class TileGroupUV(QtGui.QWidget):
         # options
         self.num_u_spinbox = TileGroupUV.add_spinbox(label='U Num items', layout=tab_1_vertical_layout, min=1, max=999, default=4)
         self.num_v_spinbox = TileGroupUV.add_spinbox(label='V Num items', layout=tab_1_vertical_layout, min=1, max=999, default=4)
-        self.spacing_spinbox = TileGroupUV.add_spinbox(label='Spacing', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4)
-        self.left_offset_spinbox = TileGroupUV.add_spinbox(label='Left offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4)
-        self.bottom_offset_spinbox = TileGroupUV.add_spinbox(label='Bottom offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4)
+        self.spacing_spinbox = TileGroupUV.add_spinbox(label='Spacing', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4, single_step=0.01)
+        self.left_offset_spinbox = TileGroupUV.add_spinbox(label='Left offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4, single_step=0.01)
+        self.bottom_offset_spinbox = TileGroupUV.add_spinbox(label='Bottom offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4, single_step=0.01)
         
         # use existing hairsystem group box
         self.randomize_groupbox = QtGui.QGroupBox("Randomize")
@@ -349,7 +349,7 @@ class TileGroupUV(QtGui.QWidget):
         
            
     @staticmethod
-    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False, decimals=3):
+    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False, decimals=3, single_step=1):
         
         horiz_layout = QtGui.QHBoxLayout()
         layout.addLayout(horiz_layout)
@@ -363,6 +363,7 @@ class TileGroupUV(QtGui.QWidget):
         if double_spinbox:
             spinbox = QtGui.QDoubleSpinBox()
             spinbox.setDecimals(decimals)
+            spinbox.setSingleStep(single_step)
 
         else:
             spinbox = QtGui.QSpinBox()
