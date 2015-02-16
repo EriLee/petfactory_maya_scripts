@@ -174,6 +174,7 @@ class TileGroupUV(QtGui.QWidget):
         # options
         self.num_u_spinbox = TileGroupUV.add_spinbox(label='U Num items', layout=tab_1_vertical_layout, min=1, max=999, default=4)
         self.num_v_spinbox = TileGroupUV.add_spinbox(label='V Num items', layout=tab_1_vertical_layout, min=1, max=999, default=4)
+        self.start_index_spinbox = TileGroupUV.add_spinbox(label='Start index', layout=tab_1_vertical_layout, min=0, max=999)
         self.spacing_spinbox = TileGroupUV.add_spinbox(label='Spacing', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4, single_step=0.01)
         self.left_offset_spinbox = TileGroupUV.add_spinbox(label='Left offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4, single_step=0.01)
         self.bottom_offset_spinbox = TileGroupUV.add_spinbox(label='Bottom offset', layout=tab_1_vertical_layout, double_spinbox=True, decimals=4, single_step=0.01)
@@ -247,13 +248,13 @@ class TileGroupUV(QtGui.QWidget):
 
         num_items_u = self.num_u_spinbox.value()
         num_items_v = self.num_v_spinbox.value()
+        start_index = self.start_index_spinbox.value()
         left_offset = self.left_offset_spinbox.value()
         bottom_offset = self.bottom_offset_spinbox.value()
         randomize = self.randomize_groupbox.isChecked()
         num_random = None
         spacing = self.spacing_spinbox.value()
-        start_index = 0
-        
+
         if randomize:
             num_random = self.max_random_index_spinbox.value()
             #print(num_random)
@@ -397,7 +398,6 @@ win.show()
 
 
 win.move(150,250)
-
 '''
             
 #pm.openFile("/Users/johan/Documents/Projects/python_dev/scenes/plane_grid.mb", f=True)
