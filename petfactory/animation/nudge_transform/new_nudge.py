@@ -3,10 +3,83 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 from functools import partial
 
+
+'''
+
+TODO
+
+add large value, small value inc spinbox
+use shift as modifier to use the large values
+
+
+
+'''
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
 
+
+class RadioButtonGroup(QtGui.QGroupBox):
+    
+    def __init__(self, title, items):   
+       
+        super(RadioButtonGroup, self).__init__()
+        
+        self.setTitle(title)
+        self.curr_sel_index = 0
+        
+        hbox = QtGui.QHBoxLayout()
+        
+        self.radiobutton_list = []
+        for item in items:
+            rb = QtGui.QRadioButton(item)
+            self.radiobutton_list.append(rb)
+            hbox.addWidget(rb)
+            
+            
+        self.radiobutton_list[self.curr_sel_index].setChecked(True)
+
+        hbox.addStretch(1)
+        self.setLayout(hbox)
+    
+    def get_selected_text(self):
+        
+        for rb in self.radiobutton_list:
+            
+            if rb.isChecked():
+                return(rb.text())
+    
+    def get_selected_index(self):
+        
+        for index, rb in enumerate(self.radiobutton_list):
+            
+            if rb.isChecked():
+                return(index)
+                
+    
+    def inc_selection(self):
+        self.radiobutton_list[self.curr_sel_index].setChecked(False)
+        
+        
+        self.curr_sel_index += 1
+        if self.curr_sel_index > len(self.radiobutton_list)-1:
+            self.curr_sel_index = 0
+        
+        self.radiobutton_list[self.curr_sel_index].setChecked(True)
+        
+
+    def dec_selection(self):
+        self.radiobutton_list[self.curr_sel_index].setChecked(False)
+        
+        
+        self.curr_sel_index -= 1
+        if self.curr_sel_index < 0:
+            self.curr_sel_index = len(self.radiobutton_list)-1
+        
+        self.radiobutton_list[self.curr_sel_index].setChecked(True)    
+        
+        
+        
 
 # the main ui class  
 class NudgeTransform(QtGui.QWidget):
@@ -26,15 +99,21 @@ class NudgeTransform(QtGui.QWidget):
         vertical_layout = QtGui.QVBoxLayout()
         self.setLayout(vertical_layout)
         
-        self.right_button = QtGui.QPushButton('>>')
-        self.right_button.clicked.connect(partial(self.on_click, 'right'))
-        vertical_layout.addWidget(self.right_button)
-        self.button_dict[QtCore.Qt.Key_Right] = self.right_button
+        self.axis_radiogroup = RadioButtonGroup(title='Axis', items=['x', 'y', 'z'])
+        vertical_layout.addWidget(self.axis_radiogroup)
         
-        self.left_button = QtGui.QPushButton('<<')
-        self.left_button.clicked.connect(partial(self.on_click, 'left'))
+        
+        vertical_layout.addStretch()
+        
+        self.right_button = QtGui.QPushButton(' + ')
+        self.right_button.clicked.connect(partial(self.on_click, 'up'))
+        vertical_layout.addWidget(self.right_button)
+        self.button_dict[QtCore.Qt.Key_Up] = self.right_button
+        
+        self.left_button = QtGui.QPushButton(' - ')
+        self.left_button.clicked.connect(partial(self.on_click, 'down'))
         vertical_layout.addWidget(self.left_button)
-        self.button_dict[QtCore.Qt.Key_Left] = self.left_button
+        self.button_dict[QtCore.Qt.Key_Down] = self.left_button
           
         
     # handle keypress
@@ -56,31 +135,48 @@ class NudgeTransform(QtGui.QWidget):
         # step time forward
         elif key == QtCore.Qt.Key_Right:
             print('Key_Right')
-            self.on_click('right')
+            
                 
         # step time back    
         elif key == QtCore.Qt.Key_Left:
             print('Key_Left')
-            self.on_click('left')
+            
             
         # increment
         elif key == QtCore.Qt.Key_Up:
             print('Key_Up')
+            self.on_click('up')
         
         # deccrement    
         elif key == QtCore.Qt.Key_Down:
             print('Key_Down')
+            self.on_click('down')
             
         # toggle axis
         elif key == QtCore.Qt.Key_Space:
             print('Key_Space')
-            
+            self.axis_radiogroup.inc_selection()
             
         # toggle translate tool, move, rotate, scale
         elif key == QtCore.Qt.Key_Tab:
             print('Key_Tab')
+            print(self.axis_radiogroup.get_selected_text())
             
     def on_click(self, dir):
+        
+        val = .1
+        if dir == 'down':
+            val = val *-1
+            
+        axis = self.axis_radiogroup.get_selected_text()
+        
+        if axis == 'x':
+            vec = (val, 0, 0)
+        elif axis == 'y':
+            vec = (0, val, 0)
+        else:
+            vec = (0, 0, val)
+
         
         sel_list = pm.ls(sl=True)
         if sel_list:
@@ -90,11 +186,11 @@ class NudgeTransform(QtGui.QWidget):
   
         if sel:
             
-            if dir == 'left':
-                sel.translateBy((0,.1,0))
+            if dir == 'up':
+                sel.translateBy(vec)
                 
-            elif dir == 'right':
-                sel.translateBy((0,-.1,0))
+            elif dir == 'down':
+                sel.translateBy(vec)
                 
     
                     
