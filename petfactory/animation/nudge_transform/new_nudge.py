@@ -19,6 +19,48 @@ def maya_main_window():
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
 
 
+class ComboboxWidget(QtGui.QWidget):
+    
+    def __init__(self, items, label=None):   
+       
+        super(ComboboxWidget, self).__init__()
+        
+        hbox = QtGui.QHBoxLayout()
+        self.setLayout(hbox)
+        self.items = items
+        
+        if label is not None:
+            self.label = QtGui.QLabel(label)
+            hbox.addWidget(self.label)
+        
+        self.combobox = QtGui.QComboBox()
+        self.combobox.addItems(items)
+        hbox.addWidget(self.combobox)
+        self.combobox.setFocusPolicy(QtCore.Qt.NoFocus)
+        #self.combobox.currentIndexChanged.connect(self.update_index)
+        
+    #def update_index(self):
+        #pass
+        
+    def inc_selection(self):
+        
+        index = self.combobox.currentIndex() + 1
+        if index > len(self.items)-1:
+            index = 0
+            
+        self.combobox.setCurrentIndex(index)
+        
+    def get_selected_text(self):
+        return(self.combobox.itemText(self.combobox.currentIndex()))
+    
+    def get_selected_index(self):
+        return self.combobox.currentIndex()
+
+        
+        
+                
+        
+        
 class RadioButtonGroup(QtGui.QGroupBox):
     
     def __init__(self, title, items):   
@@ -105,11 +147,13 @@ class NudgeTransform(QtGui.QWidget):
         vertical_layout.addWidget(self.axis_radiogroup)
         
         
-        self.qb = QtGui.QComboBox()
-        self.qb.addItems(['Translate', 'Rotate', 'Scale'])
-        vertical_layout.addWidget(self.qb)
+        #self.qb = QtGui.QComboBox()
+        #self.qb.addItems(['Translate', 'Rotate', 'Scale'])
+        #vertical_layout.addWidget(self.qb)
+        #self.qb.setFocusPolicy(QtCore.Qt.NoFocus)        
         
-        self.qb.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.tool_combobox = ComboboxWidget(label='Tool', items=['Translate', 'Rotate', 'Scale'])
+        vertical_layout.addWidget(self.tool_combobox)
         
         vertical_layout.addStretch()
         
@@ -172,8 +216,12 @@ class NudgeTransform(QtGui.QWidget):
         elif key == QtCore.Qt.Key_Tab:
             print('Key_Tab')
             print(self.axis_radiogroup.get_selected_text())
+            self.tool_combobox.inc_selection()
             
     def on_click(self, dir):
+        
+        tool = self.tool_combobox.get_selected_text()
+        print(tool)
         
         val = .1
         if dir == 'down':
