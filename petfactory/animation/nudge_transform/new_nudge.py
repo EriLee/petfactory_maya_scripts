@@ -145,27 +145,28 @@ class NudgeTransform(QtGui.QWidget):
         
         self.axis_radiogroup = RadioButtonGroup(title='Axis', items=['x', 'y', 'z'])
         vertical_layout.addWidget(self.axis_radiogroup)
-        
-        
-        #self.qb = QtGui.QComboBox()
-        #self.qb.addItems(['Translate', 'Rotate', 'Scale'])
-        #vertical_layout.addWidget(self.qb)
-        #self.qb.setFocusPolicy(QtCore.Qt.NoFocus)        
-        
+                
         self.tool_combobox = ComboboxWidget(label='Tool', items=['Translate', 'Rotate', 'Scale'])
         vertical_layout.addWidget(self.tool_combobox)
         
         vertical_layout.addStretch()
         
-        self.right_button = QtGui.QPushButton(' + ')
-        self.right_button.clicked.connect(partial(self.on_click, 'up'))
-        vertical_layout.addWidget(self.right_button)
-        self.button_dict[QtCore.Qt.Key_Up] = self.right_button
+        
+        hbox = QtGui.QHBoxLayout()
+        vertical_layout.addLayout(hbox)
         
         self.left_button = QtGui.QPushButton(' - ')
         self.left_button.clicked.connect(partial(self.on_click, 'down'))
-        vertical_layout.addWidget(self.left_button)
+        hbox.addWidget(self.left_button)
         self.button_dict[QtCore.Qt.Key_Down] = self.left_button
+        
+        
+        self.right_button = QtGui.QPushButton(' + ')
+        self.right_button.clicked.connect(partial(self.on_click, 'up'))
+        hbox.addWidget(self.right_button)
+        self.button_dict[QtCore.Qt.Key_Up] = self.right_button
+        
+        
         
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
@@ -220,21 +221,21 @@ class NudgeTransform(QtGui.QWidget):
             
     def on_click(self, dir):
         
-        tool = self.tool_combobox.get_selected_text()
-        print(tool)
+        tool = self.tool_combobox.get_selected_text().lower()
         
-        val = .1
+        amount = .1
         if dir == 'down':
-            val = val *-1
+            amount = amount*-1
             
         axis = self.axis_radiogroup.get_selected_text()
         
+
         if axis == 'x':
-            vec = (val, 0, 0)
+            vec = (amount, 0, 0)
         elif axis == 'y':
-            vec = (0, val, 0)
+            vec = (0, amount, 0)
         else:
-            vec = (0, 0, val)
+            vec = (0, 0, amount)
 
         
         sel_list = pm.ls(sl=True)
@@ -245,12 +246,16 @@ class NudgeTransform(QtGui.QWidget):
   
         if sel:
             
-            if dir == 'up':
-                sel.translateBy(vec)
+            if tool == 'translate':
+                pm.xform(translation=vec, relative=True, objectSpace=True)
                 
-            elif dir == 'down':
-                sel.translateBy(vec)
+            elif tool == 'rotate':
+                pm.xform(ro=vec, relative=True, objectSpace=True)
                 
+            elif tool == 'scale':
+                pm.xform(scale=sel.scale.get()+amount)
+                
+
     
                     
     def keyReleaseEvent(self, event):
