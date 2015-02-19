@@ -92,6 +92,8 @@ class NudgeTransform(QtGui.QWidget):
         self.resize(150, 200)
         self.setWindowTitle("Nudge transform")
         
+        
+        
         self.set_button_down_on_keypress = True
         self.button_dict = {}
         
@@ -102,6 +104,12 @@ class NudgeTransform(QtGui.QWidget):
         self.axis_radiogroup = RadioButtonGroup(title='Axis', items=['x', 'y', 'z'])
         vertical_layout.addWidget(self.axis_radiogroup)
         
+        
+        self.qb = QtGui.QComboBox()
+        self.qb.addItems(['Translate', 'Rotate', 'Scale'])
+        vertical_layout.addWidget(self.qb)
+        
+        self.qb.setFocusPolicy(QtCore.Qt.NoFocus)
         
         vertical_layout.addStretch()
         
@@ -114,6 +122,9 @@ class NudgeTransform(QtGui.QWidget):
         self.left_button.clicked.connect(partial(self.on_click, 'down'))
         vertical_layout.addWidget(self.left_button)
         self.button_dict[QtCore.Qt.Key_Down] = self.left_button
+        
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
           
         
     # handle keypress
