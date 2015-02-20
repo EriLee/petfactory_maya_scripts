@@ -480,41 +480,14 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
     return ret_dict
         
         
-'''
-def get_child_nodes(root_node, nodetype=pm.nodetypes.ClusterHandle, get_parent=True):
-    
-    if not isinstance(root_node, pm.nodetypes.Transform):
-        pm.warning('Please select a Transform node!')
-        return 
 
-    node_list = pm.listRelatives(root_node, children=True, allDescendents=True)
-    
-    ret_list = []
-    for node in node_list:
-        
-        if isinstance(node, nodetype):
-            
-            if get_parent:
-                
-                parent = node.getParent()
-                if parent is not None:
-                    ret_list.append(parent)
-                    
-                else:
-                    pm.warning('parent of {0} not found, skip to next node'.format(node))     
-                                    
-            else:
-                ret_list.append(node)
-                
-    return(ret_list)
-'''
 
 # manual setup
+
+pm.system.openFile('/Users/johan/Documents/projects/pojkarna/tendril/maya/tendril_anim/scenes/dev/tendril_dev_v001.mb ', f=True)
+
+# create set
 '''
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_thin_mesh_v03.mb', f=True)
-
-# output curve set 
-
 output_curve_set = pm.sets(name='output_curve_set')
 root_ctrl_set = pm.sets(name='root_ctrl_set') 
 sine_anim_ctrl_set = pm.sets(name='sine_anim_ctrl_set') 
@@ -522,46 +495,22 @@ sine_anim_ctrl_set = pm.sets(name='sine_anim_ctrl_set')
 output_curve_list = []
 root_ctrl_list = []
 sine_anim_ctrl_list = []
-
-# single setup
-def single_setup():
-    node_0 = pm.PyNode('flower_jnt_pos_0')
-    joint_ref_list = [node_0]
-    name_list = ['tendril_0']
-    
-    # create the joints
-    jnt_dict_list = build_joints(joint_ref_list=joint_ref_list, name_list=name_list)
-    
-    # create the rig
-    dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict=jnt_dict_list[0], ctrl_size=1.2)
-    output_curve_list.append(dyn_joint_dict_0.get('output_curve'))
-    root_ctrl_list.append(dyn_joint_dict_0.get('root_ctrl'))
-    
-    # add procedural anim
-    if dyn_joint_dict_0:
-        proc_anim_dict = add_pocedural_wave_anim(dyn_joint_dict_0)
-        sine_anim_ctrl_list.append(proc_anim_dict.get('sine_anim_ctrl'))
-        
-    output_curve_set.addMembers(output_curve_list)
-    sine_anim_ctrl_set.addMembers(sine_anim_ctrl_list)
-    root_ctrl_set.addMembers(root_ctrl_list)
-
-single_setup()
 '''
 
+ref = pm.PyNode('rig_ref_grp')
 
 
-'''
+ref_list = [ref]
+name_list=['tendril_0']
 
-node_0 = pm.PyNode('flower_jnt_pos_0')
-node_1 = pm.PyNode('flower_jnt_pos_1')
-node_2 = pm.PyNode('flower_jnt_pos_2')
-
-ref_list = [node_0, node_1, node_2]
-jnt_dict_list = build_joints(ref_list, name_list=['tendril_a', 'tendril_b', 'tendril_c'])
+jnt_dict_list = build_joints(ref_list, name_list=name_list)
 
 
 dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict_list[0])
+add_pocedural_wave_anim(dyn_joint_dict_0, ctrl_size=.8)
+
+'''
+
 hairsystem_0 = dyn_joint_dict_0.get('hairsystem')
 output_curve_list.append(dyn_joint_dict_0.get('output_curve'))
 add_pocedural_wave_anim(dyn_joint_dict_0)
