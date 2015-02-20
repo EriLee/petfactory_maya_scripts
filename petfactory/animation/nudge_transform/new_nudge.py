@@ -8,9 +8,9 @@ from functools import partial
 
 TODO
 
-add large value, small value inc spinbox
-use shift as modifier to use the large values
+Instead of using tab to toggle tool use qwerety
 
+maybe use q to inc toggle ?
 
 
 '''
