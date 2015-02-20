@@ -83,7 +83,14 @@ class ComboboxWidget(QtGui.QWidget):
             index = 0
             
         self.combobox.setCurrentIndex(index)
-        
+    
+    def set_selection(self, index):
+         if index > len(self.items)-1:
+             pm.warning('index out of bounds, max index is {0}'.format(len(self.items)-1))
+             return
+             
+         self.combobox.setCurrentIndex(index)
+            
     def get_selected_text(self):
         return(self.combobox.itemText(self.combobox.currentIndex()))
     
@@ -238,22 +245,17 @@ class NudgeTransform(QtGui.QWidget):
         elif key == QtCore.Qt.Key_Right:
             #print('Key_Right')
             pass
-            
-                
+                            
         # step time back    
         elif key == QtCore.Qt.Key_Left:
             #print('Key_Left')
-            pass
-            
+            pass            
             
         # increment
         elif key == QtCore.Qt.Key_Up:
             #print('Key_Up')
             self.do_transform('up', modifier)
-            
-            
-                
-        
+
         # deccrement    
         elif key == QtCore.Qt.Key_Down:
             #print('Key_Down')
@@ -265,10 +267,18 @@ class NudgeTransform(QtGui.QWidget):
             self.axis_radiogroup.inc_selection()
             
         # toggle translate tool, move, rotate, scale
-        elif key == QtCore.Qt.Key_Tab:
-            #print('Key_Tab')
-            #print(self.axis_radiogroup.get_selected_text())
+        elif key == QtCore.Qt.Key_Q:
             self.tool_combobox.inc_selection()
+        
+        # toggle translate tool, move, rotate, scale
+        elif key == QtCore.Qt.Key_W:
+            self.tool_combobox.set_selection(0)
+            
+        elif key == QtCore.Qt.Key_E:
+            self.tool_combobox.set_selection(1)
+        
+        elif key == QtCore.Qt.Key_R:
+            self.tool_combobox.set_selection(2)
         
     def do_transform(self, dir, modifier=None):
     
