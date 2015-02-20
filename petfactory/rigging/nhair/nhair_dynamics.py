@@ -5,6 +5,8 @@ import maya.mel as mel
 
 def make_curve_dynamic(crv):
 
+    pm.select(deselect=True)
+    print(crv)
     pm.select(crv)
     mel.eval('makeCurvesDynamicHairs 1 0 1;')
     

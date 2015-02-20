@@ -261,6 +261,8 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
     jnt_list = jnt_dict.get(name)
     num_jnt = len(jnt_list)
     
+    #print(name)
+    
     # create groups
     root_main_grp = pm.group(em=True, name='{0}_root_main_grp'.format(name))
     root_ctrl_grp = pm.group(parent=root_main_grp, em=True, name='{0}_root_ctrl_grp'.format(name))
@@ -292,7 +294,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
     
     # cluster group
     cluster_grp = pm.group(parent=root_ctrl, em=True, name='{0}_cluster_grp'.format(name))
-    rig_crv_grp = pm.group(parent=root_ctrl, em=True, name='{0}_rig_crv_grp'.format(name))
+    #rig_crv_grp = pm.group(parent=root_ctrl, em=True, name='{0}_rig_crv_grp'.format(name))
     
     # jnt group
     jnt_grp = pm.group(em=True, name='{0}_jnt_grp'.format(name))
@@ -310,10 +312,10 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
     pos_list = [pm.joint(jnt, q=True, p=True, a=True) for jnt in jnt_list]
     
     # build the curve that we will make dynamic, and drive the ik spline rig 
-    orig_crv = pm.curve(ep=pos_list, name='orig_curve')
+    orig_crv = pm.curve(ep=pos_list, name='{0}_orig_curve'.format(name))
 
 
-    result_crv = pm.duplicate(orig_crv, name='result_curv')[0]
+    result_crv = pm.duplicate(orig_crv, name='{0}_result_curve'.format(name))[0]
     orig_crv.worldSpace >> result_crv.create
     # create a curve info node
     result_crv_info = pm.arclen(result_crv, ch=True)
@@ -502,15 +504,18 @@ sine_anim_ctrl_list = []
 ref = pm.PyNode('rig_ref_grp')
 
 
-ref_list = [ref]
-name_list=['tendril_0']
+ref_list = [ref, ref]
+name_list=['tendril_0', 'tendril_1']
 
 jnt_dict_list = build_joints(ref_list, name_list=name_list)
 
 
 dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict_list[0])
-add_pocedural_wave_anim(dyn_joint_dict_0, ctrl_size=.8)
+
+dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[1])
 '''
+#add_pocedural_wave_anim(dyn_joint_dict_0, ctrl_size=.8)
+
 
 
 
