@@ -19,6 +19,40 @@ def maya_main_window():
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
 
 
+class SpinboxWidget(QtGui.QWidget):
+    
+    def __init__(self, label=None, min=None, max=None, default=None, double_spinbox=False):   
+       
+        super(SpinboxWidget, self).__init__()
+        
+        hbox = QtGui.QHBoxLayout()
+        self.setLayout(hbox)
+        
+        if label is not None:
+            self.label = QtGui.QLabel(label)
+            #self.label.setMinimumWidth(80)
+            hbox.addWidget(self.label)
+            hbox.addStretch()
+         
+        self.spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
+        self.spinbox.setMinimumWidth(100)
+        
+        if min:
+            self.spinbox.setMinimum(min)
+        if max:
+            self.spinbox.setMaximum(max)
+        if default:
+            self.spinbox.setValue(default)
+            
+        hbox.addWidget(self.spinbox)
+        
+    def get_spinbox():
+        return self.spinbox
+        
+    def get_value(self):
+        return self.spinbox.value()
+        
+                
 class ComboboxWidget(QtGui.QWidget):
     
     def __init__(self, items, label=None):   
@@ -135,8 +169,8 @@ class NudgeTransform(QtGui.QWidget):
         self.setWindowTitle("Nudge transform")
         
         
-        
-        self.set_button_down_on_keypress = True
+        # set to false if we do not want to toggle the gui button on keypress
+        #self.set_button_down_on_keypress = True
         self.button_dict = {}
         
         # layout
@@ -148,6 +182,14 @@ class NudgeTransform(QtGui.QWidget):
                 
         self.tool_combobox = ComboboxWidget(label='Tool', items=['Translate', 'Rotate', 'Scale'])
         vertical_layout.addWidget(self.tool_combobox)
+        
+        
+        self.step_small_spinbox = SpinboxWidget(label='Step small', default=.1, double_spinbox=True)
+        vertical_layout.addWidget(self.step_small_spinbox)
+        
+        self.step_big_spinbox = SpinboxWidget(label='Step big', default=5, double_spinbox=True)
+        vertical_layout.addWidget(self.step_big_spinbox)
+        
         
         vertical_layout.addStretch()
         
@@ -177,56 +219,75 @@ class NudgeTransform(QtGui.QWidget):
         
         key = event.key()
         
-        if self.set_button_down_on_keypress:
+        modifier = QtCore.Qt.Key_Shift if event.modifiers() & QtCore.Qt.SHIFT else None
+
+     
+        #if self.set_button_down_on_keypress:
             
-            button = self.button_dict.get(key)
+        button = self.button_dict.get(key)
             
-            if button:
-                button.setDown(True)
+        if button:
+            button.setDown(True)
         
         # set key
         if key == QtCore.Qt.Key_S:
-            print('Key_S')
+            #print('Key_S')
+            pass
             
         # step time forward
         elif key == QtCore.Qt.Key_Right:
-            print('Key_Right')
+            #print('Key_Right')
+            pass
             
                 
         # step time back    
         elif key == QtCore.Qt.Key_Left:
-            print('Key_Left')
+            #print('Key_Left')
+            pass
             
             
         # increment
         elif key == QtCore.Qt.Key_Up:
-            print('Key_Up')
-            self.on_click('up')
+            #print('Key_Up')
+            self.do_transform('up', modifier)
+            
+            
+                
         
         # deccrement    
         elif key == QtCore.Qt.Key_Down:
-            print('Key_Down')
-            self.on_click('down')
+            #print('Key_Down')
+            self.do_transform('down', modifier)
             
         # toggle axis
         elif key == QtCore.Qt.Key_Space:
-            print('Key_Space')
+            #print('Key_Space')
             self.axis_radiogroup.inc_selection()
             
         # toggle translate tool, move, rotate, scale
         elif key == QtCore.Qt.Key_Tab:
-            print('Key_Tab')
-            print(self.axis_radiogroup.get_selected_text())
+            #print('Key_Tab')
+            #print(self.axis_radiogroup.get_selected_text())
             self.tool_combobox.inc_selection()
-            
-    def on_click(self, dir):
+        
+    def do_transform(self, dir, modifier=None):
+    
+        #print(modifier)
         
         tool = self.tool_combobox.get_selected_text().lower()
         
-        amount = .1
+        small_amount = self.step_small_spinbox.get_value()
+        big_amount = self.step_big_spinbox.get_value()
+        
+        if modifier is None:
+            amount = small_amount
+        else:
+            amount = big_amount
+            
+            
         if dir == 'down':
             amount = amount*-1
-            
+              
         axis = self.axis_radiogroup.get_selected_text()
         
 
@@ -255,19 +316,29 @@ class NudgeTransform(QtGui.QWidget):
             elif tool == 'scale':
                 pm.xform(scale=sel.scale.get()+amount)
                 
-
-    
-                    
+        
+    def on_click(self, dir):
+        
+        modifier = None
+        
+        q_modifier = QtGui.QApplication.keyboardModifiers()
+        
+        if q_modifier == QtCore.Qt.ShiftModifier:
+            modifier = QtCore.Qt.Key_Shift
+            
+        self.do_transform(dir, modifier=modifier)
+        
+                            
     def keyReleaseEvent(self, event):
         
         key = event.key()
         
-        if self.set_button_down_on_keypress:
+        #if self.set_button_down_on_keypress:
             
-            button = self.button_dict.get(key)
+        button = self.button_dict.get(key)
             
-            if button:
-                button.setDown(False)
+        if button:
+            button.setDown(False)
             
 
         
