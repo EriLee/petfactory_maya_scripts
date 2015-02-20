@@ -29,6 +29,10 @@ class AddVrayAttrs(QtGui.QWidget):
         vertical_layout.addWidget(self.subdivision_groupbox)
         self.subdivision_groupbox.setCheckable(True)
         
+        subdivision_groupbox_vert_layout = QtGui.QVBoxLayout()
+        self.subdivision_groupbox.setLayout(subdivision_groupbox_vert_layout)
+        self.subdivide_uvs_checkbox = AddVrayAttrs.add_checkbox(label='Subdivide UVs', layout=subdivision_groupbox_vert_layout)
+        
         # use existing hairsystem group box
         self.subdivision_disp_quality_groupbox = QtGui.QGroupBox("Subdivision and diplacement quality")
         vertical_layout.addWidget(self.subdivision_disp_quality_groupbox)
@@ -36,8 +40,8 @@ class AddVrayAttrs(QtGui.QWidget):
         subdivision_disp_quality_groupbox_vert_layout = QtGui.QVBoxLayout()
         self.subdivision_disp_quality_groupbox.setLayout(subdivision_disp_quality_groupbox_vert_layout)
         
-        self.edge_length_add_spinbox = AddVrayAttrs.add_spinbox(label='Edge length', min=.1, layout=subdivision_disp_quality_groupbox_vert_layout, default=1, double_spinbox=True)
-        self.max_subdivs_spinbox = AddVrayAttrs.add_spinbox(label='Max subdivs', min=1, layout=subdivision_disp_quality_groupbox_vert_layout, default=32)
+        self.edge_length_add_spinbox = AddVrayAttrs.add_spinbox(label='Edge length', min=.1, layout=subdivision_disp_quality_groupbox_vert_layout, default=4, double_spinbox=True)
+        self.max_subdivs_spinbox = AddVrayAttrs.add_spinbox(label='Max subdivs', min=1, layout=subdivision_disp_quality_groupbox_vert_layout, default=64)
         
         
         # use existing hairsystem group box
@@ -82,6 +86,25 @@ class AddVrayAttrs(QtGui.QWidget):
         
         return spinbox
         
+    @staticmethod
+    def add_checkbox(label, layout, enabled=True):
+        
+        horiz_layout = QtGui.QHBoxLayout()
+        layout.addLayout(horiz_layout)
+
+        checkbox = QtGui.QCheckBox()    
+        horiz_layout.addWidget(checkbox)
+        
+        checkbox.setChecked(False)
+        label = QtGui.QLabel(label)
+        label.setMinimumWidth(100)
+        horiz_layout.addWidget(label)
+ 
+        horiz_layout.addStretch()
+  
+        return checkbox
+        
+        
     def add_attr_button_clicked(self):
         
         
@@ -116,8 +139,8 @@ class AddVrayAttrs(QtGui.QWidget):
         for mesh in mesh_list:
             
             if use_subdivision:
-                print('add subd')
                 pm.vray("addAttributesFromGroup", mesh.longName(), "vray_subdivision", 1)
+                mesh.vraySubdivUVs.set(self.subdivide_uvs_checkbox.isChecked())
                  
             else:
                 pm.vray("addAttributesFromGroup", mesh.longName(), "vray_subdivision", 0)
@@ -155,6 +178,15 @@ class AddVrayAttrs(QtGui.QWidget):
 def show():      
     win = AddVrayAttrs(parent=maya_main_window())
     win.show()
+    return win
 
-
-#show()
+'''
+try:
+    win.close()
+    
+except NameError:
+    pass
+    
+win = show()
+win.move(150,250)
+'''
