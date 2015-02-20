@@ -6,7 +6,7 @@ import maya.cmds as cmds
 import pprint
 import petfactory.rigging.joint_tools as joint_tools
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
-#reload(nhair_dynamics)
+reload(nhair_dynamics)
 
 import petfactory.rigging.ctrl.ctrl as pet_ctrl
 #reload(pet_ctrl)
@@ -484,7 +484,7 @@ def setup_dynamic_joint_chain(jnt_dict, existing_hairsystem=None, ctrl_size=1):
 
 # manual setup
 
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/tendril/maya/tendril_anim/scenes/dev/tendril_dev_v001.mb ', f=True)
+#pm.system.openFile('/Users/johan/Documents/projects/pojkarna/tendril/maya/tendril_anim/scenes/dev/tendril_dev_v001.mb ', f=True)
 
 # create set
 '''
@@ -497,6 +497,8 @@ root_ctrl_list = []
 sine_anim_ctrl_list = []
 '''
 
+
+'''
 ref = pm.PyNode('rig_ref_grp')
 
 
@@ -508,9 +510,11 @@ jnt_dict_list = build_joints(ref_list, name_list=name_list)
 
 dyn_joint_dict_0 = setup_dynamic_joint_chain(jnt_dict_list[0])
 add_pocedural_wave_anim(dyn_joint_dict_0, ctrl_size=.8)
-
 '''
 
+
+
+'''
 hairsystem_0 = dyn_joint_dict_0.get('hairsystem')
 output_curve_list.append(dyn_joint_dict_0.get('output_curve'))
 add_pocedural_wave_anim(dyn_joint_dict_0)
@@ -519,7 +523,6 @@ add_pocedural_wave_anim(dyn_joint_dict_0)
 dyn_joint_dict_1 = setup_dynamic_joint_chain(jnt_dict_list[1], existing_hairsystem=hairsystem_0)
 output_curve_list.append(dyn_joint_dict_1.get('output_curve'))
 add_pocedural_wave_anim(dyn_joint_dict_1)
-
 
 
 output_curve_set.addMembers(output_curve_list)
