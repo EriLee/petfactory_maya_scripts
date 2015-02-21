@@ -26,16 +26,18 @@ class SpinboxWidget(QtGui.QWidget):
         super(SpinboxWidget, self).__init__()
         
         hbox = QtGui.QHBoxLayout()
+        hbox.setContentsMargins(0,0,0,0)
         self.setLayout(hbox)
+        
         
         if label is not None:
             self.label = QtGui.QLabel(label)
-            #self.label.setMinimumWidth(80)
             hbox.addWidget(self.label)
             hbox.addStretch()
          
         self.spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
         self.spinbox.setMinimumWidth(100)
+
         
         if min:
             self.spinbox.setMinimum(min)
@@ -60,14 +62,17 @@ class ComboboxWidget(QtGui.QWidget):
         super(ComboboxWidget, self).__init__()
         
         hbox = QtGui.QHBoxLayout()
+        hbox.setContentsMargins(0,0,0,0)
         self.setLayout(hbox)
         self.items = items
         
         if label is not None:
             self.label = QtGui.QLabel(label)
             hbox.addWidget(self.label)
+            hbox.addStretch()
         
         self.combobox = QtGui.QComboBox()
+        self.combobox.setMinimumWidth(100)
         self.combobox.addItems(items)
         hbox.addWidget(self.combobox)
         self.combobox.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -174,8 +179,7 @@ class NudgeTransform(QtGui.QWidget):
         
         self.resize(150, 200)
         self.setWindowTitle("Nudge transform")
-        
-        
+                
         # set to false if we do not want to toggle the gui button on keypress
         #self.set_button_down_on_keypress = True
         self.button_dict = {}
@@ -201,19 +205,38 @@ class NudgeTransform(QtGui.QWidget):
         vertical_layout.addStretch()
         
         
-        hbox = QtGui.QHBoxLayout()
-        vertical_layout.addLayout(hbox)
+        change_value_hbox = QtGui.QHBoxLayout()
+        vertical_layout.addLayout(change_value_hbox)
         
         self.left_button = QtGui.QPushButton(' - ')
+        self.left_button.setFixedHeight(40)
         self.left_button.clicked.connect(partial(self.on_click, 'down'))
-        hbox.addWidget(self.left_button)
+        change_value_hbox.addWidget(self.left_button)
         self.button_dict[QtCore.Qt.Key_Down] = self.left_button
         
         
         self.right_button = QtGui.QPushButton(' + ')
+        self.right_button.setFixedHeight(40)
         self.right_button.clicked.connect(partial(self.on_click, 'up'))
-        hbox.addWidget(self.right_button)
+        change_value_hbox.addWidget(self.right_button)
         self.button_dict[QtCore.Qt.Key_Up] = self.right_button
+        
+        
+        timeslider_hbox = QtGui.QHBoxLayout()
+        vertical_layout.addLayout(timeslider_hbox)
+        
+        self.prev_time_button = QtGui.QPushButton(' < ')
+        timeslider_hbox.addWidget(self.prev_time_button)
+        self.button_dict[QtCore.Qt.Key_Left] = self.prev_time_button
+        
+        self.set_keyframe_button = QtGui.QPushButton(' key ')
+        self.set_keyframe_button.setFixedWidth(50)
+        timeslider_hbox.addWidget(self.set_keyframe_button)
+        self.button_dict[QtCore.Qt.Key_S] = self.set_keyframe_button
+        
+        self.next_time_button = QtGui.QPushButton(' > ')
+        timeslider_hbox.addWidget(self.next_time_button)
+        self.button_dict[QtCore.Qt.Key_Right] = self.next_time_button
         
         
         
