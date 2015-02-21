@@ -208,18 +208,18 @@ class NudgeTransform(QtGui.QWidget):
         change_value_hbox = QtGui.QHBoxLayout()
         vertical_layout.addLayout(change_value_hbox)
         
-        self.left_button = QtGui.QPushButton(' - ')
-        self.left_button.setFixedHeight(40)
-        self.left_button.clicked.connect(partial(self.on_click, 'down'))
-        change_value_hbox.addWidget(self.left_button)
-        self.button_dict[QtCore.Qt.Key_Down] = self.left_button
+        self.minus_button = QtGui.QPushButton(' - ')
+        self.minus_button.setFixedHeight(40)
+        self.minus_button.clicked.connect(partial(self.on_click, 'down'))
+        change_value_hbox.addWidget(self.minus_button)
+        self.button_dict[QtCore.Qt.Key_Down] = self.minus_button
         
         
-        self.right_button = QtGui.QPushButton(' + ')
-        self.right_button.setFixedHeight(40)
-        self.right_button.clicked.connect(partial(self.on_click, 'up'))
-        change_value_hbox.addWidget(self.right_button)
-        self.button_dict[QtCore.Qt.Key_Up] = self.right_button
+        self.plus_button = QtGui.QPushButton(' + ')
+        self.plus_button.setFixedHeight(40)
+        self.plus_button.clicked.connect(partial(self.on_click, 'up'))
+        change_value_hbox.addWidget(self.plus_button)
+        self.button_dict[QtCore.Qt.Key_Up] = self.plus_button
         
         
         timeslider_hbox = QtGui.QHBoxLayout()
