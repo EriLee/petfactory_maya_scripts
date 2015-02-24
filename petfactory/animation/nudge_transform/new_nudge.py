@@ -222,21 +222,29 @@ class NudgeTransform(QtGui.QWidget):
         self.button_dict[QtCore.Qt.Key_Up] = self.plus_button
         
         
+        self.time_step_spinbox = SpinboxWidget(label='Time step', default=5, min=0, max=999)
+        vertical_layout.addWidget(self.time_step_spinbox)
+        
+        
         timeslider_hbox = QtGui.QHBoxLayout()
         vertical_layout.addLayout(timeslider_hbox)
         
         self.prev_time_button = QtGui.QPushButton(' < ')
         timeslider_hbox.addWidget(self.prev_time_button)
         self.button_dict[QtCore.Qt.Key_Left] = self.prev_time_button
+        self.prev_time_button.clicked.connect(partial(self.change_time, -1))
         
         self.set_keyframe_button = QtGui.QPushButton(' key ')
         self.set_keyframe_button.setFixedWidth(50)
         timeslider_hbox.addWidget(self.set_keyframe_button)
         self.button_dict[QtCore.Qt.Key_S] = self.set_keyframe_button
+        self.set_keyframe_button.clicked.connect(self.on_keyframe_click)
+        
         
         self.next_time_button = QtGui.QPushButton(' > ')
         timeslider_hbox.addWidget(self.next_time_button)
         self.button_dict[QtCore.Qt.Key_Right] = self.next_time_button
+        self.next_time_button.clicked.connect(partial(self.change_time, 1))
         
         
         
@@ -262,17 +270,17 @@ class NudgeTransform(QtGui.QWidget):
         # set key
         if key == QtCore.Qt.Key_S:
             #print('Key_S')
-            pass
+            self.set_keyframe(modifier)
             
         # step time forward
         elif key == QtCore.Qt.Key_Right:
             #print('Key_Right')
-            pass
+            self.change_time(1)
                             
         # step time back    
         elif key == QtCore.Qt.Key_Left:
             #print('Key_Left')
-            pass            
+            self.change_time(-1)         
             
         # increment
         elif key == QtCore.Qt.Key_Up:
@@ -302,7 +310,25 @@ class NudgeTransform(QtGui.QWidget):
         
         elif key == QtCore.Qt.Key_R:
             self.tool_combobox.set_selection(2)
+
+    def change_time(self, direction):
+        time = pm.currentTime(query=True) + (direction*self.time_step_spinbox.get_value())
+        pm.currentTime(time, update=True, edit=True ) 
         
+    def set_keyframe(self, modifier):
+        
+        sel_list = pm.ls(sl=True)
+        if sel_list:
+            sel = sel_list[0]
+        else:
+            return
+            
+        if modifier is QtCore.Qt.Key.Key_Shift:
+            pm.cutKey(time=pm.currentTime(query=True), cl=True)
+        else:
+            pm.setKeyframe()
+                    
+               
     def do_transform(self, dir, modifier=None):
     
         #print(modifier)
@@ -360,6 +386,18 @@ class NudgeTransform(QtGui.QWidget):
             modifier = QtCore.Qt.Key_Shift
             
         self.do_transform(dir, modifier=modifier)
+        
+    def on_keyframe_click(self):
+        
+        modifier = None
+        
+        q_modifier = QtGui.QApplication.keyboardModifiers()
+        
+        if q_modifier == QtCore.Qt.ShiftModifier:
+            modifier = QtCore.Qt.Key_Shift
+            
+        self.set_keyframe(modifier=modifier)
+        
         
                             
     def keyReleaseEvent(self, event):
