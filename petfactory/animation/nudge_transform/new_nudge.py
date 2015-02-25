@@ -259,10 +259,13 @@ class NudgeTransform(QtGui.QWidget):
         
         key = event.key()
         
-        modifier = QtCore.Qt.Key_Shift if event.modifiers() & QtCore.Qt.SHIFT else None
-
+        modifier = None
+        
+        if event.modifiers() & QtCore.Qt.SHIFT:
+            modifier = QtCore.Qt.Key_Shift
+        elif event.modifiers() & QtCore.Qt.ALT:
+            modifier = QtCore.Qt.Key_Alt
      
-        #if self.set_button_down_on_keypress:
             
         button = self.button_dict.get(key)
             
@@ -272,17 +275,17 @@ class NudgeTransform(QtGui.QWidget):
         # set key
         if key == QtCore.Qt.Key_S:
             #print('Key_S')
-            self.set_keyframe(modifier)
+            self.set_keyframe(modifier=modifier)
             
         # step time forward
         elif key == QtCore.Qt.Key_Right:
             #print('Key_Right')
-            self.set_time(1)
+            self.set_time(dir=1, modifier=modifier)
                             
         # step time back    
         elif key == QtCore.Qt.Key_Left:
             #print('Key_Left')
-            self.set_time(-1)         
+            self.set_time(dir=-1, modifier=modifier)         
             
         # increment
         elif key == QtCore.Qt.Key_Up:
@@ -314,8 +317,27 @@ class NudgeTransform(QtGui.QWidget):
             self.tool_combobox.set_selection(2)
 
     def set_time(self, dir, modifier=None):
-        time = pm.currentTime(query=True) + (dir*self.time_step_spinbox.get_value())
-        pm.currentTime(time, update=True, edit=True ) 
+                
+        if modifier is QtCore.Qt.Key.Key_Shift:
+            pass
+            
+        elif modifier is QtCore.Qt.Key.Key_Alt:
+            sel_list = pm.ls(sl=True)
+            if sel_list:
+                sel = sel_list[0]
+            else:
+                return
+                
+            all_keys = pm.keyframe(sel, query=True, timeChange=True)
+            
+            keyframe_list = list(set(all_keys))
+            keyframe_list.sort()            
+
+
+            
+        else:
+            time = pm.currentTime(query=True) + (dir*self.time_step_spinbox.get_value())
+            pm.currentTime(time, update=True, edit=True ) 
         
     def set_keyframe(self, modifier):
         
@@ -327,6 +349,7 @@ class NudgeTransform(QtGui.QWidget):
             
         if modifier is QtCore.Qt.Key.Key_Shift:
             pm.cutKey(time=pm.currentTime(query=True), cl=True)
+            
         else:
             pm.setKeyframe()
                     
@@ -340,10 +363,11 @@ class NudgeTransform(QtGui.QWidget):
         small_amount = self.step_small_spinbox.get_value()
         big_amount = self.step_big_spinbox.get_value()
         
-        if modifier is None:
-            amount = small_amount
-        else:
+        if modifier is QtCore.Qt.Key_Shift:
             amount = big_amount
+            
+        else:
+            amount = small_amount
             
             
         if dir is -1:
@@ -385,6 +409,10 @@ class NudgeTransform(QtGui.QWidget):
         q_modifier = QtGui.QApplication.keyboardModifiers()
         if q_modifier == QtCore.Qt.ShiftModifier:
             modifier = QtCore.Qt.Key_Shift
+            
+        if q_modifier == QtCore.Qt.AltModifier:
+            modifier = QtCore.Qt.Key_Alt
+        
     
         # unpack the kargs, look which callback to use
         callback = kargs.get('callback')
