@@ -8,9 +8,6 @@ from functools import partial
 
 TODO
 
-Instead of using tab to toggle tool use qwerety
-
-maybe use q to inc toggle ?
 
 
 '''
@@ -210,14 +207,16 @@ class NudgeTransform(QtGui.QWidget):
         
         self.minus_button = QtGui.QPushButton(' - ')
         self.minus_button.setFixedHeight(40)
-        self.minus_button.clicked.connect(partial(self.on_click, 'down'))
+        kargs = {'callback':'set_transform', 'dir':-1}
+        self.minus_button.clicked.connect(partial(self.on_ui_click, **kargs))
         change_value_hbox.addWidget(self.minus_button)
         self.button_dict[QtCore.Qt.Key_Down] = self.minus_button
         
         
         self.plus_button = QtGui.QPushButton(' + ')
         self.plus_button.setFixedHeight(40)
-        self.plus_button.clicked.connect(partial(self.on_click, 'up'))
+        kargs = {'callback':'set_transform', 'dir':1}
+        self.plus_button.clicked.connect(partial(self.on_ui_click, **kargs))        
         change_value_hbox.addWidget(self.plus_button)
         self.button_dict[QtCore.Qt.Key_Up] = self.plus_button
         
@@ -232,19 +231,22 @@ class NudgeTransform(QtGui.QWidget):
         self.prev_time_button = QtGui.QPushButton(' < ')
         timeslider_hbox.addWidget(self.prev_time_button)
         self.button_dict[QtCore.Qt.Key_Left] = self.prev_time_button
-        self.prev_time_button.clicked.connect(partial(self.change_time, -1))
+        kargs = {'callback':'set_time', 'dir':-1}
+        self.prev_time_button.clicked.connect(partial(self.on_ui_click, **kargs))
         
         self.set_keyframe_button = QtGui.QPushButton(' key ')
         self.set_keyframe_button.setFixedWidth(50)
         timeslider_hbox.addWidget(self.set_keyframe_button)
         self.button_dict[QtCore.Qt.Key_S] = self.set_keyframe_button
-        self.set_keyframe_button.clicked.connect(self.on_keyframe_click)
+        kargs = {'callback':'set_keyframe'}
+        self.set_keyframe_button.clicked.connect(partial(self.on_ui_click, **kargs))
         
         
         self.next_time_button = QtGui.QPushButton(' > ')
         timeslider_hbox.addWidget(self.next_time_button)
         self.button_dict[QtCore.Qt.Key_Right] = self.next_time_button
-        self.next_time_button.clicked.connect(partial(self.change_time, 1))
+        kargs = {'callback':'set_time', 'dir':1}
+        self.next_time_button.clicked.connect(partial(self.on_ui_click, **kargs))
         
         
         
@@ -275,22 +277,22 @@ class NudgeTransform(QtGui.QWidget):
         # step time forward
         elif key == QtCore.Qt.Key_Right:
             #print('Key_Right')
-            self.change_time(1)
+            self.set_time(1)
                             
         # step time back    
         elif key == QtCore.Qt.Key_Left:
             #print('Key_Left')
-            self.change_time(-1)         
+            self.set_time(-1)         
             
         # increment
         elif key == QtCore.Qt.Key_Up:
             #print('Key_Up')
-            self.do_transform('up', modifier)
+            self.set_transform(dir=1, modifier=modifier)
 
         # deccrement    
         elif key == QtCore.Qt.Key_Down:
             #print('Key_Down')
-            self.do_transform('down', modifier)
+            self.set_transform(dir=-1, modifier=modifier)
             
         # toggle axis
         elif key == QtCore.Qt.Key_Space:
@@ -311,8 +313,8 @@ class NudgeTransform(QtGui.QWidget):
         elif key == QtCore.Qt.Key_R:
             self.tool_combobox.set_selection(2)
 
-    def change_time(self, direction):
-        time = pm.currentTime(query=True) + (direction*self.time_step_spinbox.get_value())
+    def set_time(self, dir, modifier=None):
+        time = pm.currentTime(query=True) + (dir*self.time_step_spinbox.get_value())
         pm.currentTime(time, update=True, edit=True ) 
         
     def set_keyframe(self, modifier):
@@ -329,7 +331,7 @@ class NudgeTransform(QtGui.QWidget):
             pm.setKeyframe()
                     
                
-    def do_transform(self, dir, modifier=None):
+    def set_transform(self, dir, modifier=None):
     
         #print(modifier)
         
@@ -344,7 +346,7 @@ class NudgeTransform(QtGui.QWidget):
             amount = big_amount
             
             
-        if dir == 'down':
+        if dir is -1:
             amount = amount*-1
               
         axis = self.axis_radiogroup.get_selected_text()
@@ -374,38 +376,33 @@ class NudgeTransform(QtGui.QWidget):
                 
             elif tool == 'scale':
                 pm.xform(scale=sel.scale.get()+amount)
+
+    
+    def on_ui_click(self, **kargs):
+
+        modifier = None
+     
+        q_modifier = QtGui.QApplication.keyboardModifiers()
+        if q_modifier == QtCore.Qt.ShiftModifier:
+            modifier = QtCore.Qt.Key_Shift
+    
+        # unpack the kargs, look which callback to use
+        callback = kargs.get('callback')
+        if callback:
+            
+            if callback is 'set_transform':
+                self.set_transform(dir=kargs.get('dir'), modifier=modifier)
+    
+            elif callback is 'set_time':
+                self.set_time(dir=kargs.get('dir'), modifier=modifier)
                 
-        
-    def on_click(self, dir):
-        
-        modifier = None
-        
-        q_modifier = QtGui.QApplication.keyboardModifiers()
-        
-        if q_modifier == QtCore.Qt.ShiftModifier:
-            modifier = QtCore.Qt.Key_Shift
-            
-        self.do_transform(dir, modifier=modifier)
-        
-    def on_keyframe_click(self):
-        
-        modifier = None
-        
-        q_modifier = QtGui.QApplication.keyboardModifiers()
-        
-        if q_modifier == QtCore.Qt.ShiftModifier:
-            modifier = QtCore.Qt.Key_Shift
-            
-        self.set_keyframe(modifier=modifier)
-        
-        
+            elif callback is 'set_keyframe':
+                self.set_keyframe(modifier=modifier)
+
                             
     def keyReleaseEvent(self, event):
         
-        key = event.key()
-        
-        #if self.set_button_down_on_keypress:
-            
+        key = event.key()            
         button = self.button_dict.get(key)
             
         if button:
