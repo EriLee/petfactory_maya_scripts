@@ -2,6 +2,7 @@ from PySide import QtCore, QtGui
 from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 from functools import partial
+from bisect import bisect_left, bisect_right
 
 
 '''
@@ -317,10 +318,12 @@ class NudgeTransform(QtGui.QWidget):
             self.tool_combobox.set_selection(2)
 
     def set_time(self, dir, modifier=None):
-                
+            
+        # shift modifier
         if modifier is QtCore.Qt.Key.Key_Shift:
             pass
-            
+         
+        # alt modifier   
         elif modifier is QtCore.Qt.Key.Key_Alt:
             sel_list = pm.ls(sl=True)
             if sel_list:
@@ -329,15 +332,44 @@ class NudgeTransform(QtGui.QWidget):
                 return
                 
             all_keys = pm.keyframe(sel, query=True, timeChange=True)
+            curr_time = pm.currentTime(query=True)
             
             keyframe_list = list(set(all_keys))
-            keyframe_list.sort()            
-
-
+            keyframe_list.sort()
+            go_to_time = None
             
+            # early out if we have no keyframes
+            if len(keyframe_list) <1:
+                return
+                
+            # get next keyframe
+            # Find leftmost value greater than x, if x is greater than last val in a return a[-1]
+            if dir is 1:
+                i = bisect_right(keyframe_list, curr_time)
+                
+                if i != len(keyframe_list):
+                    go_to_time = keyframe_list[i]
+                else:
+                    go_to_time = keyframe_list[-1]
+                
+            
+            # get previous keyframe
+            # Find rightmost value less than x, if x is less than first val in a return a[0]
+            else:
+                
+                i = bisect_left(keyframe_list, curr_time)
+                if i:
+                    go_to_time =  keyframe_list[i-1]
+                else:
+                    go_to_time = keyframe_list[0]  
+                    
+            #print(go_to_time)
+            pm.currentTime(go_to_time, update=True, edit=True )        
+
+        # no modifier 
         else:
             time = pm.currentTime(query=True) + (dir*self.time_step_spinbox.get_value())
-            pm.currentTime(time, update=True, edit=True ) 
+            pm.currentTime(time, update=True, edit=True) 
         
     def set_keyframe(self, modifier):
         
