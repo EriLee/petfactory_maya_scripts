@@ -2,6 +2,7 @@ import pymel.core as pm
 import maya.api.OpenMaya as om
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
+import petfactory.util.vector as pet_vector
 
 
 def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True):
@@ -11,12 +12,9 @@ def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lr
     length_inc = length / (num_joints-1)
     
     crv_matrix = crv.getMatrix(worldSpace=True)
-    
+        
     up_vec = pm.datatypes.Vector(crv_matrix[up_axis][0], crv_matrix[up_axis][1], crv_matrix[up_axis][2])
-    
-    print(up_vec)
-    
-    return
+    up_vec.normalize()
     
     
     jnt_list = []
@@ -33,34 +31,14 @@ def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lr
             prev_jnt = jnt_list[index-1].getTranslation(space='world')
             curr_jnt = jnt_list[index].getTranslation(space='world')
             
-            aim_vec = (curr_jnt - prev_jnt).normal()             
-            up_vec = pm.datatypes.Vector(0,1,0)
+            aim_vec = (curr_jnt - prev_jnt).normal()  
             
-            # if the aim and up vec are effectively (within a certain tolerance) colinear, the
-            # resulting perpendicualar vector will not be vaild in this case the negative z axis
-            # will be used as up vector
             if aim_vec.isParallel(up_vec, tol=0.1):
-                
-                up_vec = pm.datatypes.Vector(0,0,1)
-                
-                cross_vec = aim_vec.cross(up_vec)
-                up_vec_ortho = cross_vec.cross(aim_vec)
-                tm = pm.datatypes.TransformationMatrix(    [aim_vec[0], aim_vec[1], aim_vec[2], 0],
-                                                           [up_vec_ortho[0], up_vec_ortho[1], up_vec_ortho[2], 0],
-                                                           [cross_vec[0], cross_vec[1], cross_vec[2], 0],                                                   
-                                                           [prev_jnt[0], prev_jnt[1], prev_jnt[2], 1])            
-            else:
-                cross_vec = aim_vec.cross(up_vec)
-                up_vec_ortho = cross_vec.cross(aim_vec)
-                tm = pm.datatypes.TransformationMatrix(    [aim_vec[0], aim_vec[1], aim_vec[2], 0], 
-                                                           [up_vec_ortho[0], up_vec_ortho[1], up_vec_ortho[2], 0],
-                                                           [cross_vec[0], cross_vec[1], cross_vec[2], 0],
-                                                           [prev_jnt[0], prev_jnt[1], prev_jnt[2], 1])
-    
-            #om_tm = om.MTransformationMatrix(om.MMatrix(tm))
-            #r = om_tm.rotation()
-            #r_deg = pm.util.degrees((r.x, r.y, r.z))
-            #print(r_deg)
+                pm.warning('up_vec is to close to the aim vec')
+            
+            # build a transform matrix from aim and up
+            tm = pet_vector.remap_aim_up(aim_vec, up_vec, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, pos=prev_jnt)
+            
             pm_rot = tm.getRotation()
             r_deg = pm.util.degrees((pm_rot[0], pm_rot[1], pm_rot[2]))
                                     
@@ -85,6 +63,7 @@ def parent_joint_list(joint_list):
     for index, jnt in enumerate(joint_list):
         if index > 0:
             pm.parent(joint_list[index], joint_list[index-1])
+    pm.select(deselect=True)
             
 def add_cable_rig(crv, jnt_list, name, cable_radius):
     
@@ -433,7 +412,7 @@ def setup_selected_curves(sel_list, num_joints=10, cable_radius=.5, cable_axis_d
 
 
 
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 
 #pm.curve(d=3, p=[(0,0,0), (0,5,0), (0,10,0), (0,15,0), (0,15,5)], name='curve1')
 
