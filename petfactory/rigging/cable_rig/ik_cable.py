@@ -70,6 +70,8 @@ def parent_joint_list(joint_list):
 
 def cable_base_ik(crv):
     
+    #crv = pm.rebuildCurve(crv, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, name='new_crv')[0]
+    
     # create the ik joints
     ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True)
     
@@ -83,26 +85,21 @@ def cable_base_ik(crv):
     pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=2, include_start=False, include_end=True))
     
     # build the linear blendshape crv
+    #temp_crv_linear = pm.curve(d=3, p=pos_list)
+    #crv_linear = pm.rebuildCurve(temp_crv_linear, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, n='linear_curve_bs')[0]
     crv_linear = pm.curve(d=3, p=pos_list, n='linear_curve_bs')
     
-    blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
+    
   
     # bind, add ik handle  
     ik_handle = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1])
   
-    pm.skinCluster(ik_jnt_list, crv)
-    
-    # add blendshape condition
-    
-    
-    
-    
+     
     dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
     start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
     end_loc = pm.listConnections( '{0}.endPoint'.format(dist))
     
-    pm.parent(start_loc, ctrl_start)
-    pm.parent(ik_handle[0], end_loc, ctrl_end)
+    
     
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
     
@@ -112,18 +109,13 @@ def cable_base_ik(crv):
     dist.distance >> linear_blendshape_RMV.inputValue
     
     # set the min to 90 percent of the crv length, max to crv length
-    #linear_blendshape_RMV.inputMin.set(crv_length-(crv_length*0.1))
     linear_blendshape_RMV.inputMin.set(jont_chain_length*.8)
     linear_blendshape_RMV.inputMax.set(crv_length)
     
     # set the first value point to use a spline interpolation
     linear_blendshape_RMV.value[0].value_Interp.set(3)
     
-    linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
-    
-    
-    
-    
+        
     
     # set up the condition node
     jnt_cable_rig_stretch_CND = pm.createNode('condition', name='jnt_cable_rig_stretch_CND')
@@ -145,6 +137,22 @@ def cable_base_ik(crv):
     jnt_cable_rig_stretch_CND.outColorR >> ik_jnt_list[1].scaleX
     
     
+    # create the blendshape
+    blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
+    
+    # set the blendshape weight to 1 (weighted to the linear crv) when we bind the crv
+    # this will ensure that we get the correct deformation when the crv is stretched
+    # if we do not do this the cvs will be slighlty off (maya bug?)
+    blendshape_linear.linear_curve_bs.set(1.0)
+    pm.skinCluster(ik_jnt_list[0], crv)
+    
+    # connect the remap out value to control the blendshape
+    linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
+    
+    
+    # organize
+    pm.parent(start_loc, ctrl_start)
+    pm.parent(ik_handle[0], end_loc, ctrl_end)
     pm.parent(ik_jnt_list[0], ctrl_start)
 
     
