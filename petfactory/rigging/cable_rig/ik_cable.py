@@ -65,20 +65,51 @@ def parent_joint_list(joint_list):
 
 def cable_base_ik(crv):
     
+    # create the ik joints
     ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True)
     
     # calculate the cv pos of the lin crv 
     pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=1, include_start=True, include_end=True)
     pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=1, include_start=False, include_end=True))
     
-    crv_linear_blendshape = pm.curve(d=1, p=pos_list, n='linear_curve_blendshape')
+    # build the linear blendshape crv
+    crv_linear = pm.curve(d=1, p=pos_list, n='linear_curve_bs')
     
-    pm.blendShape(crv_linear_blendshape, crv, origin='local')
-    
+    blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
+  
+    # bind, add ik handle  
     pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1])
-    
+  
     pm.skinCluster(ik_jnt_list, crv)
     
+    # add blendshape condition
+    
+    #linear_blendshape_CND = pm.createNode('condition', name='linear_blendshape_CND')
+    linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
+    
+    ik_jnt_list[1].rotateZ >> linear_blendshape_RMV.inputValue
+    
+    linear_blendshape_RMV.inputMin.set(30)
+    linear_blendshape_RMV.inputMax.set(67)
+    
+    # set the first value point to use a spline interpolation
+    linear_blendshape_RMV.value[0].value_Interp.set(3)
+    
+    linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
+
+    
+    
+    # set up the condition node
+    '''
+    ik_jnt_list[1].rotateZ >> linear_blendshape_CND.firstTerm
+    linear_blendshape_CND.operation.set(2)
+    linear_blendshape_CND.secondTerm.set(50)
+    
+    linear_blendshape_CND.colorIfTrue.set(1,0,0)
+    linear_blendshape_CND.colorIfFalse.set(0,0,0)
+    '''
+    
+
     '''
     dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
     start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
@@ -87,6 +118,8 @@ def cable_base_ik(crv):
     pm.parent(start_loc, ik_jnt_list[0])
     pm.parent(end_loc, ik_jnt_list[-1])
     '''
+    
+    
     
 def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=False):
     
