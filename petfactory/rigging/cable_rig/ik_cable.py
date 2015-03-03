@@ -4,7 +4,7 @@ import petfactory.util.vector as pet_vector
 '''
 TODO
 
-add stretch
+add pole vector
 
 '''
 def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True):
@@ -73,6 +73,11 @@ def cable_base_ik(crv):
     # create the ik joints
     ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True)
     
+    ctrl_start = pm.circle()[0]
+    ctrl_start.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
+    
+    ctrl_end = pm.circle()[0]
+    ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
     # calculate the cv pos of the lin crv 
     pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=1, include_start=True, include_end=True)
     pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=1, include_start=False, include_end=True))
@@ -96,8 +101,8 @@ def cable_base_ik(crv):
     start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
     end_loc = pm.listConnections( '{0}.endPoint'.format(dist))
     
-    pm.parent(start_loc, ik_jnt_list[0])
-    pm.parent(end_loc, ik_handle[0])
+    pm.parent(start_loc, ctrl_start)
+    pm.parent(ik_handle[0], end_loc, ctrl_end)
     
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
     
@@ -115,15 +120,30 @@ def cable_base_ik(crv):
     linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
     
     
-    # set up the condition node
-    '''
-    ik_jnt_list[1].rotateZ >> linear_blendshape_CND.firstTerm
-    linear_blendshape_CND.operation.set(2)
-    linear_blendshape_CND.secondTerm.set(50)
+    jont_chain_length = ik_jnt_list[1].tx.get() + ik_jnt_list[-1].tx.get()
     
-    linear_blendshape_CND.colorIfTrue.set(1,0,0)
-    linear_blendshape_CND.colorIfFalse.set(0,0,0)
-    '''
+    
+    # set up the condition node
+    jnt_cable_rig_stretch_CND = pm.createNode('condition', name='jnt_cable_rig_stretch_CND')
+    jnt_cable_rig_stretch_MD = pm.createNode('multiplyDivide', name='jnt_cable_rig_stretch_MD')
+    
+    dist.distance >> jnt_cable_rig_stretch_MD.input1X
+    jnt_cable_rig_stretch_MD.input2X.set(jont_chain_length)
+    jnt_cable_rig_stretch_MD.operation.set(2)
+    
+    jnt_cable_rig_stretch_MD.outputX >> jnt_cable_rig_stretch_CND.colorIfTrueR
+    
+    dist.distance >> jnt_cable_rig_stretch_CND.firstTerm
+    jnt_cable_rig_stretch_CND.operation.set(2)
+    jnt_cable_rig_stretch_CND.secondTerm.set(jont_chain_length)
+    
+    jnt_cable_rig_stretch_CND.colorIfFalseR.set(1)
+    
+    jnt_cable_rig_stretch_CND.outColorR >> ik_jnt_list[0].scaleX
+    jnt_cable_rig_stretch_CND.outColorR >> ik_jnt_list[1].scaleX
+    
+    
+    pm.parent(ik_jnt_list[0], ctrl_start)
 
     
     
