@@ -1,7 +1,12 @@
 import pymel.core as pm
 import petfactory.util.vector as pet_vector
 
+'''
+TODO
 
+add stretch
+
+'''
 def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True):
     
     crv_shape = crv.getShape()
@@ -78,25 +83,36 @@ def cable_base_ik(crv):
     blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
   
     # bind, add ik handle  
-    pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1])
+    ik_handle = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1])
   
     pm.skinCluster(ik_jnt_list, crv)
     
     # add blendshape condition
     
-    #linear_blendshape_CND = pm.createNode('condition', name='linear_blendshape_CND')
+    
+    
+    
+    dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
+    start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
+    end_loc = pm.listConnections( '{0}.endPoint'.format(dist))
+    
+    pm.parent(start_loc, ik_jnt_list[0])
+    pm.parent(end_loc, ik_handle[0])
+    
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
     
-    ik_jnt_list[1].rotateZ >> linear_blendshape_RMV.inputValue
+    crv_length = pm.arclen(crv)
     
-    linear_blendshape_RMV.inputMin.set(30)
-    linear_blendshape_RMV.inputMax.set(67)
+    dist.distance >> linear_blendshape_RMV.inputValue
+    
+    # set the min to 90 percent of the crv length, max to crv length
+    linear_blendshape_RMV.inputMin.set(crv_length-(crv_length*0.1))
+    linear_blendshape_RMV.inputMax.set(crv_length)
     
     # set the first value point to use a spline interpolation
     linear_blendshape_RMV.value[0].value_Interp.set(3)
     
     linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
-
     
     
     # set up the condition node
@@ -108,16 +124,7 @@ def cable_base_ik(crv):
     linear_blendshape_CND.colorIfTrue.set(1,0,0)
     linear_blendshape_CND.colorIfFalse.set(0,0,0)
     '''
-    
 
-    '''
-    dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
-    start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
-    end_loc = pm.listConnections( '{0}.endPoint'.format(dist))
-    
-    pm.parent(start_loc, ik_jnt_list[0])
-    pm.parent(end_loc, ik_jnt_list[-1])
-    '''
     
     
     
