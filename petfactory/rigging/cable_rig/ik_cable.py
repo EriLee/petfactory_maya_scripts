@@ -107,11 +107,13 @@ def cable_base_ik(crv):
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
     
     crv_length = pm.arclen(crv)
+    jont_chain_length = ik_jnt_list[1].tx.get() + ik_jnt_list[-1].tx.get()
     
     dist.distance >> linear_blendshape_RMV.inputValue
     
     # set the min to 90 percent of the crv length, max to crv length
-    linear_blendshape_RMV.inputMin.set(crv_length-(crv_length*0.1))
+    #linear_blendshape_RMV.inputMin.set(crv_length-(crv_length*0.1))
+    linear_blendshape_RMV.inputMin.set(jont_chain_length*.8)
     linear_blendshape_RMV.inputMax.set(crv_length)
     
     # set the first value point to use a spline interpolation
@@ -120,7 +122,7 @@ def cable_base_ik(crv):
     linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
     
     
-    jont_chain_length = ik_jnt_list[1].tx.get() + ik_jnt_list[-1].tx.get()
+    
     
     
     # set up the condition node
