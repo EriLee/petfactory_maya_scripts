@@ -65,17 +65,57 @@ def parent_joint_list(joint_list):
 
 def cable_base_ik(crv):
     
-    jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True)
+    ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True)
     
-    # calculate the cv pos of the lin crv
-    #crv_blendshape = 
-    pm.ikHandle(sj=jnt_list[0], ee=jnt_list[-1])
+    # calculate the cv pos of the lin crv 
+    pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=1, include_start=True, include_end=True)
+    pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=1, include_start=False, include_end=True))
     
+    crv_linear_blendshape = pm.curve(d=1, p=pos_list, n='linear_curve_blendshape')
+    
+    pm.blendShape(crv_linear_blendshape, crv, origin='local')
+    
+    pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1])
+    
+    pm.skinCluster(ik_jnt_list, crv)
+    
+    '''
+    dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
+    start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
+    end_loc = pm.listConnections( '{0}.endPoint'.format(dist))
+    
+    pm.parent(start_loc, ik_jnt_list[0])
+    pm.parent(end_loc, ik_jnt_list[-1])
+    '''
+    
+def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=False):
+    
+    start_vec = pm.datatypes.Vector(start)
+    end_vec = pm.datatypes.Vector(end)
+    delta = end_vec - start_vec
+       
+    u_inc = 1.0 / (num_divisions+1)
+    
+    pos_list = []
+    for n in range(num_divisions+2):
+        
+        if n is 0:
+            if include_start:
+                pos_list.append(start_vec)
+            
+        elif n is num_divisions+1:
+            if include_end:
+                pos_list.append(end_vec)
+        else:
+            pos_list.append(delta * (u_inc*n) + start_vec)
+        
+    return pos_list
+        
+        
    
-    
-    
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 
 crv = pm.PyNode('curve1')
 
 cable_base_ik(crv)
+
