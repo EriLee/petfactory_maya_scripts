@@ -70,6 +70,16 @@ def parent_joint_list(joint_list):
 
 def cable_base_ik(crv):
     
+    crv_shape = crv.getShape()
+    num_cvs = crv_shape.numCVs()
+    num_linear_crv_div = (num_cvs - 3) / 2
+    
+    
+    if num_cvs < 5 or num_cvs % 2 == 0:
+        pm.warning('Please use a curve that has an uneven number of cvs that is greater than 4')
+        return
+        
+    
     #crv = pm.rebuildCurve(crv, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, name='new_crv')[0]
     
     # create the ik joints
@@ -81,8 +91,8 @@ def cable_base_ik(crv):
     ctrl_end = pm.circle()[0]
     ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
     # calculate the cv pos of the lin crv 
-    pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=2, include_start=True, include_end=True)
-    pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=2, include_start=False, include_end=True))
+    pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=True, include_end=True)
+    pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=False, include_end=True))
     
     # build the linear blendshape crv
     #temp_crv_linear = pm.curve(d=3, p=pos_list)
@@ -183,7 +193,9 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
         
         
    
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 
 crv = pm.PyNode('curve1')
 
