@@ -113,8 +113,10 @@ def cable_base_ik(crv, name='curve_rig'):
     
   
     # bind, add ik handle  
-    ik_handle, ik_effector = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikRPsolver')
-  
+    ik_handle_unicode, ik_effector_unicode = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikRPsolver')
+    # since tpm.ikHandle returns unicode and not a PyNode, we need to construct one here
+    ik_handle = pm.PyNode('|{0}'.format(ik_handle_unicode))
+    ik_effector = pm.PyNode('{0}'.format(ik_effector_unicode))
     
     dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
     dist_transform = dist.getParent()
@@ -177,14 +179,24 @@ def cable_base_ik(crv, name='curve_rig'):
     linear_blendshape_RMV.outValue >> blendshape_linear.weight[0]
     
     # pole vector
-    pole_vector_target = pm.spaceLocator(n='polevector_target')
-    pole_vector_target_grp = pm.group(em=True, n='polevector_target_grp')
+    # weird??? should work??
+    #pole_vector_target_unicode = pm.spaceLocator(n='polevector_target')
+    #pole_vector_target = pm.PyNode('|{0}'.format(pole_vector_target_unicode))
+    
+    # seems like we need to us createNode to get an actual PyNode...
+    pole_vector_target_loc_shape = pm.createNode('locator')
+    pole_vector_target = pole_vector_target_loc_shape.getParent()
+    
+    pole_vector_target_grp = pm.group(em=True, n='polevector_target_grp')    
     pm.parent(pole_vector_target, pole_vector_target_grp)
+
+    
     pole_vector_target_grp.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
     pole_vector_target.tz.set(10)
     
     polevector_const = pm.poleVectorConstraint(pole_vector_target, ik_handle)
     ik_handle.twist.set(-90)
+    
     
     # organize
     pm.parent(ctrl_start, ctrl_end, ctrl_grp)
@@ -239,10 +251,14 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
    
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
 
-crv = pm.PyNode('curve1')
+#crv = pm.PyNode('curve1')
+#cable_base_ik(crv)
 
-cable_base_ik(crv)
+crv_list = [pm.PyNode('curve{0}'.format(n+1)) for n in range(4)]
+for crv in crv_list:
+    cable_base_ik(crv)
 
