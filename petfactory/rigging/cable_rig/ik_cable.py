@@ -7,7 +7,7 @@ TODO
 add pole vector
 
 '''
-def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True):
+def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True, name='joint'):
     
     crv_shape = crv.getShape()
     length = crv_shape.length()
@@ -24,7 +24,7 @@ def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lr
         
         u = crv_shape.findParamFromLength(length_inc*index)
         p = crv_shape.getPointAtParam(u, space='world')
-        jnt = pm.createNode('joint', name='joint_{0}'.format(index), ss=True)
+        jnt = pm.createNode('joint', name='{0}_{1}_jnt'.format(name, index), ss=True)
         jnt.translate.set(p)
         jnt_list.append(jnt)
         
@@ -68,9 +68,9 @@ def parent_joint_list(joint_list):
     pm.select(deselect=True)
     
 
-def cable_base_ik(crv):
+def cable_base_ik(crv, name='curve_rig'):
     
-    crv = pm.duplicate(crv, n='cable_rig_cubic_crv')[0]
+    crv = pm.duplicate(crv, n='{0}_cubic_crv'.format(name))[0]
     # freeze transform, keep the position
     pm.makeIdentity(crv, apply=True)
     
@@ -87,12 +87,12 @@ def cable_base_ik(crv):
     #crv = pm.rebuildCurve(crv, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, name='new_crv')[0]
     
     # create the ik joints
-    ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True)
+    ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True, name=name)
     
-    ctrl_start = pm.circle()[0]
+    ctrl_start = pm.circle(n='{0}_start_ctrl'.format(name))[0]
     ctrl_start.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
     
-    ctrl_end = pm.circle()[0]
+    ctrl_end = pm.circle(n='{0}_end_ctrl'.format(name))[0]
     ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
     # calculate the cv pos of the lin crv 
     pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=True, include_end=True)
@@ -101,18 +101,21 @@ def cable_base_ik(crv):
     # build the linear blendshape crv
     #temp_crv_linear = pm.curve(d=3, p=pos_list)
     #crv_linear = pm.rebuildCurve(temp_crv_linear, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, n='linear_curve_bs')[0]
-    crv_linear = pm.curve(d=3, p=pos_list, n='cable_rig_linear_crv')
+    crv_linear = pm.curve(d=3, p=pos_list, n='{0}_linear_crv'.format(name))
     #crv_linear = pm.curve(d=3, p=pos_list, n='linear_curve_bs')
     
     
   
     # bind, add ik handle  
-    ik_handle = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1])
+    ik_handle = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name))
   
     
     dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
-    start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
-    end_loc = pm.listConnections( '{0}.endPoint'.format(dist))
+    dist.getParent().rename('{0}_dist'.format(name))
+    start_loc = pm.listConnections( '{0}.startPoint'.format(dist))[0]
+    start_loc.rename('start_loc')
+    end_loc = pm.listConnections( '{0}.endPoint'.format(dist))[0]
+    end_loc.rename('end_loc')
     
     
     
