@@ -70,6 +70,8 @@ def parent_joint_list(joint_list):
 
 def cable_base_ik(crv):
     
+    crv = pm.duplicate(crv, n='cable_rig_cubic_crv')[0]
+    
     crv_shape = crv.getShape()
     num_cvs = crv_shape.numCVs()
     num_linear_crv_div = (num_cvs - 3) / 2
@@ -97,14 +99,15 @@ def cable_base_ik(crv):
     # build the linear blendshape crv
     #temp_crv_linear = pm.curve(d=3, p=pos_list)
     #crv_linear = pm.rebuildCurve(temp_crv_linear, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, n='linear_curve_bs')[0]
-    crv_linear = pm.curve(d=3, p=pos_list, n='linear_curve_bs')
+    crv_linear = pm.curve(d=3, p=pos_list, n='cable_rig_linear_crv')
+    #crv_linear = pm.curve(d=3, p=pos_list, n='linear_curve_bs')
     
     
   
     # bind, add ik handle  
     ik_handle = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1])
   
-     
+    
     dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
     start_loc = pm.listConnections( '{0}.startPoint'.format(dist))
     end_loc = pm.listConnections( '{0}.endPoint'.format(dist))
@@ -153,11 +156,13 @@ def cable_base_ik(crv):
     # set the blendshape weight to 1 (weighted to the linear crv) when we bind the crv
     # this will ensure that we get the correct deformation when the crv is stretched
     # if we do not do this the cvs will be slighlty off (maya bug?)
-    blendshape_linear.linear_curve_bs.set(1.0)
+    #blendshape_linear.linear_curve_bs.set(1.0)
+    blendshape_linear.weight[0].set(1.0)
     pm.skinCluster(ik_jnt_list[0], crv)
     
     # connect the remap out value to control the blendshape
-    linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
+    #linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
+    linear_blendshape_RMV.outValue >> blendshape_linear.weight[0]
     
     
     # organize
@@ -194,8 +199,9 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
         
    
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg_freeze.mb', f=True)
 
 crv = pm.PyNode('curve1')
 
