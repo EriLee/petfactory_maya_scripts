@@ -71,6 +71,8 @@ def parent_joint_list(joint_list):
 def cable_base_ik(crv):
     
     crv = pm.duplicate(crv, n='cable_rig_cubic_crv')[0]
+    # freeze transform, keep the position
+    pm.makeIdentity(crv, apply=True)
     
     crv_shape = crv.getShape()
     num_cvs = crv_shape.numCVs()
@@ -201,7 +203,7 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg_freeze.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
 crv = pm.PyNode('curve1')
 
