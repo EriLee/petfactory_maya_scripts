@@ -84,6 +84,10 @@ def cable_base_ik(crv, name='curve_rig'):
         return
         
     
+    main_grp = pm.group(em=True, n='{0}_main_grp'.format(name))
+    ctrl_grp = pm.group(em=True, parent=main_grp, n='{0}_ctrl_grp'.format(name))
+    bind_geo_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_geo_grp'.format(name))
+    hidden_grp = pm.group(em=True, parent=main_grp, n='{0}_hidden_grp'.format(name))
     #crv = pm.rebuildCurve(crv, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, name='new_crv')[0]
     
     # create the ik joints
@@ -107,11 +111,12 @@ def cable_base_ik(crv, name='curve_rig'):
     
   
     # bind, add ik handle  
-    ik_handle = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name))
+    ik_handle, ik_effector = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikRPsolver')
   
     
     dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
-    dist.getParent().rename('{0}_dist'.format(name))
+    dist_transform = dist.getParent()
+    dist_transform.rename('{0}_dist'.format(name))
     start_loc = pm.listConnections( '{0}.startPoint'.format(dist))[0]
     start_loc.rename('start_loc')
     end_loc = pm.listConnections( '{0}.endPoint'.format(dist))[0]
@@ -169,11 +174,30 @@ def cable_base_ik(crv, name='curve_rig'):
     #linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
     linear_blendshape_RMV.outValue >> blendshape_linear.weight[0]
     
+    # pole vector
+    pole_vector_target = pm.spaceLocator(n='polevector_target')
+    pole_vector_target_grp = pm.group(em=True, n='polevector_target_grp')
+    pm.parent(pole_vector_target, pole_vector_target_grp)
+    pole_vector_target_grp.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
+    pole_vector_target.tz.set(10)
+    
+    polevector_const = pm.poleVectorConstraint(pole_vector_target, ik_handle)
+    ik_handle.twist.set(-90)
     
     # organize
     pm.parent(start_loc, ctrl_start)
-    pm.parent(ik_handle[0], end_loc, ctrl_end)
+    pm.parent(ik_handle, end_loc, ctrl_end)
     pm.parent(ik_jnt_list[0], ctrl_start)
+    
+    pm.parent(ctrl_start, ctrl_end, ctrl_grp)
+    pm.parent(dist_transform, pole_vector_target_grp, crv_linear, hidden_grp)
+    pm.parent(crv, bind_geo_grp)
+    
+    # uncheck inherit transform on cubic crv
+    crv.inheritsTransform.set(0)
+    
+    # hide grp
+    hidden_grp.visibility.set(0)
 
     
     
