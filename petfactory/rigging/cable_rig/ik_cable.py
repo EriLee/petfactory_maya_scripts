@@ -4,7 +4,6 @@ import petfactory.util.vector as pet_vector
 '''
 TODO
 
-add pole vector
 
 '''
 def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True, name='joint'):
@@ -88,6 +87,9 @@ def cable_base_ik(crv, name='curve_rig'):
     ctrl_grp = pm.group(em=True, parent=main_grp, n='{0}_ctrl_grp'.format(name))
     bind_geo_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_geo_grp'.format(name))
     hidden_grp = pm.group(em=True, parent=main_grp, n='{0}_hidden_grp'.format(name))
+    start_ctrl_hidden_grp = pm.group(em=True, n='{0}_start_ctrl_hidden_grp'.format(name))
+    end_ctrl_hidden_grp = pm.group(em=True, n='{0}_end_ctrl_hidden_grp'.format(name))
+    
     #crv = pm.rebuildCurve(crv, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, name='new_crv')[0]
     
     # create the ik joints
@@ -185,19 +187,27 @@ def cable_base_ik(crv, name='curve_rig'):
     ik_handle.twist.set(-90)
     
     # organize
-    pm.parent(start_loc, ctrl_start)
-    pm.parent(ik_handle, end_loc, ctrl_end)
-    pm.parent(ik_jnt_list[0], ctrl_start)
-    
     pm.parent(ctrl_start, ctrl_end, ctrl_grp)
     pm.parent(dist_transform, pole_vector_target_grp, crv_linear, hidden_grp)
     pm.parent(crv, bind_geo_grp)
+    
+    pm.parent(start_ctrl_hidden_grp, ctrl_start)
+    pm.parent(end_ctrl_hidden_grp, ctrl_end)
+    
+    pm.parent(start_loc, ik_jnt_list[0], start_ctrl_hidden_grp)
+    pm.parent(ik_handle, end_loc, end_ctrl_hidden_grp)
+    
     
     # uncheck inherit transform on cubic crv
     crv.inheritsTransform.set(0)
     
     # hide grp
-    hidden_grp.visibility.set(0)
+    pm.setAttr(hidden_grp.v, 0, lock=True)
+    pm.setAttr(start_ctrl_hidden_grp.v, 0, lock=True)
+    pm.setAttr(end_ctrl_hidden_grp.v, 0, lock=True)
+    
+    crv_shape.overrideEnabled.set(1)
+    crv_shape.overrideDisplayType.set(2)
 
     
     
@@ -229,8 +239,8 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
    
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
 crv = pm.PyNode('curve1')
 
