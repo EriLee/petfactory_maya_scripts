@@ -183,6 +183,9 @@ def cable_base_ik(crv, name='curve_rig'):
     #pole_vector_target_unicode = pm.spaceLocator(n='polevector_target')
     #pole_vector_target = pm.PyNode('|{0}'.format(pole_vector_target_unicode))
     
+    # tried this
+    #pole_vector_target = pm.general.spaceLocator(n='polevector_target')
+    
     # seems like we need to us createNode to get an actual PyNode...
     pole_vector_target_loc_shape = pm.createNode('locator')
     pole_vector_target = pole_vector_target_loc_shape.getParent()
