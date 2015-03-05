@@ -14,8 +14,7 @@ def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lr
     length = crv_shape.length()
     length_inc = length / (num_joints-1)
     
-    crv_matrix = crv.getMatrix(worldSpace=True)
-        
+    crv_matrix = crv.getMatrix(worldSpace=True) 
     up_vec = pm.datatypes.Vector(crv_matrix[up_axis][0], crv_matrix[up_axis][1], crv_matrix[up_axis][2])
     up_vec.normalize()
     
@@ -69,7 +68,7 @@ def parent_joint_list(joint_list):
     pm.select(deselect=True)
     
 
-def cable_base_ik(crv, name='curve_rig', pv_dir=1):
+def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
     
     crv = pm.duplicate(crv, n='{0}_cubic_crv'.format(name))[0]
     # freeze transform, keep the position
@@ -85,8 +84,15 @@ def cable_base_ik(crv, name='curve_rig', pv_dir=1):
         return
         
     
+    min_u, max_u = crv_shape.getKnotDomain()
+    
+    # get the up axis from the crv matrix, used to create a transform matrix for the start / end ctrl
+    crv_matrix = crv.getMatrix(worldSpace=True)
+    up_vec = pm.datatypes.Vector(crv_matrix[up_axis][0], crv_matrix[up_axis][1], crv_matrix[up_axis][2])
+    up_vec.normalize()
+    
+    # position the main grp and position it
     main_grp = pm.group(em=True, n='{0}_main_grp'.format(name))
-    # position the main grp
     main_grp_pos = crv_shape.getPointAtParam(0, space='world')
     main_grp.translate.set(main_grp_pos)
     
@@ -101,10 +107,14 @@ def cable_base_ik(crv, name='curve_rig', pv_dir=1):
     ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True, name=name)
     
     ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='start_ctrl', size=1)
-    ctrl_start.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
+    #ctrl_start.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
+    start_matrix = matrix_from_u(crv=crv, start_u=0, end_u=.05, pos_u=0, up_vec=up_vec)
+    ctrl_start.setMatrix(start_matrix)
     
     ctrl_end = pet_ctrl.CreateCtrl.create_circle_arrow(name='end_ctrl', size=1)
-    ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
+    end_matrix = matrix_from_u(crv=crv, start_u=max_u-.05, end_u=max_u, pos_u=max_u, up_vec=up_vec)
+    #ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
+    ctrl_end.setMatrix(end_matrix)
     
     # calculate the cv pos of the lin crv 
     pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=True, include_end=True)
@@ -228,7 +238,21 @@ def cable_base_ik(crv, name='curve_rig', pv_dir=1):
 
     
     
+def matrix_from_u(crv, start_u, end_u, pos_u, up_vec):
     
+    crv_shape = crv.getShape()
+    
+    start_p = crv_shape.getPointAtParam(start_u, space='world')
+    end_p = crv_shape.getPointAtParam(end_u, space='world')
+    pos_p = crv_shape.getPointAtParam(pos_u, space='world')
+    
+    aim_vec = end_p - start_p
+    
+    tm = pet_vector.remap_aim_up(aim_vec, up_vec, aim_axis=0, up_axis=2, invert_aim=False, invert_up=False, pos=pos_p)
+    return tm
+    
+    
+        
 def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=False):
     
     start_vec = pm.datatypes.Vector(start)
@@ -257,15 +281,16 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
 #crv = pm.PyNode('curve1')
-#cable_base_ik(crv)
+#cable_base_ik(crv, pv_dir=-1)
+
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
 
 crv_list = [pm.PyNode('curve{0}'.format(n+1)) for n in range(4)]
 for crv in crv_list:
     cable_base_dict = cable_base_ik(crv, pv_dir=1)
-    curve_cubic = cable_base_dict.get('curve_cubic')
-    print(curve_cubic)
+    #curve_cubic = cable_base_dict.get('curve_cubic')
+    #print(curve_cubic)
 
