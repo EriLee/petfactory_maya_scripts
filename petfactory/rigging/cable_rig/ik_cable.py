@@ -85,6 +85,7 @@ def cable_base_ik(crv, name='curve_rig', pv_dir=1):
         
     
     main_grp = pm.group(em=True, n='{0}_main_grp'.format(name))
+    # position the main grp
     main_grp_pos = crv_shape.getPointAtParam(0, space='world')
     main_grp.translate.set(main_grp_pos)
     
@@ -215,6 +216,14 @@ def cable_base_ik(crv, name='curve_rig', pv_dir=1):
     
     crv_shape.overrideEnabled.set(1)
     crv_shape.overrideDisplayType.set(2)
+    
+    ret_dict = {}
+    ret_dict['start_ctrl'] = ctrl_start
+    ret_dict['end_ctrl'] = ctrl_end
+    ret_dict['curve_cubic'] = crv
+    ret_dict['curve_linear'] = crv_linear
+    
+    return ret_dict
 
     
     
@@ -255,5 +264,7 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test
 
 crv_list = [pm.PyNode('curve{0}'.format(n+1)) for n in range(4)]
 for crv in crv_list:
-    cable_base_ik(crv, pv_dir=1)
+    cable_base_dict = cable_base_ik(crv, pv_dir=1)
+    curve_cubic = cable_base_dict.get('curve_cubic')
+    print(curve_cubic)
 
