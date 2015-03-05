@@ -1,5 +1,6 @@
 import pymel.core as pm
 import petfactory.util.vector as pet_vector
+import petfactory.rigging.ctrl.ctrl as pet_ctrl
 
 '''
 TODO
@@ -67,7 +68,7 @@ def parent_joint_list(joint_list):
     pm.select(deselect=True)
     
 
-def cable_base_ik(crv, name='curve_rig'):
+def cable_base_ik(crv, name='curve_rig', pv_dir=1):
     
     crv = pm.duplicate(crv, n='{0}_cubic_crv'.format(name))[0]
     # freeze transform, keep the position
@@ -84,34 +85,32 @@ def cable_base_ik(crv, name='curve_rig'):
         
     
     main_grp = pm.group(em=True, n='{0}_main_grp'.format(name))
+    main_grp_pos = crv_shape.getPointAtParam(0, space='world')
+    main_grp.translate.set(main_grp_pos)
+    
     ctrl_grp = pm.group(em=True, parent=main_grp, n='{0}_ctrl_grp'.format(name))
     bind_geo_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_geo_grp'.format(name))
     hidden_grp = pm.group(em=True, parent=main_grp, n='{0}_hidden_grp'.format(name))
     start_ctrl_hidden_grp = pm.group(em=True, n='{0}_start_ctrl_hidden_grp'.format(name))
     end_ctrl_hidden_grp = pm.group(em=True, n='{0}_end_ctrl_hidden_grp'.format(name))
     
-    #crv = pm.rebuildCurve(crv, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, name='new_crv')[0]
-    
+
     # create the ik joints
     ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True, name=name)
     
-    ctrl_start = pm.circle(n='{0}_start_ctrl'.format(name))[0]
+    ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='start_ctrl', size=1)
     ctrl_start.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
     
-    ctrl_end = pm.circle(n='{0}_end_ctrl'.format(name))[0]
+    ctrl_end = pet_ctrl.CreateCtrl.create_circle_arrow(name='end_ctrl', size=1)
     ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
+    
     # calculate the cv pos of the lin crv 
     pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=True, include_end=True)
     pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=False, include_end=True))
     
-    # build the linear blendshape crv
-    #temp_crv_linear = pm.curve(d=3, p=pos_list)
-    #crv_linear = pm.rebuildCurve(temp_crv_linear, keepRange=False, keepControlPoints=True, ch=False, rebuildType=0, replaceOriginal=False, n='linear_curve_bs')[0]
+    # build the linear blendshape crv    
     crv_linear = pm.curve(d=3, p=pos_list, n='{0}_linear_crv'.format(name))
-    #crv_linear = pm.curve(d=3, p=pos_list, n='linear_curve_bs')
-    
-    
-  
+
     # bind, add ik handle  
     ik_handle_unicode, ik_effector_unicode = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikRPsolver')
     # since tpm.ikHandle returns unicode and not a PyNode, we need to construct one here
@@ -179,26 +178,19 @@ def cable_base_ik(crv, name='curve_rig'):
     linear_blendshape_RMV.outValue >> blendshape_linear.weight[0]
     
     # pole vector
-    # weird??? should work??
-    #pole_vector_target_unicode = pm.spaceLocator(n='polevector_target')
-    #pole_vector_target = pm.PyNode('|{0}'.format(pole_vector_target_unicode))
-    
-    # tried this
-    #pole_vector_target = pm.general.spaceLocator(n='polevector_target')
-    
-    # seems like we need to us createNode to get an actual PyNode...
-    pole_vector_target_loc_shape = pm.createNode('locator')
-    pole_vector_target = pole_vector_target_loc_shape.getParent()
+    pole_vector_target = pm.spaceLocator()
     
     pole_vector_target_grp = pm.group(em=True, n='polevector_target_grp')    
     pm.parent(pole_vector_target, pole_vector_target_grp)
+    pole_vector_target.rename('pv_target_loc')
 
     
     pole_vector_target_grp.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
     pole_vector_target.tz.set(10)
     
     polevector_const = pm.poleVectorConstraint(pole_vector_target, ik_handle)
-    ik_handle.twist.set(-90)
+    # multiply by pv_dir
+    ik_handle.twist.set(90*pv_dir)
     
     
     # organize
@@ -263,5 +255,5 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test
 
 crv_list = [pm.PyNode('curve{0}'.format(n+1)) for n in range(4)]
 for crv in crv_list:
-    cable_base_ik(crv)
+    cable_base_ik(crv, pv_dir=1)
 
