@@ -5,6 +5,7 @@ import petfactory.rigging.ctrl.ctrl as pet_ctrl
 '''
 TODO
 
+create the start and end ctrl to point in the dir of the crv seg
 
 '''
 def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True, name='joint'):
