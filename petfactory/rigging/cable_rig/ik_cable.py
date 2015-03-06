@@ -1,6 +1,7 @@
 import pymel.core as pm
 import petfactory.util.vector as pet_vector
 import petfactory.rigging.ctrl.ctrl as pet_ctrl
+import petfactory.modelling.mesh.extrude_profile as pet_extrude
 
 '''
 TODO
@@ -295,9 +296,71 @@ def add_cable_rig_ikspline(crv, name, num_joints):
                                         sj=ikspline_jnt_list[0],
                                         ee=ikspline_jnt_list[-1])
     '''
+    
+    extrude_along_path(crv, cable_radius=.5, cable_length_divisions=30, cable_axis_divisions=12)
 
 
-   
+
+def matrix_from_curve(crv, num_samples=10, up_axis=2):
+
+    crv_shape = crv.getShape()
+    length = crv_shape.length()
+    length_inc = length / (num_samples-1)
+    
+    crv_matrix = crv.getMatrix(worldSpace=True) 
+    up_vec = pm.datatypes.Vector(crv_matrix[up_axis][0], crv_matrix[up_axis][1], crv_matrix[up_axis][2])
+    up_vec.normalize()
+    
+    
+    tm_list = []
+    prev_pos = None
+    for index in range(num_samples+1):
+        
+        u = crv_shape.findParamFromLength(length_inc*index)
+        p = crv_shape.getPointAtParam(u, space='world')
+
+        if index > 0:
+
+            aim_vec = (p - prev_pos).normal()
+            
+            if aim_vec.isParallel(up_vec, tol=0.1):
+                pm.warning('up_vec is to close to the aim vec')
+            
+            
+            tm = pet_vector.remap_aim_up(   aim_vec,
+                                            up_vec,
+                                            aim_axis=0,
+                                            up_axis=2,
+                                            invert_aim=False,
+                                            invert_up=False,
+                                            pos=prev_pos)                
+                
+            tm_list.append(tm)
+            
+        prev_pos = p
+                
+    return tm_list
+
+
+def extrude_along_path(crv, cable_radius=.5, cable_length_divisions=10, cable_axis_divisions=12):
+
+    profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
+    
+    tm_list = matrix_from_curve(crv, num_samples=cable_length_divisions, up_axis=2)
+        
+    extrude_pos_list = []
+    for tm in tm_list:
+        
+        extrude_pos_list.append( [p.rotateBy(tm)+tm.getTranslation(space='world') for p in profile_pos] )
+        
+    pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
+    #pm.skinCluster(joint_list, pm_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
+    
+    return pm_mesh
+    
+    
+    
+       
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
