@@ -277,14 +277,35 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
     return pos_list
         
         
+def add_cable_rig_ikspline(crv, name, num_joints):
+    
+    cable_base_dict = cable_base_ik(crv=crv, name=name, pv_dir=-1)
+    
+    cubic_crv = cable_base_dict['curve_cubic']
+    # create the ik joints
+    ikspline_jnt_list = create_joints_on_curve(crv=crv, num_joints=num_joints, up_axis=2, parent_joints=True, show_lra=True, name=name)
+    
+    '''
+    iks_handle, effector = pm.ikHandle( solver='ikSplineSolver',
+                                        curve=cubic_crv,
+                                        parentCurve=False,
+                                        createCurve=False,
+                                        rootOnCurve=False,
+                                        twistType='easeInOut',
+                                        sj=ikspline_jnt_list[0],
+                                        ee=ikspline_jnt_list[-1])
+    '''
+
+
    
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
+
 crv = pm.PyNode('curve1')
-cable_base_ik(crv, pv_dir=-1)
+add_cable_rig_ikspline(crv=crv, name='cable_rig_name', num_joints=10)
 
 '''
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
