@@ -6,7 +6,8 @@ import petfactory.modelling.mesh.extrude_profile as pet_extrude
 '''
 TODO
 
-create the start and end ctrl to point in the dir of the crv seg
+skip the first and last aim const on the joints
+create the joints and mesh flat on the grid, then attatch to crv.
 
 '''
 def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True, name='joint'):
@@ -235,6 +236,7 @@ def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
     ret_dict['end_ctrl'] = ctrl_end
     ret_dict['curve_cubic'] = crv
     ret_dict['curve_linear'] = crv_linear
+   # ret_dict['polevector'] = pole_vector_target
     
     return ret_dict
 
@@ -281,40 +283,56 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
         
 def add_cable_rig_ikspline(crv, name, num_joints):
     
-    crv_shape = crv.getShape()
-    min_u, max_u = crv_shape.getKnotDomain()
-    
     cable_base_dict = cable_base_ik(crv=crv, name=name, pv_dir=-1)
     
     cubic_crv = cable_base_dict['curve_cubic']
+    start_ctrl = cable_base_dict['start_ctrl']
+    
+    
+    cubic_crv_shape = cubic_crv.getShape()
+    min_u, max_u = cubic_crv_shape.getKnotDomain()
+    cubic_crv_shape_length = cubic_crv_shape.length()
+    
+    
     # create the ik joints
-    ikspline_jnt_list = create_joints_on_curve(crv=cubic_crv, num_joints=num_joints, up_axis=2, parent_joints=False, show_lra=False, name=name)
+    ikspline_jnt_list = create_joints_on_curve(crv=cubic_crv, num_joints=num_joints, up_axis=2, parent_joints=False, show_lra=True, name=name)
     
-    '''
-    iks_handle, effector = pm.ikHandle( solver='ikSplineSolver',
-                                        curve=cubic_crv,
-                                        parentCurve=False,
-                                        createCurve=False,
-                                        rootOnCurve=False,
-                                        twistType='easeInOut',
-                                        sj=ikspline_jnt_list[0],
-                                        ee=ikspline_jnt_list[-1])
-    '''
     
-    cable_mesh = build_cable_mesh(cubic_crv, cable_radius=.5, cable_length_divisions=19, cable_axis_divisions=12)
+    cable_mesh = build_cable_mesh(cubic_crv, cable_radius=.5, cable_length_divisions=20, cable_axis_divisions=12)
     
-    '''
-    # add motion jnt path
-    u_inc = 1.0 / (num_joints-1)    
+    
+    length_inc = cubic_crv_shape_length / (num_joints-1)
     for index, jnt in enumerate(ikspline_jnt_list):
-        # create the motion path node, if fractionMode is True it will use 0-1 u range
-        mp = pm.pathAnimation(jnt, follow=True, bank=True, fractionMode=True, c=cubic_crv)
-        mp = pm.PyNode(mp)
-        anim_crv = pm.listConnections('{0}.uValue'.format(mp))
-        pm.delete(anim_crv)
-        mp.uValue.set(index*u_inc)
-    '''
-   
+        
+        u = cubic_crv_shape.findParamFromLength(length_inc*index) / max_u
+        
+        point_on_crv_info = pm.createNode('pointOnCurveInfo', name='point_on_crv_{0}'.format(index))
+        point_on_crv_info.turnOnPercentage.set(True)
+        cubic_crv_shape.worldSpace >> point_on_crv_info.inputCurve
+        point_on_crv_info.parameter.set(u)
+        point_on_crv_info.position >> jnt.translate
+        
+        # on the last joint, switch aim dir
+        if index == num_joints-1:
+            aim_vector = (-1,0,0)
+            target = ikspline_jnt_list[index-1] 
+            node = ikspline_jnt_list[index]
+            
+        else:
+            aim_vector = (1,0,0)
+            target = ikspline_jnt_list[index+1] 
+            node = ikspline_jnt_list[index]
+        
+        aim_const = pm.aimConstraint(   target,
+                                        node,
+                                        aimVector=aim_vector,
+                                        upVector=(0,0,1),
+                                        worldUpObject=start_ctrl,
+                                        worldUpType='objectrotation',
+                                        worldUpVector=(0,0,1))
+                                            
+
+        
     pm.skinCluster(ikspline_jnt_list, cable_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
 
 
@@ -380,16 +398,16 @@ def build_cable_mesh(crv, cable_radius=.5, cable_length_divisions=10, cable_axis
     
     
        
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
 
-#crv = pm.PyNode('curve1')
-#add_cable_rig_ikspline(crv=crv, name='cable_rig_name', num_joints=10)
+crv = pm.PyNode('curve1')
+add_cable_rig_ikspline(crv=crv, name='cable_rig_name', num_joints=20)
 
-
+'''
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
 
 crv_list = [pm.PyNode('curve{0}'.format(n+1)) for n in range(4)]
@@ -398,3 +416,4 @@ for crv in crv_list:
     add_cable_rig_ikspline(crv=crv, name='cable_rig_name', num_joints=10)
     #curve_cubic = cable_base_dict.get('curve_cubic')
     #print(curve_cubic)
+'''
