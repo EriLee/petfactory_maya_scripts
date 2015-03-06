@@ -280,12 +280,13 @@ def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=
    
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
-#crv = pm.PyNode('curve1')
-#cable_base_ik(crv, pv_dir=-1)
+crv = pm.PyNode('curve1')
+cable_base_ik(crv, pv_dir=-1)
 
+'''
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
 
 crv_list = [pm.PyNode('curve{0}'.format(n+1)) for n in range(4)]
@@ -293,4 +294,4 @@ for crv in crv_list:
     cable_base_dict = cable_base_ik(crv, pv_dir=1)
     #curve_cubic = cable_base_dict.get('curve_cubic')
     #print(curve_cubic)
-
+'''
