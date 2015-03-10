@@ -178,11 +178,12 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     
     crv_length = pm.arclen(crv)
     
-    jont_chain_length = 0
-    for index, jnt in enumerate(ik_jnt_list):
-        if index is 0:
-            continue
+    # get the length of the joint chain by getting the tx of the second to last jnt
+    # I slice the ik_jnt_list to skip the first jnt
+    jont_chain_length = 0  
+    for jnt in ik_jnt_list[1:]:
         jont_chain_length += jnt.tx.get()
+        
         
     dist.distance >> linear_blendshape_RMV.inputValue
     
@@ -211,9 +212,10 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     
     jnt_cable_rig_stretch_CND.colorIfFalseR.set(1)
     
-    jnt_cable_rig_stretch_CND.outColorR >> ik_jnt_list[0].scaleX
-    jnt_cable_rig_stretch_CND.outColorR >> ik_jnt_list[1].scaleX
-    
+    # hook up stretch scaling of the jnts
+    for jnt in ik_jnt_list[:-1]:
+        jnt_cable_rig_stretch_CND.outColorR >> jnt.scaleX
+
     
     # create the blendshape
     blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
@@ -281,7 +283,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     return ret_dict
 
     
-    
+  
 def matrix_from_u(crv, start_u, end_u, pos_u, up_vec):
     
     crv_shape = crv.getShape()
@@ -296,7 +298,26 @@ def matrix_from_u(crv, start_u, end_u, pos_u, up_vec):
     return tm
     
     
+def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radius=.5, cable_axis_divisions=12):
 
+    profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
+   
+    start_pos = pm.datatypes.Vector(pm.xform(start_joint, ws=True, t=True, q=True))
+    end_pos = pm.datatypes.Vector(pm.xform(end_joint, ws=True, t=True, q=True))
+    distance = (end_pos - start_pos).length()
+    length_inc = distance / (length_divisions-1)
+    
+    extrude_pos_list = []
+    for i in range(length_divisions):
+        tm = pm.datatypes.TransformationMatrix(start_joint.getMatrix(ws=True))
+        pos = pm.datatypes.Vector(i*length_inc,0,0)
+        extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
+        
+    pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
+
+    return pm_mesh
+    
+    
 def interpolate_positions(pos_list, num_divisions=1):
     
     u_inc = 1.0 / (num_divisions+1)
@@ -321,7 +342,7 @@ def interpolate_positions(pos_list, num_divisions=1):
     
     return ret_pos_list
     
-           
+    
 def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1):
     
     cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir)
@@ -391,67 +412,10 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
                                         worldUpVector=(0,0,1))
                                             
 
-def matrix_from_curve(crv, num_samples=10, up_axis=2):
-
-    crv_shape = crv.getShape()
-    length = crv_shape.length()
-    length_inc = length / (num_samples-1)
-    
-    crv_matrix = crv.getMatrix(worldSpace=True) 
-    up_vec = pm.datatypes.Vector(crv_matrix[up_axis][0], crv_matrix[up_axis][1], crv_matrix[up_axis][2])
-    up_vec.normalize()
-    
-    
-    tm_list = []
-    prev_pos = None
-    for index in range(num_samples+1):
-        
-        u = crv_shape.findParamFromLength(length_inc*index)
-        p = crv_shape.getPointAtParam(u, space='world')
-
-        if index > 0:
-
-            aim_vec = (p - prev_pos).normal()
-            
-            if aim_vec.isParallel(up_vec, tol=0.1):
-                pm.warning('up_vec is to close to the aim vec')
-            
-            
-            tm = pet_vector.remap_aim_up(   aim_vec,
-                                            up_vec,
-                                            aim_axis=0,
-                                            up_axis=2,
-                                            invert_aim=False,
-                                            invert_up=False,
-                                            pos=prev_pos)                
-                
-            tm_list.append(tm)
-            
-        prev_pos = p
-                
-    return tm_list
-
   
-def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radius=.5, cable_axis_divisions=12):
 
-    profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
-   
-    start_pos = pm.datatypes.Vector(pm.xform(start_joint, ws=True, t=True, q=True))
-    end_pos = pm.datatypes.Vector(pm.xform(end_joint, ws=True, t=True, q=True))
-    distance = (end_pos - start_pos).length()
-    length_inc = distance / (length_divisions-1)
     
-    extrude_pos_list = []
-    for i in range(length_divisions):
-        tm = pm.datatypes.TransformationMatrix(start_joint.getMatrix(ws=True))
-        pos = pm.datatypes.Vector(i*length_inc,0,0)
-        extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
-        
-    pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
-
-    return pm_mesh
-    
-    
+ 
     
        
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
