@@ -416,18 +416,21 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
                                         worldUpType='objectrotation',
                                         worldUpVector=(0,0,1))
                                         
-        
-        bind_jnt_grp.inheritsTransform.set(False)                 
-        geo_grp.inheritsTransform.set(False)                 
-            
-        pm.parent(joint_list, bind_jnt_grp)
-        pm.parent(cable_mesh, geo_grp)
-        
-                                            
-
-  
-
+     
+    # organizw       
+    pm.parent(joint_list, bind_jnt_grp)
+    pm.parent(cable_mesh, geo_grp)
     
+    # set attrs
+    bind_jnt_grp.inheritsTransform.set(False)                 
+    geo_grp.inheritsTransform.set(False)
+    
+    cable_mesh.overrideEnabled.set(1)
+    cable_mesh.overrideDisplayType.set(2)
+    
+    pm.setAttr(bind_jnt_grp.v, 0, lock=True)
+
+        
  
     
        
