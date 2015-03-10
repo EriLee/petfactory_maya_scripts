@@ -278,6 +278,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     ret_dict['curve_cubic'] = crv
     ret_dict['curve_linear'] = crv_linear
     ret_dict['remap_value'] = linear_blendshape_RMV
+    ret_dict['main_grp'] = main_grp
     #ret_dict['polevector'] = pole_vector_target
     
     return ret_dict
@@ -351,7 +352,11 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     linear_crv = cable_base_dict['curve_linear']
     start_ctrl = cable_base_dict['start_ctrl']
     linear_blendshape_RMV = cable_base_dict['remap_value']
+    main_grp = cable_base_dict['main_grp']
     
+    
+    bind_jnt_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_jnt_grp'.format(name))
+    geo_grp = pm.group(em=True, parent=main_grp, n='{0}_geo_grp'.format(name))
         
     linear_crv_shape = linear_crv.getShape()
     linear_crv_min_u, linear_crv_max_u = linear_crv_shape.getKnotDomain()
@@ -410,6 +415,14 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
                                         worldUpObject=start_ctrl,
                                         worldUpType='objectrotation',
                                         worldUpVector=(0,0,1))
+                                        
+        
+        bind_jnt_grp.inheritsTransform.set(False)                 
+        geo_grp.inheritsTransform.set(False)                 
+            
+        pm.parent(joint_list, bind_jnt_grp)
+        pm.parent(cable_mesh, geo_grp)
+        
                                             
 
   
