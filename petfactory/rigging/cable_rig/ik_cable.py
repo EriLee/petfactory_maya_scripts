@@ -90,22 +90,30 @@ def parent_joint_list(joint_list):
     pm.select(deselect=True)
     
 
-def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
-    
-    crv = pm.duplicate(crv, n='{0}_cubic_crv'.format(name))[0]
-    # freeze transform, keep the position
-    pm.makeIdentity(crv, apply=True)
-    
+def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
+        
     crv_shape = crv.getShape()
     num_cvs = crv_shape.numCVs()
-    num_linear_crv_div = (num_cvs - 3) / 2
+
+    cvs_per_bone = float(num_cvs - num_joints) / (num_joints-1)
+    min_cv_count = num_joints + (num_joints-1)
     
+    # check if the number of cvs are valid
+    if num_cvs >= min_cv_count and cvs_per_bone % 1 == 0:
+        print('valid number of cvs')
     
-    if num_cvs < 5 or num_cvs % 2 == 0:
-        pm.warning('Please use a curve that has an uneven number of cvs that is greater than 4')
+    else:
+        pm.warning('The number of cvs must be at least {0} and follow pattern num_jnt+(num_jnt-1)*n where n is positive integer'.format(min_cv_count))
         return
         
+        
+    # duplicate the crv, freeze transform, keep the position
+    crv = pm.duplicate(crv, n='{0}_cubic_crv'.format(name))[0]
+    pm.makeIdentity(crv, apply=True)
+    crv_shape = crv.getShape()
     
+        
+    num_linear_crv_div = (num_cvs - 3) / 2    
     min_u, max_u = crv_shape.getKnotDomain()
     
     # get the up axis from the crv matrix, used to create a transform matrix for the start / end ctrl
@@ -118,6 +126,7 @@ def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
     main_grp_pos = crv_shape.getPointAtParam(0, space='world')
     main_grp.translate.set(main_grp_pos)
     
+    # organize, create groups
     ctrl_grp = pm.group(em=True, parent=main_grp, n='{0}_ctrl_grp'.format(name))
     bind_geo_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_geo_grp'.format(name))
     hidden_grp = pm.group(em=True, parent=main_grp, n='{0}_hidden_grp'.format(name))
@@ -126,7 +135,7 @@ def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
     
 
     # create the ik joints
-    ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=3, up_axis=2, parent_joints=True, show_lra=True, name='{0}_base_ik'.format(name))
+    ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=num_joints, up_axis=2, parent_joints=True, show_lra=True, name='{0}_base_ik'.format(name))
     
     ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='start_ctrl', size=1)
     #ctrl_start.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
@@ -137,19 +146,23 @@ def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
     end_matrix = matrix_from_u(crv=crv, start_u=max_u-.05, end_u=max_u, pos_u=max_u, up_vec=up_vec)
     #ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
     ctrl_end.setMatrix(end_matrix)
+        
+    jnt_pos_list = [ jnt.getTranslation(space='world') for jnt in ik_jnt_list ]
+    pos_list = interpolate_positions(pos_list=jnt_pos_list, num_divisions=int(cvs_per_bone))
     
-    # calculate the cv pos of the lin crv 
-    pos_list = get_pos_on_line(start=ik_jnt_list[0].getTranslation(space='world'), end=ik_jnt_list[1].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=True, include_end=True)
-    pos_list.extend(get_pos_on_line(start=ik_jnt_list[1].getTranslation(space='world'), end=ik_jnt_list[2].getTranslation(space='world'), num_divisions=num_linear_crv_div, include_start=False, include_end=True))
     
     # build the linear blendshape crv    
     crv_linear = pm.curve(d=3, p=pos_list, n='{0}_linear_crv'.format(name))
 
+    
     # bind, add ik handle  
     ik_handle_unicode, ik_effector_unicode = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikRPsolver')
     # since tpm.ikHandle returns unicode and not a PyNode, we need to construct one here
     ik_handle = pm.PyNode('|{0}'.format(ik_handle_unicode))
     ik_effector = pm.PyNode('{0}'.format(ik_effector_unicode))
+    
+    
+    
     
     dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
     dist_transform = dist.getParent()
@@ -164,8 +177,13 @@ def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
     
     crv_length = pm.arclen(crv)
-    jont_chain_length = ik_jnt_list[1].tx.get() + ik_jnt_list[-1].tx.get()
     
+    jont_chain_length = 0
+    for index, jnt in enumerate(ik_jnt_list):
+        if index is 0:
+            continue
+        jont_chain_length += jnt.tx.get()
+        
     dist.distance >> linear_blendshape_RMV.inputValue
     
     # set the min to 90 percent of the crv length, max to crv length
@@ -243,9 +261,11 @@ def cable_base_ik(crv, name='curve_rig', up_axis=2, pv_dir=1):
     crv.inheritsTransform.set(0)
     
     # hide grp
+
     pm.setAttr(hidden_grp.v, 0, lock=True)
     pm.setAttr(start_ctrl_hidden_grp.v, 0, lock=True)
     pm.setAttr(end_ctrl_hidden_grp.v, 0, lock=True)
+    
     
     crv_shape.overrideEnabled.set(1)
     crv_shape.overrideDisplayType.set(2)
@@ -276,34 +296,35 @@ def matrix_from_u(crv, start_u, end_u, pos_u, up_vec):
     return tm
     
     
-        
-def get_pos_on_line(start, end, num_divisions, include_start=False, include_end=False):
+
+def interpolate_positions(pos_list, num_divisions=1):
     
-    start_vec = pm.datatypes.Vector(start)
-    end_vec = pm.datatypes.Vector(end)
-    delta = end_vec - start_vec
-       
     u_inc = 1.0 / (num_divisions+1)
+    last_index = len(pos_list)-1
     
-    pos_list = []
-    for n in range(num_divisions+2):
+    ret_pos_list = []
+    for index, pos in enumerate(pos_list):
         
-        if n is 0:
-            if include_start:
-                pos_list.append(start_vec)
+        if index < last_index:
             
-        elif n is num_divisions+1:
-            if include_end:
-                pos_list.append(end_vec)
+            dx = pos_list[index+1][0] - pos_list[index][0]
+            dy = pos_list[index+1][1] - pos_list[index][1]
+            dz = pos_list[index+1][2] - pos_list[index][2]
+            
+            for u in range(num_divisions+1):
+                ret_pos_list.append((   pos_list[index][0] + dx*u*u_inc,
+                                        pos_list[index][1] + dy*u*u_inc,
+                                        pos_list[index][2] + dz*u*u_inc))
+    
         else:
-            pos_list.append(delta * (u_inc*n) + start_vec)
-        
-    return pos_list
-        
-        
+            ret_pos_list.append(pos_list[-1])
+    
+    return ret_pos_list
+    
+           
 def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
     
-    cable_base_dict = cable_base_ik(crv=crv, name=name, pv_dir=pv_dir)
+    cable_base_dict = cable_base_ik(crv=crv, num_joints=3, name=name, pv_dir=pv_dir)
     
     cubic_crv = cable_base_dict['curve_cubic']
     linear_crv = cable_base_dict['curve_linear']
@@ -410,37 +431,7 @@ def matrix_from_curve(crv, num_samples=10, up_axis=2):
                 
     return tm_list
 
-'''
-def build_cable_mesh(crv, cable_radius=.5, cable_length_divisions=10, cable_axis_divisions=12):
-
-    profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
-    
-    #tm_list = matrix_from_curve(crv, num_samples=cable_length_divisions, up_axis=2)
-        
-    extrude_pos_list = []
-    for tm in tm_list:
-        
-        extrude_pos_list.append( [p.rotateBy(tm)+tm.getTranslation(space='world') for p in profile_pos] )
-        
-    pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
-
-    return pm_mesh
-
-def mesh_from_joints(joint_list, cable_radius=.5, cable_axis_divisions=12):
-
-    profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
-       
-    extrude_pos_list = []
-    for jnt in joint_list:
-        tm = pm.datatypes.TransformationMatrix(jnt.getMatrix(ws=True))
-        pos = pm.xform(jnt, ws=True, t=True, q=True)
-        extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
-        
-    pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
-
-    return pm_mesh
-'''    
-
+  
 def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radius=.5, cable_axis_divisions=12):
 
     profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
@@ -464,14 +455,18 @@ def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radiu
     
        
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_9_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
 
 crv = pm.PyNode('curve1')
-add_cable_bind_joints(crv=crv, name='cable_rig_name', num_joints=20, pv_dir=-1)
+#add_cable_bind_joints(crv=crv, name='cable_rig_name', num_joints=20, pv_dir=-1)
+cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
 
+#def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
+    
 '''
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
 
