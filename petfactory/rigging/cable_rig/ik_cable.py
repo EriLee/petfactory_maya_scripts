@@ -351,6 +351,7 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     cubic_crv = cable_base_dict['curve_cubic']
     linear_crv = cable_base_dict['curve_linear']
     start_ctrl = cable_base_dict['start_ctrl']
+    end_ctrl = cable_base_dict['end_ctrl']
     linear_blendshape_RMV = cable_base_dict['remap_value']
     main_grp = cable_base_dict['main_grp']
     
@@ -378,6 +379,29 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     cubic_length_inc = cubic_curve_length / (num_bind_joints-1)
     linear_length_inc = linear_curve_length / (num_bind_joints-1)
     
+    '''
+    start_const_jnt_list = [pm.createNode('joint', name='{0}_{1}_start_const_jnt'.format(name, index), ss=True) for index in range(3)]
+    start_ctrl_const_jnt_list = [pm.createNode('joint', name='{0}_{1}_start_ctrl_const_jnt'.format(name, index), ss=True) for index in range(3)]
+    
+    end_const_jnt_list = [pm.createNode('joint', name='{0}_{1}_end_const_jnt'.format(name, index), ss=True) for index in range(3)]
+    end_ctrl_const_jnt_list = [pm.createNode('joint', name='{0}_{1}_end_ctrl_const_jnt'.format(name, index), ss=True) for index in range(3)]
+    
+    
+    start_const_grp = pm.group(em=True, n='{0}_start_const_grp'.format(name))
+    start_const_grp.setMatrix(start_ctrl.getMatrix(worldSpace=True))
+    pm.parent(start_const_grp, start_ctrl)
+    
+    
+    end_const_grp = pm.group(em=True, n='{0}_end_const_grp'.format(name))
+    end_const_grp.setMatrix(end_ctrl.getMatrix(worldSpace=True))
+    pm.parent(end_const_grp, end_ctrl)
+
+    pm.parent(start_ctrl_const_jnt_list, start_const_grp)
+    pm.parent(end_ctrl_const_jnt_list, end_const_grp)
+    '''
+
+    
+    #print(cubic_length_inc)
     for index, jnt in enumerate(joint_list):
         
         point_on_crv_info = pm.createNode('pointOnCurveInfo', name='point_on_crv_{0}'.format(index))
@@ -393,31 +417,91 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
         blend.output >> point_on_crv_info.parameter
         linear_blendshape_RMV.outValue >> blend.attributesBlender
         
+        '''
+        # first 3 jnts
+        if index < 3:
+            
+            start_ctrl_const_jnt_list[index].setMatrix(start_ctrl.getMatrix(worldSpace=True))
+            start_ctrl_const_jnt_list[index].rotate.set(0,0,0)
+            start_ctrl_const_jnt_list[index].translate.set(cubic_length_inc*index,0,0)
+            point_on_crv_info.position >> start_const_jnt_list[index].translate
+                                    
+            # we are not on the third and last start_const jnt
+            if index < 2:
+                aim_vector = (1,0,0)
+                target = start_const_jnt_list[index+1] 
+                node = start_const_jnt_list[index]
+                
+            # the last start_const joint needs to be aimed at the next bind joint
+            else:
+                target = joint_list[index+1] 
+                node = start_const_jnt_list[index]
+               
+             
+            aim_const = pm.aimConstraint(   target,
+                                            node,
+                                            aimVector=aim_vector,
+                                            upVector=(0,0,1),
+                                            worldUpObject=start_ctrl,
+                                            worldUpType='objectrotation',
+                                            worldUpVector=(0,0,1))
+                              
+            pm.pointConstraint(start_const_jnt_list[index], start_ctrl_const_jnt_list[index], joint_list[index])
+            
+            aim_const = pm.aimConstraint(   joint_list[index+1] ,
+                                            joint_list[index],
+                                            aimVector=(1,0,0),
+                                            upVector=(0,0,1),
+                                            worldUpObject=start_ctrl,
+                                            worldUpType='objectrotation',
+                                            worldUpVector=(0,0,1))
+
+                                             
+        # last 3 jnts   
+        elif index > num_bind_joints-4:
+            # we need to "remap" the index to 0, 1, 3 ...
+            last_index = (num_bind_joints-1)-index
+            point_on_crv_info.position >> end_const_jnt_list[last_index].translate
+                                                          
+        else:            
+            point_on_crv_info.position >> jnt.translate
+            
+            aim_const = pm.aimConstraint(   joint_list[index+1] ,
+                                            joint_list[index],
+                                            aimVector=(1,0,0),
+                                            upVector=(0,0,1),
+                                            worldUpObject=start_ctrl,
+                                            worldUpType='objectrotation',
+                                            worldUpVector=(0,0,1))
         
-        #point_on_crv_info.parameter.set(u)
+
+        '''
         point_on_crv_info.position >> jnt.translate
         
-        # on the last joint, switch aim dir
-        if index == num_bind_joints-1:
-            aim_vector = (-1,0,0)
-            target = joint_list[index-1] 
-            node = joint_list[index]
-            
-        else:
-            aim_vector = (1,0,0)
-            target = joint_list[index+1] 
-            node = joint_list[index]
         
-        aim_const = pm.aimConstraint(   target,
-                                        node,
-                                        aimVector=aim_vector,
-                                        upVector=(0,0,1),
-                                        worldUpObject=start_ctrl,
-                                        worldUpType='objectrotation',
-                                        worldUpVector=(0,0,1))
+        # orient constrain the first jnt to start ctrl
+        if index == 0:
+            pm.orientConstraint(start_ctrl, joint_list[index])
+
+        # orient constrain the last jnt to end ctrl        
+        elif index == num_bind_joints-1:
+            pm.orientConstraint(end_ctrl, joint_list[index])
+   
+        # aim constrain the joints in between to aim at next bind joint    
+        else:
+            pm.aimConstraint(   joint_list[index+1],
+                                joint_list[index],
+                                aimVector=(1,0,0),
+                                upVector=(0,0,1),
+                                worldUpObject=start_ctrl,
+                                worldUpType='objectrotation',
+                                worldUpVector=(0,0,1))
+
+
+
                                         
      
-    # organizw       
+    # organize       
     pm.parent(joint_list, bind_jnt_grp)
     pm.parent(cable_mesh, geo_grp)
     
@@ -442,7 +526,7 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_
 
 
 crv = pm.PyNode('curve1')
-add_cable_bind_joints(crv=crv, name='cable_rig_name', num_ik_joints=4, num_bind_joints=20, pv_dir=1)
+add_cable_bind_joints(crv=crv, name='cable_rig_name', num_ik_joints=4, num_bind_joints=13, pv_dir=1)
 #cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
 
 #def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
