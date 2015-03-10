@@ -322,9 +322,9 @@ def interpolate_positions(pos_list, num_divisions=1):
     return ret_pos_list
     
            
-def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
+def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1):
     
-    cable_base_dict = cable_base_ik(crv=crv, num_joints=3, name=name, pv_dir=pv_dir)
+    cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir)
     
     cubic_crv = cable_base_dict['curve_cubic']
     linear_crv = cable_base_dict['curve_linear']
@@ -341,16 +341,16 @@ def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
     cubic_curve_length = cubic_crv_shape.length()
     
     # build the cable joints
-    joint_list = create_joints_on_axis(num_joints=num_joints, show_lra=show_lra)
+    joint_list = create_joints_on_axis(num_joints=num_bind_joints, show_lra=show_lra)
     
     # create the mesh
-    cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_joints*2)-1)
+    cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_bind_joints*2)-1)
     
     pm.skinCluster(joint_list, cable_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
     
     
-    cubic_length_inc = cubic_curve_length / (num_joints-1)
-    linear_length_inc = linear_curve_length / (num_joints-1)
+    cubic_length_inc = cubic_curve_length / (num_bind_joints-1)
+    linear_length_inc = linear_curve_length / (num_bind_joints-1)
     
     for index, jnt in enumerate(joint_list):
         
@@ -372,7 +372,7 @@ def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
         point_on_crv_info.position >> jnt.translate
         
         # on the last joint, switch aim dir
-        if index == num_joints-1:
+        if index == num_bind_joints-1:
             aim_vector = (-1,0,0)
             target = joint_list[index-1] 
             node = joint_list[index]
@@ -462,8 +462,8 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_
 
 
 crv = pm.PyNode('curve1')
-#add_cable_bind_joints(crv=crv, name='cable_rig_name', num_joints=20, pv_dir=-1)
-cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
+add_cable_bind_joints(crv=crv, name='cable_rig_name', num_ik_joints=4, num_bind_joints=20, pv_dir=1)
+#cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
 
 #def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
     
