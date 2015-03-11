@@ -29,11 +29,14 @@ def create_joints_on_axis(num_joints=10, parent_joints=False, show_lra=True, nam
     
     return jnt_list
     
-def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True, name='joint'):
+def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lra=True, name='joint', start_offset=0, end_offset=0):
     
     crv_shape = crv.getShape()
-    length = crv_shape.length()
+    crv_length = crv_shape.length()
+    
+    length = crv_length * (1.0-start_offset-end_offset)
     length_inc = length / (num_joints-1)
+    start_length_offset = crv_length * start_offset
     
     crv_matrix = crv.getMatrix(worldSpace=True) 
     up_vec = pm.datatypes.Vector(crv_matrix[up_axis][0], crv_matrix[up_axis][1], crv_matrix[up_axis][2])
@@ -43,7 +46,7 @@ def create_joints_on_curve(crv, num_joints, up_axis, parent_joints=True, show_lr
     jnt_list = []
     for index in range(num_joints):
         
-        u = crv_shape.findParamFromLength(length_inc*index)
+        u = crv_shape.findParamFromLength(length_inc*index+start_length_offset)
         p = crv_shape.getPointAtParam(u, space='world')
         jnt = pm.createNode('joint', name='{0}_{1}_jnt'.format(name, index), ss=True)
         jnt.translate.set(p)
@@ -137,16 +140,24 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     # create the ik joints
     ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=num_joints, up_axis=2, parent_joints=True, show_lra=True, name='{0}_base_ik'.format(name))
     
-    ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='start_ctrl', size=1)
-    #ctrl_start.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
+    # calculate the start and end t matrix
     start_matrix = matrix_from_u(crv=crv, start_u=0, end_u=.05, pos_u=0, up_vec=up_vec)
+    end_matrix = matrix_from_u(crv=crv, start_u=max_u-.05, end_u=max_u, pos_u=max_u, up_vec=up_vec)
+    
+    #start_jnt = pm.createNode('joint', name='{0}_start_ctrl_jnt'.format(name), ss=True)
+    #start_jnt.setMatrix(start_matrix)
+    
+    #end_jnt = pm.createNode('joint', name='{0}_end_ctrl_jnt'.format(name), ss=True)
+    #end_jnt.setMatrix(end_matrix)
+    
+    # create start and end ctrl
+    ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='start_ctrl', size=1)
     ctrl_start.setMatrix(start_matrix)
     
     ctrl_end = pet_ctrl.CreateCtrl.create_circle_arrow(name='end_ctrl', size=1)
-    end_matrix = matrix_from_u(crv=crv, start_u=max_u-.05, end_u=max_u, pos_u=max_u, up_vec=up_vec)
-    #ctrl_end.setMatrix(ik_jnt_list[-1].getMatrix(worldSpace=True))
     ctrl_end.setMatrix(end_matrix)
-        
+   
+    # build the linear curve 
     jnt_pos_list = [ jnt.getTranslation(space='world') for jnt in ik_jnt_list ]
     pos_list = interpolate_positions(pos_list=jnt_pos_list, num_divisions=int(cvs_per_bone))
     
@@ -225,7 +236,9 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     # if we do not do this the cvs will be slighlty off (maya bug?)
     #blendshape_linear.linear_curve_bs.set(1.0)
     blendshape_linear.weight[0].set(1.0)
-    pm.skinCluster(ik_jnt_list[0], crv)
+
+    
+    pm.skinCluster(ik_jnt_list, crv)
     
     # connect the remap out value to control the blendshape
     #linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
@@ -263,11 +276,9 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     crv.inheritsTransform.set(0)
     
     # hide grp
-
     pm.setAttr(hidden_grp.v, 0, lock=True)
     pm.setAttr(start_ctrl_hidden_grp.v, 0, lock=True)
     pm.setAttr(end_ctrl_hidden_grp.v, 0, lock=True)
-    
     
     crv_shape.overrideEnabled.set(1)
     crv_shape.overrideDisplayType.set(2)
@@ -518,14 +529,17 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
  
     
        
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_9_cvs.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
 
 crv = pm.PyNode('curve1')
+#cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='test', pv_dir=1)
+#create_joints_on_curve(crv=crv, num_joints=4, up_axis=2, parent_joints=True, show_lra=True, name='joint')
+
 add_cable_bind_joints(crv=crv, name='cable_rig_name', num_ik_joints=4, num_bind_joints=13, pv_dir=1)
 #cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
 
