@@ -135,6 +135,8 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     hidden_grp = pm.group(em=True, parent=main_grp, n='{0}_hidden_grp'.format(name))
     start_ctrl_hidden_grp = pm.group(em=True, n='{0}_start_ctrl_hidden_grp'.format(name))
     end_ctrl_hidden_grp = pm.group(em=True, n='{0}_end_ctrl_hidden_grp'.format(name))
+    no_inherit_trans_grp = pm.group(em=True, parent=hidden_grp, n='{0}_no_inherit_trans_grp'.format(name))
+    no_inherit_trans_grp.inheritsTransform.set(0)
     
 
     # create the ik joints
@@ -143,12 +145,6 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     # calculate the start and end t matrix
     start_matrix = matrix_from_u(crv=crv, start_u=0, end_u=.05, pos_u=0, up_vec=up_vec)
     end_matrix = matrix_from_u(crv=crv, start_u=max_u-.05, end_u=max_u, pos_u=max_u, up_vec=up_vec)
-    
-    #start_jnt = pm.createNode('joint', name='{0}_start_ctrl_jnt'.format(name), ss=True)
-    #start_jnt.setMatrix(start_matrix)
-    
-    #end_jnt = pm.createNode('joint', name='{0}_end_ctrl_jnt'.format(name), ss=True)
-    #end_jnt.setMatrix(end_matrix)
     
     # create start and end ctrl
     ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='start_ctrl', size=1)
@@ -288,18 +284,27 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     nhair_dict = nhair_dynamics.make_curve_dynamic(crv)
 
     output_curve = nhair_dict.get('output_curve')
+    output_curve.rename('{0}_output_curve'.format(name))
     #follicle = nhair_dict.get('follicle')
     #nucleus = nhair_dict.get('nucleus')
     #hairsystem = nhair_dict.get('hairsystem')
     
+    
+    
     # create a duplicate of the orig crv
-    result_crv_shape = pm.createNode('nurbsCurve', n='{0}_result_crv'.format(name))
+    result_crv_shape = pm.createNode('nurbsCurve', n='{0}_result_crvShape'.format(name))
     result_crv = result_crv_shape.getParent()
+    result_crv.rename('{0}_result_crv'.format(name))
 
     crv_shape.worldSpace[0] >> result_crv_shape.create
-    pm.blendShape(output_curve, result_crv, origin='local')
+    nhair_blendshape = pm.blendShape(output_curve, result_crv, origin='local')[0]
     
-
+    
+    # add attr to control the nahir blend shape
+    pm.addAttr(ctrl_start, longName='use_nhair_sim', keyable=True, min=0, max=1, defaultValue=0)
+    ctrl_start.use_nhair_sim >> nhair_blendshape.weight[0]
+    
+    pm.parent(result_crv, output_curve, no_inherit_trans_grp)
     
     ret_dict = {}
     ret_dict['start_ctrl'] = ctrl_start
@@ -310,13 +315,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     ret_dict['curve_linear'] = crv_linear
     ret_dict['remap_value'] = linear_blendshape_RMV
     ret_dict['main_grp'] = main_grp
-    #ret_dict['polevector'] = pole_vector_target
-    
-    
-    
-        
-    
-    
+    ret_dict['no_inherit_trans_grp'] = no_inherit_trans_grp 
     
     return ret_dict
 
@@ -413,14 +412,16 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     end_ctrl = cable_base_dict['end_ctrl']
     linear_blendshape_RMV = cable_base_dict['remap_value']
     main_grp = cable_base_dict['main_grp']
-
+    no_inherit_trans_grp = cable_base_dict['no_inherit_trans_grp'] 
+    
+    
     for index, attr_name in enumerate(blender_attr_name_list):
         
         pm.addAttr(start_ctrl, longName=attr_name, keyable=True, min=0, max=1, defaultValue=blender_value_list[index])
         pm.addAttr(end_ctrl, longName=attr_name, keyable=True, min=0, max=1, defaultValue=blender_value_list[index])
 
         
-    bind_jnt_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_jnt_grp'.format(name))
+    bind_jnt_grp = pm.group(em=True, parent=no_inherit_trans_grp, n='{0}_bind_jnt_grp'.format(name))
     geo_grp = pm.group(em=True, parent=main_grp, n='{0}_geo_grp'.format(name))
         
     linear_crv_shape = linear_crv.getShape()
@@ -437,8 +438,8 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     # create the mesh
     cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_bind_joints*2)-1)
     
-    pm.skinCluster(joint_list, cable_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
-    
+    #pm.skinCluster(joint_list, cable_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
+    pm.skinCluster(joint_list, cable_mesh, bindMethod=0)
     
     cubic_length_inc = cubic_curve_length / (num_bind_joints-1)
     linear_length_inc = linear_curve_length / (num_bind_joints-1)
@@ -513,18 +514,13 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     pm.parent(joint_list, bind_jnt_grp)
     pm.parent(cable_mesh, geo_grp)
     
-    # set attrs
-    bind_jnt_grp.inheritsTransform.set(False)                 
+    
+    # set attrs             
     geo_grp.inheritsTransform.set(False)
     
     cable_mesh.overrideEnabled.set(1)
     cable_mesh.overrideDisplayType.set(2)
-    
-    pm.setAttr(bind_jnt_grp.v, 0, lock=True)
-
-        
- 
-    
+     
        
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs.mb', f=True)
