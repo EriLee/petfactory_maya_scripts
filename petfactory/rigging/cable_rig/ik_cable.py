@@ -355,7 +355,10 @@ def interpolate_positions(pos_list, num_divisions=1):
     return ret_pos_list
     
 
-def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, blender_value):
+def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, attr_name):
+    
+    # get a reference to the attr to control the blend color node
+    blend_attr = pm.Attribute('{0}.{1}'.format(ctrl, attr_name))
     
     vector_prod = pm.createNode('vectorProduct')
     # set to point matrix product
@@ -364,10 +367,8 @@ def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, blen
     vector_prod.input1.set(ctrl_local_position)
     ctrl.worldMatrix[0] >> vector_prod.matrix
     
-    
-    
     blend_col = pm.createNode('blendColors')
-    blend_col.blender.set(blender_value)
+    blend_attr >> blend_col.blender
     vector_prod.output >> blend_col.color1
     point_on_crv_info.position >> blend_col.color2
     
@@ -375,8 +376,9 @@ def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, blen
     
 def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1):
     
+    blender_attr_name_list = ['one', 'two', 'three']
     blender_value_list = [.7, .4, .1]
-    
+        
     cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir)
     
     cubic_crv = cable_base_dict['curve_cubic']
@@ -385,8 +387,13 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     end_ctrl = cable_base_dict['end_ctrl']
     linear_blendshape_RMV = cable_base_dict['remap_value']
     main_grp = cable_base_dict['main_grp']
-    
-    
+
+    for index, attr_name in enumerate(blender_attr_name_list):
+        
+        pm.addAttr(start_ctrl, longName=attr_name, keyable=True, defaultValue=blender_value_list[index])
+        pm.addAttr(end_ctrl, longName=attr_name, keyable=True, defaultValue=blender_value_list[index])
+
+        
     bind_jnt_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_jnt_grp'.format(name))
     geo_grp = pm.group(em=True, parent=main_grp, n='{0}_geo_grp'.format(name))
         
@@ -435,21 +442,21 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
             blend_col = ctrl_joint_position_blend(  ctrl=start_ctrl,
                                                     ctrl_local_position=(linear_length_inc*index,0,0),
                                                     point_on_crv_info=point_on_crv_info,
-                                                    blender_value=blender_value_list[index-1])
+                                                    attr_name=blender_attr_name_list[index-1])
 
             blend_col.output >> jnt.translate
         
         # blend the position of the jnt [-4] - [-2]   
         elif index > num_bind_joints-5 and index < num_bind_joints-1:
             
+            zero_based_index = index-(num_bind_joints-4)
             reverse_index = (num_bind_joints-2)-index
             
             # blend the jnt positions            
             blend_col = ctrl_joint_position_blend(  ctrl=end_ctrl,
                                                     ctrl_local_position=(linear_length_inc*((-reverse_index-1)),0,0),
                                                     point_on_crv_info=point_on_crv_info,
-                                                    blender_value=blender_value_list[reverse_index])
-
+                                                    attr_name=blender_attr_name_list[reverse_index])
             blend_col.output >> jnt.translate
                         
         
@@ -474,12 +481,7 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
                                 worldUpObject=start_ctrl,
                                 worldUpType='objectrotation',
                                 worldUpVector=(0,0,1))
-                                
-        #prev_point_on_crv_info = point_on_crv_info
-
-
-
-                                        
+                                                                        
      
     # organize       
     pm.parent(joint_list, bind_jnt_grp)
