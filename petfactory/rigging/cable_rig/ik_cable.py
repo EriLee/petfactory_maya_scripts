@@ -354,8 +354,28 @@ def interpolate_positions(pos_list, num_divisions=1):
     
     return ret_pos_list
     
+
+def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, blender_value):
+    
+    vector_prod = pm.createNode('vectorProduct')
+    # set to point matrix product
+    vector_prod.operation.set(4)
+    # set the position
+    vector_prod.input1.set(ctrl_local_position)
+    ctrl.worldMatrix[0] >> vector_prod.matrix
+    
+    
+    
+    blend_col = pm.createNode('blendColors')
+    blend_col.blender.set(blender_value)
+    vector_prod.output >> blend_col.color1
+    point_on_crv_info.position >> blend_col.color2
+    
+    return blend_col
     
 def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1):
+    
+    blender_value_list = [.7, .4, .1]
     
     cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir)
     
@@ -408,27 +428,31 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
         linear_blendshape_RMV.outValue >> blend.attributesBlender
         
 
-        # first 3 jnts
+        # blend the position of the jnt [1] - [3]
         if index > 0 and index <4:
-            # use a vector product node to get a local position to world position
-            vector_prod = pm.createNode('vectorProduct')
-            # set to point matrix product
-            vector_prod.operation.set(4)
-            # set the position
-            vector_prod.input1.set(linear_length_inc*index,0,0)
-            start_ctrl.worldMatrix[0] >> vector_prod.matrix
             
-            
-            
-            blend_col = pm.createNode('blendColors')
-            vector_prod.output >> blend_col.color1
-            point_on_crv_info.position >> blend_col.color2
+            # blend the jnt positions            
+            blend_col = ctrl_joint_position_blend(  ctrl=start_ctrl,
+                                                    ctrl_local_position=(linear_length_inc*index,0,0),
+                                                    point_on_crv_info=point_on_crv_info,
+                                                    blender_value=blender_value_list[index-1])
 
-
-            sp = pm.polySphere(r=.2)[0]
-            blend_col.output >> sp.translate
             blend_col.output >> jnt.translate
+        
+        # blend the position of the jnt [-4] - [-2]   
+        elif index > num_bind_joints-5 and index < num_bind_joints-1:
             
+            reverse_index = (num_bind_joints-2)-index
+            
+            # blend the jnt positions            
+            blend_col = ctrl_joint_position_blend(  ctrl=end_ctrl,
+                                                    ctrl_local_position=(linear_length_inc*((-reverse_index-1)),0,0),
+                                                    point_on_crv_info=point_on_crv_info,
+                                                    blender_value=blender_value_list[reverse_index])
+
+            blend_col.output >> jnt.translate
+                        
+        
         else:
             point_on_crv_info.position >> jnt.translate
         
