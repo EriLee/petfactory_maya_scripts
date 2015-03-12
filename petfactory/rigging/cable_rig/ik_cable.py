@@ -2,11 +2,11 @@ import pymel.core as pm
 import petfactory.util.vector as pet_vector
 import petfactory.rigging.ctrl.ctrl as pet_ctrl
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
+import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 
 '''
 TODO
 
-add attr to start and end ctrl to control the blend
 
 '''
 
@@ -113,9 +113,9 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     # duplicate the crv, freeze transform, keep the position
     crv = pm.duplicate(crv, n='{0}_cubic_crv'.format(name))[0]
     pm.makeIdentity(crv, apply=True)
-    crv_shape = crv.getShape()
+    crv_shape = crv.getShape() 
     
-        
+          
     num_linear_crv_div = (num_cvs - 3) / 2    
     min_u, max_u = crv_shape.getKnotDomain()
     
@@ -283,14 +283,40 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     crv_shape.overrideEnabled.set(1)
     crv_shape.overrideDisplayType.set(2)
     
+    
+    # make the curves dynamic    
+    nhair_dict = nhair_dynamics.make_curve_dynamic(crv)
+
+    output_curve = nhair_dict.get('output_curve')
+    #follicle = nhair_dict.get('follicle')
+    #nucleus = nhair_dict.get('nucleus')
+    #hairsystem = nhair_dict.get('hairsystem')
+    
+    # create a duplicate of the orig crv
+    result_crv_shape = pm.createNode('nurbsCurve', n='{0}_result_crv'.format(name))
+    result_crv = result_crv_shape.getParent()
+
+    crv_shape.worldSpace[0] >> result_crv_shape.create
+    pm.blendShape(output_curve, result_crv, origin='local')
+    
+
+    
     ret_dict = {}
     ret_dict['start_ctrl'] = ctrl_start
     ret_dict['end_ctrl'] = ctrl_end
-    ret_dict['curve_cubic'] = crv
+    #ret_dict['curve_cubic'] = crv
+    #ret_dict['curve_cubic'] = output_curve
+    ret_dict['curve_cubic'] = result_crv
     ret_dict['curve_linear'] = crv_linear
     ret_dict['remap_value'] = linear_blendshape_RMV
     ret_dict['main_grp'] = main_grp
     #ret_dict['polevector'] = pole_vector_target
+    
+    
+    
+        
+    
+    
     
     return ret_dict
 
