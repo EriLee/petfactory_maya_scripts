@@ -376,7 +376,7 @@ def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, attr
     
 def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1):
     
-    blender_attr_name_list = ['one', 'two', 'three']
+    blender_attr_name_list = ['blendJoint1', 'blendJoint2', 'blendJoint3']
     blender_value_list = [.7, .4, .1]
         
     cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir)
@@ -390,8 +390,8 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
 
     for index, attr_name in enumerate(blender_attr_name_list):
         
-        pm.addAttr(start_ctrl, longName=attr_name, keyable=True, defaultValue=blender_value_list[index])
-        pm.addAttr(end_ctrl, longName=attr_name, keyable=True, defaultValue=blender_value_list[index])
+        pm.addAttr(start_ctrl, longName=attr_name, keyable=True, min=0, max=1, defaultValue=blender_value_list[index])
+        pm.addAttr(end_ctrl, longName=attr_name, keyable=True, min=0, max=1, defaultValue=blender_value_list[index])
 
         
     bind_jnt_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_jnt_grp'.format(name))
