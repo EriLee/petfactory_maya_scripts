@@ -281,7 +281,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     
     
     # make the curves dynamic    
-    nhair_dict = nhair_dynamics.make_curve_dynamic(crv)
+    nhair_dict = nhair_dynamics.make_curve_dynamic(crv, delete_out_curve_parent=True)
 
     output_curve = nhair_dict.get('output_curve')
     output_curve.rename('{0}_output_curve'.format(name))
