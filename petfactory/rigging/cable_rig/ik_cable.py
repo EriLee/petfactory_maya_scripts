@@ -471,11 +471,20 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     # build the cable joints
     joint_list = create_joints_on_axis(num_joints=num_bind_joints, show_lra=show_lra)
     
+        
     # create the mesh
     cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_bind_joints*2)-1)
     
     #pm.skinCluster(joint_list, cable_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
     pm.skinCluster(joint_list, cable_mesh, bindMethod=0)
+    
+    # organize
+    pm.parent(cable_mesh, geo_grp)            
+    geo_grp.inheritsTransform.set(False)
+    cable_mesh.overrideEnabled.set(1)
+    cable_mesh.overrideDisplayType.set(2)
+    
+    
     
     cubic_length_inc = cubic_curve_length / (num_bind_joints-1)
     linear_length_inc = linear_curve_length / (num_bind_joints-1)
@@ -548,16 +557,6 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
      
     # organize       
     pm.parent(joint_list, bind_jnt_grp)
-    pm.parent(cable_mesh, geo_grp)
-    
-    
-    # set attrs             
-    geo_grp.inheritsTransform.set(False)
-    
-    cable_mesh.overrideEnabled.set(1)
-    cable_mesh.overrideDisplayType.set(2)
-    
-    
     
     return ret_dict
      
