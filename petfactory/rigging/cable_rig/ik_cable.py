@@ -382,6 +382,29 @@ def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radiu
         tm = pm.datatypes.TransformationMatrix(start_joint.getMatrix(ws=True))
         pos = pm.datatypes.Vector(i*length_inc,0,0)
         extrude_pos_list.append( [p.rotateBy(tm)+pos for p in profile_pos] )
+    
+    
+    # add some pos to the extrude pos list to create the caps, somewhat hacky...
+    # add start cap     
+    se_0 = [n*.7 for n in extrude_pos_list[0]]
+    se_1 = [n*.9 for n in extrude_pos_list[0]]
+    se_3 = [(n.x+(length_inc*.15), n.y, n.z) for n in extrude_pos_list[0]] 
+    
+    # add end cap     
+    ee_0 = [(n.x-(length_inc*.15), n.y, n.z) for n in extrude_pos_list[-1]]
+    ee_1 = [(n.x*.9+length_inc*(length_divisions-1), n.y*.9, n.z*.9) for n in extrude_pos_list[0]]
+    ee_2 = [(n.x*.7+length_inc*(length_divisions-1), n.y*.7, n.z*.7) for n in extrude_pos_list[0]]
+    
+    # add the cap positions
+    extrude_pos_list.insert(0, se_0)
+    extrude_pos_list.insert(1, se_1)
+    extrude_pos_list.insert(3, se_3)
+    
+    extrude_pos_list.insert(-1, ee_0)
+    extrude_pos_list.append(ee_1)
+    extrude_pos_list.append(ee_2)
+    
+    
         
     pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
 
