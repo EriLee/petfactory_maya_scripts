@@ -93,7 +93,7 @@ def parent_joint_list(joint_list):
     pm.select(deselect=True)
     
 
-def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
+def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existing_hairsystem=None):
         
     crv_shape = crv.getShape()
     num_cvs = crv_shape.numCVs()
@@ -285,12 +285,29 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
 
     output_curve = nhair_dict.get('output_curve')
     output_curve.rename('{0}_output_curve'.format(name))
-    #follicle = nhair_dict.get('follicle')
-    #nucleus = nhair_dict.get('nucleus')
-    #hairsystem = nhair_dict.get('hairsystem')
+    hairsystem = nhair_dict.get('hairsystem')
+    follicle = nhair_dict.get('follicle')
+    nucleus = nhair_dict.get('nucleus')
     
+       
+    # if we want to use an existing hair system
+    if existing_hairsystem is not None:
+        
+        print('Delete current hairsystem, use {0}'.format(existing_hairsystem))
+        
+        num_connection = len(pm.listConnections('{0}.inputHair'.format(existing_hairsystem)))
+        
+        follicle.outHair >> existing_hairsystem.inputHair[num_connection]
+        existing_hairsystem.outputHair[num_connection] >> follicle.currentPosition
+        
+        pm.delete(hairsystem)
+        
+        hairsystem = existing_hairsystem
+        
+    else:         
+        hairsystem.startCurveAttract.set(0.1)
     
-    
+     
     # create a duplicate of the orig crv
     result_crv_shape = pm.createNode('nurbsCurve', n='{0}_result_crvShape'.format(name))
     result_crv = result_crv_shape.getParent()
@@ -298,11 +315,26 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
 
     crv_shape.worldSpace[0] >> result_crv_shape.create
     nhair_blendshape = pm.blendShape(output_curve, result_crv, origin='local')[0]
-    
-    
+    # , n='{0}_nhair_blendshape'.format(name)
+        
     # add attr to control the nahir blend shape
     pm.addAttr(ctrl_start, longName='use_nhair_sim', keyable=True, min=0, max=1, defaultValue=0)
     ctrl_start.use_nhair_sim >> nhair_blendshape.weight[0]
+    
+    
+    # set the (0, 1, -2, -1) weights of the nhair blendshape to 0
+    #nhair_bs_weights = nhair_blendshape.inputTarget[0].baseWeights.get()
+    #num_nhair_bs_weights = len(nhair_bs_weights)
+    #print(nhair_bs_weights)
+
+    #nhair_blendshape.inputTarget[0].baseWeights[0].set(0)
+    #nhair_blendshape.inputTarget[0].baseWeights[1].set(0)
+    
+    #nhair_blendshape.inputTarget[0].baseWeights[num_nhair_bs_weights-1].set(0)
+    #nhair_blendshape.inputTarget[0].baseWeights[num_nhair_bs_weights-2].set(0)
+    
+    
+    
     
     pm.parent(result_crv, output_curve, no_inherit_trans_grp)
     
@@ -315,7 +347,8 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1):
     ret_dict['curve_linear'] = crv_linear
     ret_dict['remap_value'] = linear_blendshape_RMV
     ret_dict['main_grp'] = main_grp
-    ret_dict['no_inherit_trans_grp'] = no_inherit_trans_grp 
+    ret_dict['no_inherit_trans_grp'] = no_inherit_trans_grp
+    ret_dict['hairsystem'] = hairsystem
     
     return ret_dict
 
@@ -399,12 +432,14 @@ def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, attr
     
     return blend_col
     
-def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1):
+def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1, existing_hairsystem=None):
+    
+    ret_dict = {}
     
     blender_attr_name_list = ['blendJoint1', 'blendJoint2', 'blendJoint3']
     blender_value_list = [.7, .4, .1]
         
-    cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir)
+    cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir,existing_hairsystem=existing_hairsystem)
     
     cubic_crv = cable_base_dict['curve_cubic']
     linear_crv = cable_base_dict['curve_linear']
@@ -412,7 +447,8 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     end_ctrl = cable_base_dict['end_ctrl']
     linear_blendshape_RMV = cable_base_dict['remap_value']
     main_grp = cable_base_dict['main_grp']
-    no_inherit_trans_grp = cable_base_dict['no_inherit_trans_grp'] 
+    no_inherit_trans_grp = cable_base_dict['no_inherit_trans_grp']
+    ret_dict['hairsystem'] = cable_base_dict['hairsystem']
     
     
     for index, attr_name in enumerate(blender_attr_name_list):
@@ -520,20 +556,28 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     
     cable_mesh.overrideEnabled.set(1)
     cable_mesh.overrideDisplayType.set(2)
+    
+    
+    
+    return ret_dict
      
        
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_double.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
 
 
-crv = pm.PyNode('curve1')
+crv_1 = pm.PyNode('curve1')
+crv_2 = pm.PyNode('curve2')
+
 #cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='test', pv_dir=1)
 #create_joints_on_curve(crv=crv, num_joints=4, up_axis=2, parent_joints=True, show_lra=True, name='joint')
 
-add_cable_bind_joints(crv=crv, name='cable_rig_name', num_ik_joints=4, num_bind_joints=20, pv_dir=1)
+rig_dict = add_cable_bind_joints(crv=crv_1, name='cable_rig_name_1', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=None)
+add_cable_bind_joints(crv=crv_2, name='cable_rig_name_2', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=rig_dict.get('hairsystem'))
+
 #cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
 
 #def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
