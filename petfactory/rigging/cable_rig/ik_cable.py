@@ -287,6 +287,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existi
     output_curve.rename('{0}_output_curve'.format(name))
     hairsystem = nhair_dict.get('hairsystem')
     follicle = nhair_dict.get('follicle')
+    follicle.rename('{0}_follicle'.format(name))
     nucleus = nhair_dict.get('nucleus')
     
        
@@ -349,6 +350,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existi
     ret_dict['main_grp'] = main_grp
     ret_dict['no_inherit_trans_grp'] = no_inherit_trans_grp
     ret_dict['hairsystem'] = hairsystem
+    ret_dict['follicle'] = follicle
     
     return ret_dict
 
@@ -368,7 +370,7 @@ def matrix_from_u(crv, start_u, end_u, pos_u, up_vec):
     return tm
     
     
-def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radius=.5, cable_axis_divisions=12):
+def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radius=.5, cable_axis_divisions=12, name='mesh'):
 
     profile_pos = pet_extrude.create_profile_points(radius=cable_radius, axis_divisions=cable_axis_divisions, axis=0)
    
@@ -406,7 +408,7 @@ def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radiu
     
     
         
-    pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name='cable_mesh', as_pm_mesh=True) 
+    pm_mesh = pet_extrude.mesh_from_pos_list(pos_list=extrude_pos_list, name=name, as_pm_mesh=True) 
 
     return pm_mesh
     
@@ -455,7 +457,7 @@ def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, attr
     
     return blend_col
     
-def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1, existing_hairsystem=None):
+def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1, existing_hairsystem=None, create_mesh_copy=False):
     
     ret_dict = {}
     
@@ -472,6 +474,7 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     main_grp = cable_base_dict['main_grp']
     no_inherit_trans_grp = cable_base_dict['no_inherit_trans_grp']
     ret_dict['hairsystem'] = cable_base_dict['hairsystem']
+    ret_dict['follicle'] = cable_base_dict['follicle']
     
     
     for index, attr_name in enumerate(blender_attr_name_list):
@@ -496,7 +499,11 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     
         
     # create the mesh
-    cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_bind_joints*2)-1)
+    cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_bind_joints*2)-1, name='{0}_mesh'.format(name))
+    ret_dict['mesh'] = cable_mesh
+    
+    if create_mesh_copy:
+        mesh_copy = pm.duplicate(cable_mesh, name='{0}_dup_mesh'.format(name))
     
     #pm.skinCluster(joint_list, cable_mesh, toSelectedBones=True, ignoreHierarchy=True, skinMethod=2, maximumInfluences=3)
     pm.skinCluster(joint_list, cable_mesh, bindMethod=0)
@@ -593,12 +600,28 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_
 
 crv_1 = pm.PyNode('curve1')
 crv_2 = pm.PyNode('curve2')
+crv_list = [crv_1, crv_2]
 
 #cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='test', pv_dir=1)
 #create_joints_on_curve(crv=crv, num_joints=4, up_axis=2, parent_joints=True, show_lra=True, name='joint')
 
-rig_dict = add_cable_bind_joints(crv=crv_1, name='cable_rig_name_1', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=None)
-add_cable_bind_joints(crv=crv_2, name='cable_rig_name_2', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=rig_dict.get('hairsystem'))
+mesh_set = pm.sets(name='mesh_set')
+follicle_set = pm.sets(name='follicle_set')
+
+for index, crv in enumerate(crv_list):
+    
+    if index is 0:
+        cable_dict = add_cable_bind_joints(crv=crv_1, name='cable_rig_name_1', num_ik_joints=4, num_bind_joints=20, pv_dir=1, create_mesh_copy=True)
+        
+    else:
+        cable_dict = add_cable_bind_joints(crv=crv_2, name='cable_rig_name_2', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=cable_dict.get('hairsystem'))
+
+    mesh_set.add(cable_dict.get('mesh'))
+    follicle_set.add(cable_dict.get('follicle'))
+        
+    
+#rig_dict = add_cable_bind_joints(crv=crv_1, name='cable_rig_name_1', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=None, create_mesh_copy=True)
+#add_cable_bind_joints(crv=crv_2, name='cable_rig_name_2', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=rig_dict.get('hairsystem'))
 
 #cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
 
