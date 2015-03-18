@@ -1,15 +1,38 @@
 import pymel.core as pm
+from bisect import bisect_left, bisect_right
 import petfactory.util.vector as pet_vector
 import petfactory.rigging.ctrl.ctrl as pet_ctrl
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 
-'''
-TODO
+
+def validate_cv_num(num_joints, cv_num):
+    
+    def find_lt(a, x):
+        'Find rightmost value less than x, if x is less than first val in a return a[0]'
+        i = bisect_left(a, x)
+        if i:
+            return a[i-1]
+        return a[0]
 
 
-'''
 
+    def find_gt(a, x):
+        'Find leftmost value greater than x, if x is greater than last val in a return a[-1]'
+        i = bisect_right(a, x)
+        if i != len(a):
+            return a[i]
+        return a[-1]
+        
+    
+    valid_cv_num = [num_joints+(num_joints-1)*n for n in range(1, 30)]    
+    
+    lt = find_lt(valid_cv_num, cv_num)
+    gt = find_gt(valid_cv_num, cv_num)
+    
+    pm.warning("Invalid number of cv's. Current cv num is {0}. Remove {1} cv(s) or add {2} cv(s)".format(cv_num, cv_num-lt, gt-cv_num))
+    
+    
 def create_joints_on_axis(num_joints=10, parent_joints=False, show_lra=True, name='joint', spacing=1, axis=0):
     
     jnt_list = []
@@ -103,11 +126,12 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existi
     
     # check if the number of cvs are valid
     if num_cvs >= min_cv_count and cvs_per_bone % 1 == 0:
-        print('valid number of cvs')
+        print('Start rigging the cable...')
     
     else:
-        pm.warning('The number of cvs must be at least {0} and follow pattern num_jnt+(num_jnt-1)*n where n is positive integer'.format(min_cv_count))
-        return
+        #pm.warning('The number of cvs must be at least {0} and follow pattern num_jnt+(num_jnt-1)*n where n is positive integer'.format(min_cv_count))
+        validate_cv_num(num_joints, num_cvs)
+        return None
         
         
     # duplicate the crv, freeze transform, keep the position
@@ -147,10 +171,10 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existi
     end_matrix = matrix_from_u(crv=crv, start_u=max_u-.05, end_u=max_u, pos_u=max_u, up_vec=up_vec)
     
     # create start and end ctrl
-    ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='start_ctrl', size=1)
+    ctrl_start = pet_ctrl.CreateCtrl.create_circle_arrow(name='{0}_start_ctrl'.format(name), size=1)
     ctrl_start.setMatrix(start_matrix)
     
-    ctrl_end = pet_ctrl.CreateCtrl.create_circle_arrow(name='end_ctrl', size=1)
+    ctrl_end = pet_ctrl.CreateCtrl.create_circle_arrow(name='{0}_end_ctrl'.format(name), size=1)
     ctrl_end.setMatrix(end_matrix)
    
     # build the linear curve 
@@ -466,6 +490,10 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
         
     cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir,existing_hairsystem=existing_hairsystem)
     
+    if cable_base_dict is None:
+        return None
+        
+        
     cubic_crv = cable_base_dict['curve_cubic']
     linear_crv = cable_base_dict['curve_linear']
     start_ctrl = cable_base_dict['start_ctrl']
@@ -473,8 +501,11 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     linear_blendshape_RMV = cable_base_dict['remap_value']
     main_grp = cable_base_dict['main_grp']
     no_inherit_trans_grp = cable_base_dict['no_inherit_trans_grp']
+    
     ret_dict['hairsystem'] = cable_base_dict['hairsystem']
     ret_dict['follicle'] = cable_base_dict['follicle']
+    ret_dict['start_ctrl'] = cable_base_dict['start_ctrl']
+    ret_dict['end_ctrl'] = cable_base_dict['end_ctrl']
     
     
     for index, attr_name in enumerate(blender_attr_name_list):
@@ -494,8 +525,16 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     cubic_crv_min_u, cubic_crv_max_u = cubic_crv_shape.getKnotDomain()
     cubic_curve_length = cubic_crv_shape.length()
     
+    cubic_length_inc = cubic_curve_length / (num_bind_joints-1)
+    linear_length_inc = linear_curve_length / (num_bind_joints-1)
+    
+    
     # build the cable joints
-    joint_list = create_joints_on_axis(num_joints=num_bind_joints, show_lra=show_lra)
+    joint_list = create_joints_on_axis(num_joints=num_bind_joints, show_lra=show_lra, spacing=cubic_length_inc)
+    
+    
+    
+    
     
         
     # create the mesh
@@ -516,8 +555,7 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     
     
     
-    cubic_length_inc = cubic_curve_length / (num_bind_joints-1)
-    linear_length_inc = linear_curve_length / (num_bind_joints-1)
+
 
     
     #print(cubic_length_inc)
@@ -592,7 +630,8 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
      
        
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_double.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_double.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
@@ -600,37 +639,31 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_
 
 crv_1 = pm.PyNode('curve1')
 crv_2 = pm.PyNode('curve2')
-crv_list = [crv_1, crv_2]
+crv_3 = pm.PyNode('curve3')
+crv_list = [crv_1, crv_2, crv_3]
+#crv_list = [crv_1]
 
 #cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='test', pv_dir=1)
 #create_joints_on_curve(crv=crv, num_joints=4, up_axis=2, parent_joints=True, show_lra=True, name='joint')
 
 mesh_set = pm.sets(name='mesh_set')
 follicle_set = pm.sets(name='follicle_set')
+start_ctrl_set = pm.sets(name='start_ctrl_set')
+end_ctrl_set = pm.sets(name='end_ctrl_set')
 
 for index, crv in enumerate(crv_list):
     
     if index is 0:
-        cable_dict = add_cable_bind_joints(crv=crv_1, name='cable_rig_name_1', num_ik_joints=4, num_bind_joints=20, pv_dir=1, create_mesh_copy=True)
+        cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, pv_dir=1, create_mesh_copy=True)
         
     else:
-        cable_dict = add_cable_bind_joints(crv=crv_2, name='cable_rig_name_2', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=cable_dict.get('hairsystem'))
-
-    mesh_set.add(cable_dict.get('mesh'))
-    follicle_set.add(cable_dict.get('follicle'))
+        if cable_dict is not None:
+            cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=cable_dict.get('hairsystem'))
+    
+    if cable_dict is not None:
+        mesh_set.add(cable_dict.get('mesh'))
+        follicle_set.add(cable_dict.get('follicle'))
+        start_ctrl_set.add(cable_dict.get('start_ctrl'))
+        end_ctrl_set.add(cable_dict.get('end_ctrl'))
         
     
-#rig_dict = add_cable_bind_joints(crv=crv_1, name='cable_rig_name_1', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=None, create_mesh_copy=True)
-#add_cable_bind_joints(crv=crv_2, name='cable_rig_name_2', num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=rig_dict.get('hairsystem'))
-
-#cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='cable_rig_name',  pv_dir=1)
-
-#def add_cable_bind_joints(crv, name, num_joints, show_lra=True, pv_dir=1):
-    
-'''
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/crane_test.mb', f=True)
-
-crv_list = [pm.PyNode('curve{0}'.format(n+1)) for n in range(4)]
-for crv in crv_list:
-    add_cable_bind_joints(crv=crv, name='cable_rig_name', num_joints=16, show_lra=False, pv_dir=1)
-'''
