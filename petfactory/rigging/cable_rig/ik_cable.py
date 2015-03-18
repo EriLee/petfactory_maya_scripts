@@ -116,7 +116,7 @@ def parent_joint_list(joint_list):
     pm.select(deselect=True)
     
 
-def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existing_hairsystem=None):
+def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsystem=None):
         
     crv_shape = crv.getShape()
     num_cvs = crv_shape.numCVs()
@@ -185,6 +185,8 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existi
     # build the linear blendshape crv    
     crv_linear = pm.curve(d=3, p=pos_list, n='{0}_linear_crv'.format(name))
 
+    # get the position of the second joint, we use this later to se how to set up the twist offset of the pole vec const
+    jnt_pos_before_ik = ik_jnt_list[1].getTranslation(space='world')
     
     # bind, add ik handle  
     ik_handle_unicode, ik_effector_unicode = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikRPsolver')
@@ -274,12 +276,15 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, pv_dir=1, existi
     
     pole_vector_target_grp.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
     pole_vector_target.tz.set(10)
-    
+        
     polevector_const = pm.poleVectorConstraint(pole_vector_target, ik_handle)
-    # multiply by pv_dir
-    ik_handle.twist.set(90*pv_dir)
+    ik_handle.twist.set(90)
     
+    # if the jont pos shifted more with a length greater then 1 we flip the twist of the pole vector const
+    if (jnt_pos_before_ik - ik_jnt_list[1].getTranslation(space='world')).length() > 1:
+        ik_handle.twist.set(-90)
     
+
     # organize
     pm.parent(ctrl_start, ctrl_end, ctrl_grp)
     pm.parent(dist_transform, pole_vector_target_grp, crv_linear, hidden_grp)
@@ -481,14 +486,14 @@ def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, attr
     
     return blend_col
     
-def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, pv_dir=1, existing_hairsystem=None, create_mesh_copy=False):
+def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, existing_hairsystem=None, create_mesh_copy=False):
     
     ret_dict = {}
     
     blender_attr_name_list = ['blendJoint1', 'blendJoint2', 'blendJoint3']
     blender_value_list = [.7, .4, .1]
         
-    cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, pv_dir=pv_dir,existing_hairsystem=existing_hairsystem)
+    cable_base_dict = cable_base_ik(crv=crv, num_joints=num_ik_joints, name=name, existing_hairsystem=existing_hairsystem)
     
     if cable_base_dict is None:
         return None
@@ -643,8 +648,6 @@ crv_3 = pm.PyNode('curve3')
 crv_list = [crv_1, crv_2, crv_3]
 #crv_list = [crv_1]
 
-#cable_base_dict = cable_base_ik(crv=crv, num_joints=4, name='test', pv_dir=1)
-#create_joints_on_curve(crv=crv, num_joints=4, up_axis=2, parent_joints=True, show_lra=True, name='joint')
 
 mesh_set = pm.sets(name='mesh_set')
 follicle_set = pm.sets(name='follicle_set')
@@ -654,11 +657,11 @@ end_ctrl_set = pm.sets(name='end_ctrl_set')
 for index, crv in enumerate(crv_list):
     
     if index is 0:
-        cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, pv_dir=1, create_mesh_copy=True)
+        cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, create_mesh_copy=True)
         
     else:
         if cable_dict is not None:
-            cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, pv_dir=1, existing_hairsystem=cable_dict.get('hairsystem'))
+            cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, existing_hairsystem=cable_dict.get('hairsystem'))
     
     if cable_dict is not None:
         mesh_set.add(cable_dict.get('mesh'))
