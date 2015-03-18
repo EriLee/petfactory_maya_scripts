@@ -648,20 +648,22 @@ crv_3 = pm.PyNode('curve3')
 crv_list = [crv_1, crv_2, crv_3]
 #crv_list = [crv_1]
 
-
 mesh_set = pm.sets(name='mesh_set')
 follicle_set = pm.sets(name='follicle_set')
 start_ctrl_set = pm.sets(name='start_ctrl_set')
 end_ctrl_set = pm.sets(name='end_ctrl_set')
 
+rig_name = 'cable_rig_name'
+name_start_index = 0
+
 for index, crv in enumerate(crv_list):
     
     if index is 0:
-        cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, create_mesh_copy=True)
+        cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=4, num_bind_joints=20, create_mesh_copy=True)
         
     else:
         if cable_dict is not None:
-            cable_dict = add_cable_bind_joints(crv=crv, name='cable_rig_name_{0}'.format(index), num_ik_joints=4, num_bind_joints=20, existing_hairsystem=cable_dict.get('hairsystem'))
+            cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=4, num_bind_joints=20, existing_hairsystem=cable_dict.get('hairsystem'))
     
     if cable_dict is not None:
         mesh_set.add(cable_dict.get('mesh'))
