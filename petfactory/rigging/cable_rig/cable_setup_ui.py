@@ -2,6 +2,7 @@ from PySide import QtCore, QtGui
 from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
+from functools import partial
 
 import petfactory.gui.simple_widget as simple_widget
 reload(simple_widget)
@@ -194,12 +195,27 @@ class CableSetupWidget(QtGui.QWidget):
         sets_group_vert_layout = QtGui.QVBoxLayout()
         sets_group_box.setLayout(sets_group_vert_layout)
         
-        test = simple_widget.add_spinbox(label='Gimme a new name!!!', parent_layout=sets_group_vert_layout, min=0, max=999)
+        #test = simple_widget.add_spinbox(label='Gimme a new name!!!', parent_layout=sets_group_vert_layout, min=0, max=999)
+        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='<  Mesh      ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'follicle'})
+        self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='<  Start ctrl', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'mesh'})
+        self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='<  End ctrl  ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
+        self.follicle_set_lineedit = simple_widget.add_populate_lineedit(label='<  Follicle  ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
+        
+        
         
         tab_2_vertical_layout.addStretch()
                 
         
-    
+    def populate_lineedit(self, **kwargs):
+        
+        lineedit = kwargs.get('lineedit')
+        #type = kwargs.get('type')
+        
+        sel = pm.ls(sl=True)
+        if sel:
+            lineedit.setText(sel[0].longName())
+            #print(type)
+        
     @staticmethod
     def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False):
         
