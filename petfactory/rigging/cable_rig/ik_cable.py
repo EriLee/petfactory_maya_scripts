@@ -22,8 +22,8 @@ def validate_cv_num(num_joints, cv_num):
         i = bisect_right(a, x)
         if i != len(a):
             return a[i]
-        return a[-1]
-        
+    	return a[-1]
+    	
     
     valid_cv_num = [num_joints+(num_joints-1)*n for n in range(1, 30)]    
     
@@ -32,7 +32,7 @@ def validate_cv_num(num_joints, cv_num):
     
     pm.warning("Invalid number of cv's. Current cv num is {0}. Remove {1} cv(s) or add {2} cv(s)".format(cv_num, cv_num-lt, gt-cv_num))
     
-    
+	
 def create_joints_on_axis(num_joints=10, parent_joints=False, show_lra=True, name='joint', spacing=1, axis=0):
     
     jnt_list = []
