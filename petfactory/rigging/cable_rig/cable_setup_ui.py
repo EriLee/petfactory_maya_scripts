@@ -221,7 +221,7 @@ class CableSetupWidget(QtGui.QWidget):
         sel_list = pm.ls(sl=True)
         
         if not sel_list:
-            pm.warning('Please select a camera!')
+            pm.warning('Please select a curve!')
             return
 
         
@@ -256,7 +256,7 @@ class CableSetupWidget(QtGui.QWidget):
             
             
     def hairsystem_groupbox_clicked(self):
-
+        
         is_checked = self.sender().isChecked()
         
         if self.sender() is self.use_existing_group_box:
@@ -321,6 +321,7 @@ class CableSetupWidget(QtGui.QWidget):
         cable_bind_joints = self.cable_bind_joints_spinbox.value()           
         use_existing_hairsystem = self.use_existing_group_box.isChecked()
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
+        existing_hairsystem = self.existing_hairsystem_line_edit.text()
         mesh_set_unicode = self.mesh_set_lineedit.text()
         start_ctrl_set_unicode = self.start_ctrl_set_lineedit.text()
         end_ctrl_set_unicode = self.end_ctrl_set_lineedit.text()
@@ -338,6 +339,32 @@ class CableSetupWidget(QtGui.QWidget):
                 follicle_set_unicode,
                 use_existing_hairsystem,
                 share_hairsystem)
+                
+        for index, crv in enumerate(crv_name_list):
+            
+            if use_existing_hairsystem:
+                #check if we have a valid hs
+                print('{0}, use existing hs: {1}'.format(crv, existing_hairsystem))
+                
+                
+            # do not use existing hs
+            else:
+                
+                # create a new hs at index 0, share this hs
+                if share_hairsystem:
+                    
+                    if index is 0:
+                        print('{0}, create new hs, at index 0'.format(crv))
+                        existing_hairsystem = 'created hs'
+                        
+                    else:
+                        print('{0}, create new, sharing hs: {1}'.format(crv, existing_hairsystem))
+                        
+                        
+                # create a new hs for each rig
+                else:
+                    print('{0}, create new hs.'.format(crv))
+                    
 
         
         
@@ -365,11 +392,11 @@ win.move(100,150)
 
 
 
-'''
-pm.system.openFile('/Users/johan/Documents/projects/pojkarna/maya/flower_previz/scenes/tendril_design_v005_script_base.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
 
-node = pm.PyNode('rig_ref')
-pm.select(node)
+pm.select(pm.PyNode('curve1'), pm.PyNode('curve2'), pm.PyNode('curve3'))
 win.add_joint_ref_click()
-win.add_joint_ref_click()
-'''
+
+pm.select(pm.PyNode('hairSystem1'))
+win.add_hairsystem_clicked()
+
