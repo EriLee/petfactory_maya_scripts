@@ -7,8 +7,6 @@ from functools import partial
 import petfactory.gui.simple_widget as simple_widget
 reload(simple_widget)
 
-#import petfactory.rigging.tendril_rig.tendril_setup as tendril_setup
-#import petfactory.rigging.ribbon.create_ribbon as create_ribbon
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -105,10 +103,10 @@ class CableSetupWidget(QtGui.QWidget):
         
         
         # add_spinbox(label, parent_layout, min=None, max=None, default=None, double_spinbox=False):
-        name_start_index = simple_widget.add_spinbox(label='Name start index', parent_layout=rig_group_vert_layout, min=0, max=999)
-        cable_radius_spinbox = simple_widget.add_spinbox(label='Cable radius', parent_layout=rig_group_vert_layout, min=.1, max=999, default=1, double_spinbox=True)
-        cable_ik_joints_spinbox = simple_widget.add_spinbox(label='Cable IK joints', parent_layout=rig_group_vert_layout, min=3, max=10, default=4)
-        cable_bind_joints_spinbox = simple_widget.add_spinbox(label='Cable bind joints', parent_layout=rig_group_vert_layout, min=3, max=99, default=10)
+        self.name_start_index_spinbox = simple_widget.add_spinbox(label='Name start index', parent_layout=rig_group_vert_layout, min=0, max=999)
+        self.cable_radius_spinbox = simple_widget.add_spinbox(label='Cable radius', parent_layout=rig_group_vert_layout, min=.1, max=999, default=1, double_spinbox=True)
+        self.cable_ik_joints_spinbox = simple_widget.add_spinbox(label='Cable IK joints', parent_layout=rig_group_vert_layout, min=3, max=10, default=4)
+        self.cable_bind_joints_spinbox = simple_widget.add_spinbox(label='Cable bind joints', parent_layout=rig_group_vert_layout, min=3, max=99, default=10)
 
         
         # hairsystem group box
@@ -179,11 +177,11 @@ class CableSetupWidget(QtGui.QWidget):
         self.setup_horiz_layout = QtGui.QHBoxLayout()
         tab_1_vertical_layout.addLayout(self.setup_horiz_layout)
         
-        self.setup_button = QtGui.QPushButton('Setup Tendrils')
+        self.setup_button = QtGui.QPushButton('Setup Cables')
         self.setup_button.setMinimumWidth(125)
         self.setup_horiz_layout.addStretch()
         self.setup_horiz_layout.addWidget(self.setup_button)
-        self.setup_button.clicked.connect(self.setup_tendril)
+        self.setup_button.clicked.connect(self.setup_cable)
         
         
         
@@ -195,7 +193,7 @@ class CableSetupWidget(QtGui.QWidget):
         sets_group_vert_layout = QtGui.QVBoxLayout()
         sets_group_box.setLayout(sets_group_vert_layout)
         
-        #test = simple_widget.add_spinbox(label='Gimme a new name!!!', parent_layout=sets_group_vert_layout, min=0, max=999)
+        
         self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='<  Mesh      ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'follicle'})
         self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='<  Start ctrl', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'mesh'})
         self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='<  End ctrl  ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
@@ -216,186 +214,6 @@ class CableSetupWidget(QtGui.QWidget):
             lineedit.setText(sel[0].longName())
             #print(type)
         
-    @staticmethod
-    def add_spinbox(label, layout, min=None, max=None, default=None, double_spinbox=False):
-        
-        horiz_layout = QtGui.QHBoxLayout()
-        layout.addLayout(horiz_layout)
-
-        label = QtGui.QLabel(label)
-        label.setMinimumWidth(100)
-        horiz_layout.addWidget(label)
-        
-        horiz_layout.addStretch()
-         
-        spinbox = QtGui.QSpinBox() if not double_spinbox else QtGui.QDoubleSpinBox()
-        if min:
-            spinbox.setMinimum(min)
-        if max:
-            spinbox.setMaximum(max)
-        if default:
-            spinbox.setValue(default)
-            
-        horiz_layout.addWidget(spinbox)
-        spinbox.setMinimumWidth(100)
-        
-        return spinbox
-        
-        
-     
-    def copy_clust_pos_clicked(self):
-        
-        sel_list = pm.ls(sl=True)
-
-        if len(sel_list) < 2:
-            pm.warning('Please select at least two transform nodes')
-            return
-            
-        try:
-            source_cluster_grp = sel_list[0].cluster_grp.get()
-            source_cluster_list = source_cluster_grp.listRelatives(ad=True, type='clusterHandle')
-            source_cluster_list.sort()
-
-        except AttributeError as e:
-            print(e)
-            return
-
-
-        num_sel = len(sel_list)
-        index = 1
-        while index < num_sel:
-
-            try:
-                target_cluster_grp = sel_list[index].cluster_grp.get()
-                target_cluster_list = target_cluster_grp.listRelatives(ad=True, type='clusterHandle')
-                target_cluster_list.sort()
-
-            except AttributeError as e:
-                print(e)
-                continue
-
-            #print(target_cluster_list)
-            index += 1
-
-            if len(target_cluster_list) != len(source_cluster_list):
-                pm.warning('the cluster list is not of the same length, skipping')
-                continue
-
-            # the cluster lists are a list of the clusterHandleShapes, we call getParent 
-            # method on them to be able set the translation
-            for cls_index, source_cluster in enumerate(source_cluster_list):
-                target_cluster_list[cls_index].getParent().translate.set(source_cluster.getParent().translate.get())
-
-
-    def create_ribbon_for_joint_set(self):
-        
-
-        mesh_name = self.bind_mesh_line_edit.text()
-
-        # get a ref to the node
-        try:
-            mesh_node = pm.PyNode(mesh_name)
-            
-        except pm.general.MayaNodeError as e:
-            pm.warning('Not a valid node!', e)
-            return
-            
-        # check that it is a mesh
-        try:
-            if not isinstance(mesh_node.getShape(), pm.nodetypes.Mesh):
-                pm.warning('Not a valid node!', e)
-                return
-                
-        except AttributeError as e:
-            pm.warning('Not a valid node!', e)
-            return
-
-
-        sel_list = pm.ls(sl=True)
-        
-        width = 35
-        depth = 1
-        # note that u pathces is really 9, it is ten divisions in u that equal 9 patches.
-        # var name is a bit cpunter intuative ...
-        num_u_patches = 10
-        #num_u_patches = 5
-        num_follicles_per_u_patch = self.num_follicles_per_patch_spinbox.value()
-        
-        num_follicles = ((num_follicles_per_u_patch-1) * (num_u_patches-1)) + 1
-        #num_follicles = 145
-        #print(num_follicles)
-        
-
-        for sel in sel_list:
-
-            main_grp = sel.main_grp.get()
-            bind_jnt_grp = sel.bind_jnt_grp.get()
-
-
-            jnt_list = bind_jnt_grp.listRelatives(allDescendents=True, type='joint')
-            jnt_list.sort()
-
-
-             # build the ribbon surface
-            ribbon = create_ribbon.build_ribbon(width=width, depth=depth, num_u_patches=num_u_patches)
-            ribbon.setAttr('visibility', 0, lock=True)
-            
-            # add follicles
-            follicle_dict = create_ribbon.add_follicles(nurbs_surface=ribbon, num_follicles=num_follicles)
-            follicle_grp = follicle_dict.get('follicle_grp')
-
-            # add joint to the follicles
-            follicle_jnt_list = create_ribbon.add_follicle_joints(follicle_dict.get('follicle_transform_list'))
-            
-            #skinMethod 0 : linear, 1 : dual quaternion
-            # ignoreHierarchy : Disregard the place of the joints in the skeleton hierarchy
-            pm.skinCluster(jnt_list, ribbon, skinMethod=1, ignoreHierarchy=True)
-
-            # duplicate the mesh
-            dup_mesh = pm.duplicate(mesh_node)[0]
-
-            # bind to follicle joints
-            pm.skinCluster(follicle_jnt_list, dup_mesh, skinMethod=1, ignoreHierarchy=True)
-            
-            # organize
-            ribbon_grp = pm.group(em=True, n='ribbon_grp')
-            pm.parent(ribbon, ribbon_grp)
-            pm.parent(follicle_grp, ribbon_grp)
-            pm.parent(ribbon_grp, main_grp)
-
-            pm.addAttr(sel, longName='show_ribbon_joints', at="enum", en="off:on", keyable=True)
-            sel.show_ribbon_joints >> follicle_grp.visibility
-
-            mesh_grp = pm.group(em=True, n='mesh_grp')
-            pm.parent(mesh_grp, main_grp)
-            pm.parent(dup_mesh, mesh_grp)
-
-
-        print('{0} follicles / joints were created.'.format(num_follicles))
-        
-        '''
-        sel_list = pm.ls(sl=True)
-        
-        for sel in sel_list:
-            member_list = sel.members()
-            member_list.sort()
-            
-            # build the ribbon surface
-            ribbon = create_ribbon.build_ribbon(width=width, depth=depth, num_u_patches=num_u_patches)
-            
-            # add follicles
-            follicle_dict = create_ribbon.add_follicles(nurbs_surface=ribbon, num_follicles=num_follicles)
-            
-            # add joint to the follicles
-            create_ribbon.add_follicle_joints(follicle_dict.get('follicle_transform_list'))
-            
-            #skinMethod 0 : linear, 1 : dual quaternion
-            # ignoreHierarchy : Disregard the place of the joints in the skeleton hierarchy
-            pm.skinCluster(member_list, ribbon, skinMethod=1, ignoreHierarchy=True)
-
-        '''
-        
-
 
     def add_joint_ref_click(self):
         
@@ -475,143 +293,55 @@ class CableSetupWidget(QtGui.QWidget):
     
     
        
-    def setup_tendril(self):
+    def setup_cable(self):
         
-        ref_grp_list = []
-        
+
         root = self.model.invisibleRootItem()
         num_children = self.model.rowCount()
-        
-        
+                
         # the ref grp
         if num_children < 1:
             pm.warning('No joint ref are available in the treeview!')
             return
     
+        crv_name_list = []
         for i in range(num_children):
             
             child = root.child(i)
             
             if child.checkState():
                 
-                ref_grp_list.append(child.text())
+                crv_name_list.append(child.text())
                 
-                
-        # hairsystem        
-        use_existing = self.use_existing_group_box.isChecked()
-        existing_hairsystem = None
+
+        rig_name = self.name_line_edit.text()
+        name_start_index = self.name_start_index_spinbox.value()
+        cable_radius = self.cable_radius_spinbox.value()
+        cable_ik_joints = self.cable_ik_joints_spinbox.value()
+        cable_bind_joints = self.cable_bind_joints_spinbox.value()           
+        use_existing_hairsystem = self.use_existing_group_box.isChecked()
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
+        mesh_set_unicode = self.mesh_set_lineedit.text()
+        start_ctrl_set_unicode = self.start_ctrl_set_lineedit.text()
+        end_ctrl_set_unicode = self.end_ctrl_set_lineedit.text()
+        follicle_set_unicode = self.follicle_set_lineedit.text()
         
-        # if we are to use an existing hairsystem, make sure that is is valid, if so get a ref to it
-        if use_existing:
-            
-            existing_hairsystem_name = self.existing_hairsystem_line_edit.text()
-            
-            try:
-                existing_hairsystem = pm.PyNode(existing_hairsystem_name)
-                
-            except pm.general.MayaNodeError as e:
-                pm.warning('The hairsystem specified is not valid')
-                return
-                
-            try:
-                
-                shape = existing_hairsystem.getShape()
-                
-                if not isinstance(shape, pm.nodetypes.HairSystem):
-                    pm.warning('Please select a Hairsystem')
-                    return
-                
-            except AttributeError as e:
-                pm.warning('Please select a Hairsystem ', e)
-                return
-                
-                
-                
-                
-                
-        # get the name
-        name = self.name_line_edit.text()
-        if name == '':
-            name = 'tendril'
+        print(  crv_name_list,
+                rig_name,
+                name_start_index,
+                cable_radius,
+                cable_ik_joints,
+                cable_bind_joints,
+                mesh_set_unicode,
+                start_ctrl_set_unicode,
+                end_ctrl_set_unicode,
+                follicle_set_unicode,
+                use_existing_hairsystem,
+                share_hairsystem)
+
         
-        ref_list = []
-        name_list = []
-        
-        for index, ref_grp in enumerate(ref_grp_list):
-            
-            ref_list.append(pm.PyNode(ref_grp))
-            name_list.append('{0}_{1}'.format(name, index))
-            
-        
-        #print(ref_list, name_list, existing_hairsystem)
         
 
-        # build the joints
-        jnt_dict_list = tendril_setup.build_joints(joint_ref_list=ref_list, name_list=name_list)
-        
-        
-        # set up the nhair dynamics
-        output_curve_list = []
-        
-        
-        output_curve_set = pm.sets(name='output_curve_set')
-        root_ctrl_set = pm.sets(name='root_ctrl_set') 
-        sine_anim_ctrl_set = pm.sets(name='sine_anim_ctrl_set') 
-        
-        output_curve_list = []
-        root_ctrl_list = []
-        sine_anim_ctrl_list = []
-
-  
-        for index, jnt_dict in enumerate(jnt_dict_list):
-            
-            # use an existing hairsystem
-            if use_existing:
-                print('use existing hairsystem')
-                
-                dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2, existing_hairsystem=existing_hairsystem)
-                
-                
-                
-                
-            # create a new hairsystem  
-            else:
-                print('create a new hairsystem')
-                
-                
-                
-                
-                # share the new hairsystem
-                if share_hairsystem:
-                    print('share the new hairsystem')
-                    
-                    if index is 0:
-                        dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2)
-                        hairsystem_0 = dyn_joint_dict.get('hairsystem')
-                        
-                    else:
-                        dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2, existing_hairsystem=hairsystem_0)
-                    
-    
-    
-                # do not share the hairsystem    
-                else:
-                    print('do NOT share the new hairsystem')
-                    dyn_joint_dict = tendril_setup.setup_dynamic_joint_chain(jnt_dict, ctrl_size=1.2)
-                    
-
-
-            proc_anim_dict = tendril_setup.add_pocedural_wave_anim(dyn_joint_dict, ctrl_size=1)
-            
-            output_curve_list.append(dyn_joint_dict.get('output_curve'))
-            root_ctrl_list.append(dyn_joint_dict.get('root_ctrl'))
-            sine_anim_ctrl_list.append(proc_anim_dict.get('sine_anim_ctrl'))
-
-         
-        output_curve_set.addMembers(output_curve_list)
-        root_ctrl_set.addMembers(root_ctrl_list)
-        sine_anim_ctrl_set.addMembers(sine_anim_ctrl_list)
 
 
 def show():      
