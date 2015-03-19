@@ -1,5 +1,6 @@
+import pymel.core as pm
 
-def verify_selection(node_type, use_shape, from_string=False):
+def verify_selection(node_type, use_shape=False):
     
     '''Check if the first object in the selection list is an instance or subclass of the node_type argument.
     isinstance returns true if the object argument is an instance of the classinfo argument, or of a
@@ -29,7 +30,7 @@ def verify_selection(node_type, use_shape, from_string=False):
         return isinstance(sel[0], node_type)
 
 
-def verify_string(node_name, node_type, use_shape):
+def verify_string(node_name, node_type, use_shape=False):
     
     '''Convert the string to a PyNode and check if it is an instance or subclass of the node_type argument.
     isinstance returns true if the object argument is an instance of the classinfo argument, or of a
@@ -42,7 +43,7 @@ def verify_string(node_name, node_type, use_shape):
     try:
         node = pm.PyNode(node_name)
         
-    except pm.MayaNodeError:
+    except pm.MayaNodeError as e:
         pm.warning('Could not create PyNode, {0}'.format(e))
         return False
               

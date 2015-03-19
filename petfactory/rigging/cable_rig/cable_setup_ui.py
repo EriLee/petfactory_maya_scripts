@@ -7,6 +7,9 @@ from functools import partial
 import petfactory.gui.simple_widget as simple_widget
 reload(simple_widget)
 
+import petfactory.util.verify as pet_verify
+reload(pet_verify)
+
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -188,10 +191,12 @@ class CableSetupWidget(QtGui.QWidget):
         
         # extra (tab 2)
         # rig group box
-        sets_group_box = QtGui.QGroupBox("Sets")
-        tab_2_vertical_layout.addWidget(sets_group_box)
+        self.sets_group_box = QtGui.QGroupBox("Use existing Sets")
+        self.sets_group_box.setCheckable(True)
+        self.sets_group_box.setChecked(False)
+        tab_2_vertical_layout.addWidget(self.sets_group_box)
         sets_group_vert_layout = QtGui.QVBoxLayout()
-        sets_group_box.setLayout(sets_group_vert_layout)
+        self.sets_group_box.setLayout(sets_group_vert_layout)
         
         
         self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='<  Mesh      ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'follicle'})
@@ -326,6 +331,7 @@ class CableSetupWidget(QtGui.QWidget):
         start_ctrl_set_unicode = self.start_ctrl_set_lineedit.text()
         end_ctrl_set_unicode = self.end_ctrl_set_lineedit.text()
         follicle_set_unicode = self.follicle_set_lineedit.text()
+        use_existing_sets = self.sets_group_box.isChecked()
         
         print(  crv_name_list,
                 rig_name,
@@ -338,8 +344,22 @@ class CableSetupWidget(QtGui.QWidget):
                 end_ctrl_set_unicode,
                 follicle_set_unicode,
                 use_existing_hairsystem,
-                share_hairsystem)
-                
+                share_hairsystem,
+                existing_hairsystem)
+        
+        if use_existing_hairsystem:
+            
+            print(pet_verify.verify_string(existing_hairsystem, pm.nodetypes.HairSystem, True))  
+        
+        
+        if use_existing_sets:
+            
+            print(pet_verify.verify_string(mesh_set_unicode, pm.nodetypes.ObjectSet))
+            print(pet_verify.verify_string(start_ctrl_set_unicode, pm.nodetypes.ObjectSet))
+            print(pet_verify.verify_string(end_ctrl_set_unicode, pm.nodetypes.ObjectSet))
+            print(pet_verify.verify_string(follicle_set_unicode, pm.nodetypes.ObjectSet))
+            
+
         for index, crv in enumerate(crv_name_list):
             
             if use_existing_hairsystem:
@@ -378,6 +398,7 @@ def show():
 
 
 
+    
 try:
     win.close()
     
@@ -397,6 +418,5 @@ win.move(100,150)
 pm.select(pm.PyNode('curve1'), pm.PyNode('curve2'), pm.PyNode('curve3'))
 win.add_joint_ref_click()
 
-pm.select(pm.PyNode('hairSystem1'))
-win.add_hairsystem_clicked()
-
+#pm.select(pm.PyNode('hairSystem1'))
+#win.add_hairsystem_clicked()
