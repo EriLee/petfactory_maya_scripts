@@ -15,7 +15,16 @@ def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
     
-    
+'''
+TODO
+
+use validation on add / remove ref
+use validation on add hairsystem
+use validation on add sets
+
+
+
+'''   
 class CableSetupWidget(QtGui.QWidget):
  
     def __init__(self, parent=None):
@@ -415,8 +424,8 @@ win.move(100,150)
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
 
-pm.select(pm.PyNode('curve1'), pm.PyNode('curve2'), pm.PyNode('curve3'))
-win.add_joint_ref_click()
+#pm.select(pm.PyNode('curve1'), pm.PyNode('curve2'), pm.PyNode('curve3'))
+#win.add_joint_ref_click()
 
 #pm.select(pm.PyNode('hairSystem1'))
 #win.add_hairsystem_clicked()
