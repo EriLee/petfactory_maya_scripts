@@ -22,8 +22,8 @@ def validate_cv_num(num_joints, cv_num):
         i = bisect_right(a, x)
         if i != len(a):
             return a[i]
-    	return a[-1]
-    	
+        return a[-1]
+        
     
     valid_cv_num = [num_joints+(num_joints-1)*n for n in range(1, 30)]    
     
@@ -32,7 +32,7 @@ def validate_cv_num(num_joints, cv_num):
     
     pm.warning("Invalid number of cv's. Current cv num is {0}. Remove {1} cv(s) or add {2} cv(s)".format(cv_num, cv_num-lt, gt-cv_num))
     
-	
+    
 def create_joints_on_axis(num_joints=10, parent_joints=False, show_lra=True, name='joint', spacing=1, axis=0):
     
     jnt_list = []
@@ -486,7 +486,7 @@ def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, attr
     
     return blend_col
     
-def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=True, existing_hairsystem=None, create_mesh_copy=False):
+def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, cable_radius, cable_axis_divisions, existing_hairsystem=None, create_mesh_copy=False, show_lra=False):
     
     ret_dict = {}
     
@@ -536,14 +536,9 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     
     # build the cable joints
     joint_list = create_joints_on_axis(num_joints=num_bind_joints, show_lra=show_lra, spacing=cubic_length_inc)
-    
-    
-    
-    
-    
         
     # create the mesh
-    cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_bind_joints*2)-1, name='{0}_mesh'.format(name))
+    cable_mesh = mesh_from_start_end(start_joint=joint_list[0], end_joint=joint_list[-1], length_divisions=(num_bind_joints*2)-1, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, name='{0}_mesh'.format(name))
     ret_dict['mesh'] = cable_mesh
     
     if create_mesh_copy:
@@ -558,11 +553,7 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, show_lra=Tr
     cable_mesh.overrideEnabled.set(1)
     cable_mesh.overrideDisplayType.set(2)
     
-    
-    
 
-
-    
     #print(cubic_length_inc)
     for index, jnt in enumerate(joint_list):
         
@@ -648,27 +639,72 @@ crv_3 = pm.PyNode('curve3')
 crv_list = [crv_1, crv_2, crv_3]
 #crv_list = [crv_1]
 
+rig_name = 'cable_rig_name'
+name_start_index = 0
+num_ik_joints = 4
+num_bind_joints = 20
+cable_radius = .5
+cable_axis_divisions = 12
+
+
 mesh_set = pm.sets(name='mesh_set')
 follicle_set = pm.sets(name='follicle_set')
 start_ctrl_set = pm.sets(name='start_ctrl_set')
 end_ctrl_set = pm.sets(name='end_ctrl_set')
 
-rig_name = 'cable_rig_name'
-name_start_index = 0
 
-for index, crv in enumerate(crv_list):
+def setup_crv_list( crv_list,
+                    rig_name,
+                    name_start_index,
+                    num_ik_joints,
+                    num_bind_joints,
+                    cable_radius,
+                    cable_axis_divisions,
+                    mesh_set = None,
+                    follicle_set = None,
+                    start_ctrl_set = None,
+                    end_ctrl_set = None):
     
-    if index is 0:
-        cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=4, num_bind_joints=20, create_mesh_copy=True)
+    
+    
+    if mesh_set is None:                
+        mesh_set = pm.sets(name='mesh_set')
+      
+    if follicle_set is None:  
+        follicle_set = pm.sets(name='follicle_set')
+    
+    if start_ctrl_set is None:
+        start_ctrl_set = pm.sets(name='start_ctrl_set')
         
-    else:
+    if end_ctrl_set is None:
+        end_ctrl_set = pm.sets(name='end_ctrl_set')
+        
+        
+    
+    for index, crv in enumerate(crv_list):
+        
+        if index is 0:
+            cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, create_mesh_copy=True)
+            
+        else:
+            if cable_dict is not None:
+                cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=cable_dict.get('hairsystem'))
+        
         if cable_dict is not None:
-            cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=4, num_bind_joints=20, existing_hairsystem=cable_dict.get('hairsystem'))
-    
-    if cable_dict is not None:
-        mesh_set.add(cable_dict.get('mesh'))
-        follicle_set.add(cable_dict.get('follicle'))
-        start_ctrl_set.add(cable_dict.get('start_ctrl'))
-        end_ctrl_set.add(cable_dict.get('end_ctrl'))
+            mesh_set.add(cable_dict.get('mesh'))
+            follicle_set.add(cable_dict.get('follicle'))
+            start_ctrl_set.add(cable_dict.get('start_ctrl'))
+            end_ctrl_set.add(cable_dict.get('end_ctrl'))
         
-    
+
+setup_crv_list( crv_list,
+                rig_name,
+                name_start_index,
+                num_ik_joints,
+                num_bind_joints,
+                cable_radius,
+                cable_axis_divisions,
+                mesh_set,
+                follicle_set,
+                start_ctrl_set,
+                end_ctrl_set)
