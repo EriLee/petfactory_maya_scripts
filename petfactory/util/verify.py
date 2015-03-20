@@ -60,3 +60,13 @@ def verify_string(node_name, node_type, use_shape=False):
             
     else:                 
         return isinstance(node, node_type)
+
+def to_pynode(node_name):
+    
+    try:
+        return(pm.PyNode(node_name))
+        
+    
+    except pm.MayaNodeError as e:
+        pm.warning('Could not create PyNode. {0}'.format(e))
+        return None

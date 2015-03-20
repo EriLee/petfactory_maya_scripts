@@ -3,6 +3,7 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
 from functools import partial
+import pprint
 
 import petfactory.gui.simple_widget as simple_widget
 reload(simple_widget)
@@ -20,9 +21,6 @@ TODO
 
 use validation on add / remove ref
 use validation on add hairsystem
-use validation on add sets
-
-
 
 '''   
 class CableSetupWidget(QtGui.QWidget):
@@ -308,7 +306,6 @@ class CableSetupWidget(QtGui.QWidget):
     
        
     def setup_cable(self):
-        
 
         root = self.model.invisibleRootItem()
         num_children = self.model.rowCount()
@@ -318,14 +315,17 @@ class CableSetupWidget(QtGui.QWidget):
             pm.warning('No joint ref are available in the treeview!')
             return
     
-        crv_name_list = []
+        crv_list = []
         for i in range(num_children):
             
             child = root.child(i)
             
             if child.checkState():
                 
-                crv_name_list.append(child.text())
+                crv = pet_verify.to_pynode(child.text())
+                
+                if crv is not None:
+                    crv_list.append(crv)
                 
 
         rig_name = self.name_line_edit.text()
@@ -335,44 +335,53 @@ class CableSetupWidget(QtGui.QWidget):
         cable_bind_joints = self.cable_bind_joints_spinbox.value()           
         use_existing_hairsystem = self.use_existing_group_box.isChecked()
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
-        existing_hairsystem = self.existing_hairsystem_line_edit.text()
+        existing_hairsystem_unicode = self.existing_hairsystem_line_edit.text()
         mesh_set_unicode = self.mesh_set_lineedit.text()
         start_ctrl_set_unicode = self.start_ctrl_set_lineedit.text()
         end_ctrl_set_unicode = self.end_ctrl_set_lineedit.text()
         follicle_set_unicode = self.follicle_set_lineedit.text()
         use_existing_sets = self.sets_group_box.isChecked()
         
-        print(  crv_name_list,
-                rig_name,
-                name_start_index,
-                cable_radius,
-                cable_ik_joints,
-                cable_bind_joints,
-                mesh_set_unicode,
-                start_ctrl_set_unicode,
-                end_ctrl_set_unicode,
-                follicle_set_unicode,
-                use_existing_hairsystem,
-                share_hairsystem,
-                existing_hairsystem)
         
         if use_existing_hairsystem:
-            
-            print(pet_verify.verify_string(existing_hairsystem, pm.nodetypes.HairSystem, True))  
-        
+            existing_hairsystem = pet_verify.to_pynode(existing_hairsystem_unicode)
+            if existing_hairsystem is None:
+                pm.warning('Please use a valid hairsystem')
+                return
+                
+        else:
+            existing_hairsystem = None
         
         if use_existing_sets:
+            mesh_set = pet_verify.to_pynode(mesh_set_unicode)
+            start_ctrl_set = pet_verify.to_pynode(start_ctrl_set_unicode)
+            end_ctrl_set = pet_verify.to_pynode(end_ctrl_set_unicode)
+            follicle_set = pet_verify.to_pynode(follicle_set_unicode)
             
-            print(pet_verify.verify_string(mesh_set_unicode, pm.nodetypes.ObjectSet))
-            print(pet_verify.verify_string(start_ctrl_set_unicode, pm.nodetypes.ObjectSet))
-            print(pet_verify.verify_string(end_ctrl_set_unicode, pm.nodetypes.ObjectSet))
-            print(pet_verify.verify_string(follicle_set_unicode, pm.nodetypes.ObjectSet))
+        else:
+            mesh_set = start_ctrl_set = end_ctrl_set = follicle_set = None
             
-
-        for index, crv in enumerate(crv_name_list):
+        
+        kwargs = {  'crv_list':crv_list,
+                    'rig_name':rig_name,
+                    'name_start_index':name_start_index,
+                    'cable_radius':cable_radius,
+                    'cable_ik_joints':cable_ik_joints,
+                    'cable_bind_joints':cable_bind_joints,
+                    'mesh_set':mesh_set,
+                    'start_ctrl_set':start_ctrl_set,
+                    'end_ctrl_set':end_ctrl_set,
+                    'follicle_set':follicle_set,
+                    'use_existing_hairsystem':use_existing_hairsystem,
+                    'share_hairsystem':share_hairsystem,
+                    'existing_hairsystem':existing_hairsystem
+                    }
+        
+        #pprint.pprint(kwargs)
+        
+        for index, crv in enumerate(crv_list):
             
             if use_existing_hairsystem:
-                #check if we have a valid hs
                 print('{0}, use existing hs: {1}'.format(crv, existing_hairsystem))
                 
                 
