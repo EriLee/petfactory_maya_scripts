@@ -21,6 +21,9 @@ TODO
 
 use validation on add / remove ref
 use validation on add hairsystem
+use validation on add sets
+
+
 
 '''   
 class CableSetupWidget(QtGui.QWidget):
@@ -362,8 +365,7 @@ class CableSetupWidget(QtGui.QWidget):
             mesh_set = start_ctrl_set = end_ctrl_set = follicle_set = None
             
         
-        kwargs = {  'crv_list':crv_list,
-                    'rig_name':rig_name,
+        kwargs = {  'rig_name':rig_name,
                     'name_start_index':name_start_index,
                     'cable_radius':cable_radius,
                     'cable_ik_joints':cable_ik_joints,
@@ -374,7 +376,6 @@ class CableSetupWidget(QtGui.QWidget):
                     'follicle_set':follicle_set,
                     'use_existing_hairsystem':use_existing_hairsystem,
                     'share_hairsystem':share_hairsystem,
-                    'existing_hairsystem':existing_hairsystem
                     }
         
         #pprint.pprint(kwargs)
