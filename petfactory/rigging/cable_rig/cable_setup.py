@@ -650,7 +650,9 @@ def setup_crv_list( crv_list,
                     existing_hairsystem = None
                     ):
     
-        
+    # deselect while creating the sets    
+    pm.select(deselect=True)
+    
     if mesh_set is None:                
         mesh_set = pm.sets(name='mesh_set')
       
@@ -700,6 +702,10 @@ def setup_crv_list( crv_list,
                     
 
         # add to sets
+        
+        if cable_dict is None:
+            return None
+            
         mesh_set.add(cable_dict['mesh'])
         follicle_set.add(cable_dict['follicle'])
         start_ctrl_set.add(cable_dict['start_ctrl'])

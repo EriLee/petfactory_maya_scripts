@@ -11,6 +11,8 @@ reload(simple_widget)
 import petfactory.util.verify as pet_verify
 reload(pet_verify)
 
+import petfactory.rigging.cable_rig.cable_setup as cable_setup
+reload(cable_setup)
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -118,6 +120,7 @@ class CableSetupWidget(QtGui.QWidget):
         # add_spinbox(label, parent_layout, min=None, max=None, default=None, double_spinbox=False):
         self.name_start_index_spinbox = simple_widget.add_spinbox(label='Name start index', parent_layout=rig_group_vert_layout, min=0, max=999)
         self.cable_radius_spinbox = simple_widget.add_spinbox(label='Cable radius', parent_layout=rig_group_vert_layout, min=.1, max=999, default=1, double_spinbox=True)
+        self.cable_axis_divisions_spinbox = simple_widget.add_spinbox(label='Cable axis divisions', parent_layout=rig_group_vert_layout, min=3, max=99, default=12)
         self.cable_ik_joints_spinbox = simple_widget.add_spinbox(label='Cable IK joints', parent_layout=rig_group_vert_layout, min=3, max=10, default=4)
         self.cable_bind_joints_spinbox = simple_widget.add_spinbox(label='Cable bind joints', parent_layout=rig_group_vert_layout, min=3, max=99, default=10)
 
@@ -334,8 +337,9 @@ class CableSetupWidget(QtGui.QWidget):
         rig_name = self.name_line_edit.text()
         name_start_index = self.name_start_index_spinbox.value()
         cable_radius = self.cable_radius_spinbox.value()
-        cable_ik_joints = self.cable_ik_joints_spinbox.value()
-        cable_bind_joints = self.cable_bind_joints_spinbox.value()           
+        cable_axis_divisions = self.cable_axis_divisions_spinbox.value()
+        num_ik_joints = self.cable_ik_joints_spinbox.value()
+        num_bind_joints = self.cable_bind_joints_spinbox.value()           
         use_existing_hairsystem = self.use_existing_group_box.isChecked()
         share_hairsystem = self.share_hairsystem_checkbox.isChecked()
         existing_hairsystem_unicode = self.existing_hairsystem_line_edit.text()
@@ -345,7 +349,10 @@ class CableSetupWidget(QtGui.QWidget):
         follicle_set_unicode = self.follicle_set_lineedit.text()
         use_existing_sets = self.sets_group_box.isChecked()
         
-        
+        if rig_name == '':
+            rig_name = 'cable_rig'
+
+            
         if use_existing_hairsystem:
             existing_hairsystem = pet_verify.to_pynode(existing_hairsystem_unicode)
             if existing_hairsystem is None:
@@ -363,51 +370,26 @@ class CableSetupWidget(QtGui.QWidget):
             
         else:
             mesh_set = start_ctrl_set = end_ctrl_set = follicle_set = None
-            
-        
-        kwargs = {  'rig_name':rig_name,
+                                    
+                        
+        kwargs = {  'crv_list':crv_list,
+                    'rig_name':rig_name,
                     'name_start_index':name_start_index,
+                    'num_ik_joints':num_ik_joints,
+                    'num_bind_joints':num_bind_joints,
                     'cable_radius':cable_radius,
-                    'cable_ik_joints':cable_ik_joints,
-                    'cable_bind_joints':cable_bind_joints,
+                    'cable_axis_divisions':cable_axis_divisions,
                     'mesh_set':mesh_set,
                     'start_ctrl_set':start_ctrl_set,
                     'end_ctrl_set':end_ctrl_set,
                     'follicle_set':follicle_set,
                     'use_existing_hairsystem':use_existing_hairsystem,
                     'share_hairsystem':share_hairsystem,
+                    'existing_hairsystem':existing_hairsystem
                     }
         
-        #pprint.pprint(kwargs)
-        
-        for index, crv in enumerate(crv_list):
-            
-            if use_existing_hairsystem:
-                print('{0}, use existing hs: {1}'.format(crv, existing_hairsystem))
-                
-                
-            # do not use existing hs
-            else:
-                
-                # create a new hs at index 0, share this hs
-                if share_hairsystem:
-                    
-                    if index is 0:
-                        print('{0}, create new hs, at index 0'.format(crv))
-                        existing_hairsystem = 'created hs'
-                        
-                    else:
-                        print('{0}, create new, sharing hs: {1}'.format(crv, existing_hairsystem))
-                        
-                        
-                # create a new hs for each rig
-                else:
-                    print('{0}, create new hs.'.format(crv))
-                    
-
-        
-        
-
+        #pprint.pprint(kwargs)        
+        cable_setup.setup_crv_list(**kwargs)
 
 
 def show():      
@@ -416,7 +398,7 @@ def show():
     
 
 
-
+'''
     
 try:
     win.close()
@@ -429,7 +411,7 @@ win.show()
 
 
 win.move(100,150)
-
+'''
 
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
