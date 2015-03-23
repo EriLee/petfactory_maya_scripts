@@ -629,39 +629,9 @@ def add_cable_bind_joints(crv, name, num_ik_joints, num_bind_joints, cable_radiu
     pm.parent(joint_list, bind_jnt_grp)
     
     return ret_dict
-     
-       
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_7_cvs.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_double.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_11_cvs.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_leg.mb', f=True)
+    
 
 
-
-crv_1 = pm.PyNode('curve1')
-crv_2 = pm.PyNode('curve2')
-crv_3 = pm.PyNode('curve3')
-crv_list = [crv_1, crv_2, crv_3]
-#crv_list = [crv_1]
-
-rig_name = 'cable_rig_name'
-name_start_index = 0
-num_ik_joints = 4
-num_bind_joints = 20
-cable_radius = .5
-cable_axis_divisions = 12
-
-
-#mesh_set = None
-#follicle_set = None
-#start_ctrl_set = None
-#end_ctrl_set = None
-
-use_existing_hairsystem = False
-share_hairsystem = True
-#existing_hairsystem = pm.PyNode('hairSystem1')
 
 
 def setup_crv_list( crv_list,
@@ -699,10 +669,10 @@ def setup_crv_list( crv_list,
         if use_existing_hairsystem:
             
             if index is 0:
-                add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=existing_hairsystem, create_mesh_copy=True)
+                cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=existing_hairsystem, create_mesh_copy=True)
                 
             else:
-                add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=existing_hairsystem)
+                cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=existing_hairsystem)
             
             
             
@@ -717,36 +687,53 @@ def setup_crv_list( crv_list,
                     existing_hairsystem = cable_dict.get('hairsystem')
                     
                 else:
-                    add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=existing_hairsystem)
+                    cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=existing_hairsystem)
                     
                     
             # create a new hs for each rig
             else:
                 if index is 0:
-                    add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, create_mesh_copy=True)
+                    cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, create_mesh_copy=True)
                 
                 else:
-                    add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions)
+                    cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions)
                     
-         
-    '''
-    for index, crv in enumerate(crv_list):
-        
-        if index is 0:
-            cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, create_mesh_copy=True)
-            
-        else:
-            if cable_dict is not None:
-                cable_dict = add_cable_bind_joints(crv=crv, name='{0}_{1}'.format(rig_name, index+name_start_index), num_ik_joints=num_ik_joints, num_bind_joints=num_bind_joints, cable_radius=cable_radius, cable_axis_divisions=cable_axis_divisions, existing_hairsystem=cable_dict.get('hairsystem'))
-        
-        if cable_dict is not None:
-            mesh_set.add(cable_dict.get('mesh'))
-            follicle_set.add(cable_dict.get('follicle'))
-            start_ctrl_set.add(cable_dict.get('start_ctrl'))
-            end_ctrl_set.add(cable_dict.get('end_ctrl'))
-            
-    '''
-        
+
+        # add to sets
+        mesh_set.add(cable_dict['mesh'])
+        follicle_set.add(cable_dict['follicle'])
+        start_ctrl_set.add(cable_dict['start_ctrl'])
+        end_ctrl_set.add(cable_dict['end_ctrl'])
+                            
+
+'''
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
+
+
+crv_1 = pm.PyNode('curve1')
+crv_2 = pm.PyNode('curve2')
+crv_3 = pm.PyNode('curve3')
+crv_list = [crv_1, crv_2, crv_3]
+
+
+rig_name = 'cable_rig_name'
+name_start_index = 0
+num_ik_joints = 4
+num_bind_joints = 20
+cable_radius = .5
+cable_axis_divisions = 12
+
+
+mesh_set = None
+follicle_set = None
+start_ctrl_set = None
+end_ctrl_set = None
+
+use_existing_hairsystem = True
+share_hairsystem = True
+#existing_hairsystem = None
+existing_hairsystem = pm.PyNode('hairSystem1')
+
 
 setup_crv_list( crv_list,
                 rig_name,
@@ -762,3 +749,4 @@ setup_crv_list( crv_list,
                 use_existing_hairsystem,
                 share_hairsystem,
                 existing_hairsystem)
+'''
