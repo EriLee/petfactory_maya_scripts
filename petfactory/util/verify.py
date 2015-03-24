@@ -1,4 +1,42 @@
 import pymel.core as pm
+#from inspect import isclass
+
+def verify_pynode(node, node_type):
+    
+    '''Convert the string to a PyNode and check if it is an instance or subclass of the node_type argument.
+    isinstance returns true if the object argument is an instance of the classinfo argument, or of a
+    (direct, indirect or virtual) subclass thereof.
+    '''
+    # check if the node_type is a class
+    #if not inspect.isclass(node_type):
+    #    pm.warning('{0} is not a class'.format(node_type))
+    #    return False
+        
+    # check if the node_type is valid
+    if not pm.util.utilitytypes.ProxyUnicode in node_type.__mro__:
+        pm.warning('{0} is not a valid node type'.format(node_type))
+        return False
+        
+    # check if node is a valid PyNode
+    if not isinstance(node, pm.util.utilitytypes.ProxyUnicode):
+        pm.warning('{0} is not a PyNode'.format(node))
+        return False
+    
+    # check if the node is an instance
+    if isinstance(node, node_type):
+        return True
+    
+    # if the node was not an instance, check the shape node
+    else:
+        
+        try:
+            shape = node.getShape()
+                
+        except AttributeError as e:
+            #pm.warning('Select a transform to use the getShape method. {0}'.format(e))
+            return False
+            
+        return isinstance(shape, node_type)
 
 def verify_selection(node_type, use_shape=False):
     
