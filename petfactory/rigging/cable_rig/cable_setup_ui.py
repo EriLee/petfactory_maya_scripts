@@ -133,14 +133,19 @@ class CableSetupWidget(QtGui.QWidget):
         
         # use existing hairsystem group box
         self.use_existing_group_box = QtGui.QGroupBox("Use existing")
-        
         hairsystem_group_vert_layout.addWidget(self.use_existing_group_box)
         self.use_existing_group_box.setCheckable(True)
         self.use_existing_group_box.setChecked(False)
+        
         use_existing_group_box_vert_layout = QtGui.QVBoxLayout()
         self.use_existing_group_box.setLayout(use_existing_group_box_vert_layout)
         self.use_existing_group_box.clicked.connect(self.hairsystem_groupbox_clicked)
 
+
+        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Hairsystem >', parent_layout=use_existing_group_box_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.HairSystem, 'use_shape':True})
+        
+
+        '''
         # use existing hairsystem widget
         self.use_existing_hairsystem_widget = QtGui.QWidget()
         
@@ -157,7 +162,7 @@ class CableSetupWidget(QtGui.QWidget):
                 
         self.existing_hairsystem_line_edit = QtGui.QLineEdit()
         use_existing_hairsystem_horiz_layout.addWidget(self.existing_hairsystem_line_edit)
-
+        '''
 
         
         # share hairsystem
@@ -211,26 +216,30 @@ class CableSetupWidget(QtGui.QWidget):
         sets_group_vert_layout = QtGui.QVBoxLayout()
         self.sets_group_box.setLayout(sets_group_vert_layout)
         
-        
-        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Mesh       >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'follicle'})
-        self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='Start ctrl >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'mesh'})
-        self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='End ctrl   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
-        self.follicle_set_lineedit = simple_widget.add_populate_lineedit(label='Follicle   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
-        
-        
-        
+  
+        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Mesh       >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
+        self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='Start ctrl >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
+        self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='End ctrl   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
+        self.follicle_set_lineedit = simple_widget.add_populate_lineedit(label='Follicle   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
+          
         tab_2_vertical_layout.addStretch()
                 
         
     def populate_lineedit(self, **kwargs):
         
         lineedit = kwargs.get('lineedit')
-        #type = kwargs.get('type')
-        
+
         sel = pm.ls(sl=True)
-        if sel:
-            lineedit.setText(sel[0].longName())
-            #print(type)
+        if sel: 
+        
+            type = kwargs.get('type')
+            use_shape = kwargs.get('use_shape')
+            
+            if type:
+                if pet_verify.verify_string(sel[0], type, use_shape=use_shape):
+                    lineedit.setText(sel[0].longName())
+                else:
+                    pm.warning('Make sure the selected node is of type: {0}'.format(type))
         
 
     def add_joint_ref_click(self):
