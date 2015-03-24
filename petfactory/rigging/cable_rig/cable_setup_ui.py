@@ -21,12 +21,6 @@ def maya_main_window():
 '''
 TODO
 
-use validation on add / remove ref
-use validation on add hairsystem
-use validation on add sets
-
-
-
 '''   
 class CableSetupWidget(QtGui.QWidget):
  
@@ -143,26 +137,6 @@ class CableSetupWidget(QtGui.QWidget):
 
 
         self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Hairsystem >', parent_layout=use_existing_group_box_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.HairSystem, 'use_shape':True})
-        
-
-        '''
-        # use existing hairsystem widget
-        self.use_existing_hairsystem_widget = QtGui.QWidget()
-        
-        # use existing hairsystem
-        use_existing_group_box_vert_layout.addWidget(self.use_existing_hairsystem_widget)
-
-        use_existing_hairsystem_horiz_layout = QtGui.QHBoxLayout()
-        
-        self.use_existing_hairsystem_widget.setLayout(use_existing_hairsystem_horiz_layout)
-        
-        add_existing_hairsystem_button = QtGui.QPushButton('Hairsystem >')
-        use_existing_hairsystem_horiz_layout.addWidget(add_existing_hairsystem_button)
-        add_existing_hairsystem_button.clicked.connect(self.add_hairsystem_clicked)
-                
-        self.existing_hairsystem_line_edit = QtGui.QLineEdit()
-        use_existing_hairsystem_horiz_layout.addWidget(self.existing_hairsystem_line_edit)
-        '''
 
         
         # share hairsystem
@@ -230,7 +204,12 @@ class CableSetupWidget(QtGui.QWidget):
         lineedit = kwargs.get('lineedit')
 
         sel = pm.ls(sl=True)
-        if sel: 
+        
+        if not sel:
+            pm.warning('Nothing is selected!')
+            return
+            
+        else: 
         
             type = kwargs.get('type')
             use_shape = kwargs.get('use_shape')
@@ -250,14 +229,17 @@ class CableSetupWidget(QtGui.QWidget):
         if not sel_list:
             pm.warning('Please select a curve!')
             return
-
         
         for sel in sel_list:
-        
-            if not isinstance(sel, pm.nodetypes.Transform):
-                pm.warning('{0} is not a valid transform, skipped'.format(sel.name()))
+            
+            if not pet_verify.verify_pynode(sel, pm.nodetypes.NurbsCurve):
+                pm.warning('{0} is not a curve, skipped'.format(sel.name()))
                 continue
             
+            # if we have selected a crv, get the parent transform
+            if isinstance(sel, pm.nodetypes.NurbsCurve):
+                sel = sel.getParent()
+                
             item = QtGui.QStandardItem(sel.name())
             
             # set flags
@@ -292,32 +274,6 @@ class CableSetupWidget(QtGui.QWidget):
         else:
             self.use_existing_group_box.setChecked(not is_checked)
 
-
-    def add_hairsystem_clicked(self):
-        
-        sel_list = pm.ls(sl=True)
-        
-        if not sel_list:
-            pm.warning('Select a hairsystem!')
-            return
-        
-        try:
-
-            shape = sel_list[0].getShape()
-            
-            if isinstance(shape, pm.nodetypes.HairSystem):
-                self.existing_hairsystem_line_edit.setText(sel_list[0].longName())
-                
-            else:
-                pm.warning('Select a hairsystem!')
-            
-        except AttributeError as e:
-            pm.warning('Please select a Hairsystem ', e)
-            return
-            
-            
-    
-    
     
        
     def setup_cable(self):
@@ -408,7 +364,7 @@ def show():
 
 
 
-    
+'''    
 try:
     win.close()
     
@@ -420,7 +376,7 @@ win.show()
 
 
 win.move(100,150)
-
+'''
 
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
