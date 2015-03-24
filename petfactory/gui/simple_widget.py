@@ -33,15 +33,14 @@ def add_populate_lineedit(label, parent_layout, callback=None, kwargs={}):
     horiz_layout = QtGui.QHBoxLayout()
     parent_layout.addLayout(horiz_layout)
 
-    lineedit = QtGui.QLineEdit()
-
-    horiz_layout.addWidget(lineedit)
-    lineedit.setMinimumWidth(100)
-    
-    
     button = QtGui.QPushButton(label)
     button.setMinimumWidth(80)
     horiz_layout.addWidget(button)
+
+    lineedit = QtGui.QLineEdit()
+    horiz_layout.addWidget(lineedit)
+    lineedit.setMinimumWidth(100)
+
     
     if callback is not None:
         

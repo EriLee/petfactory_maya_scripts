@@ -212,10 +212,10 @@ class CableSetupWidget(QtGui.QWidget):
         self.sets_group_box.setLayout(sets_group_vert_layout)
         
         
-        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='<  Mesh      ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'follicle'})
-        self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='<  Start ctrl', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'mesh'})
-        self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='<  End ctrl  ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
-        self.follicle_set_lineedit = simple_widget.add_populate_lineedit(label='<  Follicle  ', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
+        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Mesh       >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'follicle'})
+        self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='Start ctrl >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':'mesh'})
+        self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='End ctrl   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
+        self.follicle_set_lineedit = simple_widget.add_populate_lineedit(label='Follicle   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit)
         
         
         
@@ -398,7 +398,7 @@ def show():
     
 
 
-'''
+
     
 try:
     win.close()
@@ -411,7 +411,7 @@ win.show()
 
 
 win.move(100,150)
-'''
+
 
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
