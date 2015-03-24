@@ -191,10 +191,10 @@ class CableSetupWidget(QtGui.QWidget):
         self.sets_group_box.setLayout(sets_group_vert_layout)
         
   
-        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Mesh       >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
-        self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='Start ctrl >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
-        self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='End ctrl   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
-        self.follicle_set_lineedit = simple_widget.add_populate_lineedit(label='Follicle   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet, 'use_shape':False})
+        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Mesh       >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet})
+        self.start_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='Start ctrl >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet})
+        self.end_ctrl_set_lineedit = simple_widget.add_populate_lineedit(label='End ctrl   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet})
+        self.follicle_set_lineedit = simple_widget.add_populate_lineedit(label='Follicle   >', parent_layout=sets_group_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.ObjectSet})
           
         tab_2_vertical_layout.addStretch()
                 
@@ -212,10 +212,9 @@ class CableSetupWidget(QtGui.QWidget):
         else: 
         
             type = kwargs.get('type')
-            use_shape = kwargs.get('use_shape')
             
             if type:
-                if pet_verify.verify_string(sel[0], type, use_shape=use_shape):
+                if pet_verify.verify_string(sel[0], type):
                     lineedit.setText(sel[0].longName())
                 else:
                     pm.warning('Make sure the selected node is of type: {0}'.format(type))
@@ -363,8 +362,7 @@ def show():
     
 
 
-
-'''    
+'''
 try:
     win.close()
     
@@ -376,8 +374,8 @@ win.show()
 
 
 win.move(100,150)
-'''
 
+'''
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
 
