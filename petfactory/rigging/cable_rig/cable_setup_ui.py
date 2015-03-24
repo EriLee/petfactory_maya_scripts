@@ -136,7 +136,7 @@ class CableSetupWidget(QtGui.QWidget):
         self.use_existing_group_box.clicked.connect(self.hairsystem_groupbox_clicked)
 
 
-        self.mesh_set_lineedit = simple_widget.add_populate_lineedit(label='Hairsystem >', parent_layout=use_existing_group_box_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.HairSystem, 'use_shape':True})
+        self.existing_hairsystem_line_edit = simple_widget.add_populate_lineedit(label='Hairsystem >', parent_layout=use_existing_group_box_vert_layout, callback=self.populate_lineedit, kwargs={'type':pm.nodetypes.HairSystem, 'use_shape':True})
 
         
         # share hairsystem
@@ -362,7 +362,7 @@ def show():
     
 
 
-'''
+
 try:
     win.close()
     
@@ -375,7 +375,7 @@ win.show()
 
 win.move(100,150)
 
-'''
+
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
 
