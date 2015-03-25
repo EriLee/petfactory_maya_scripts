@@ -5,13 +5,16 @@ def del_transform():
 	del_list = [ x for x in t_list if not isinstance(x.getShape(), pm.nodetypes.Camera)]
 	pm.delete(del_list)
 
+
+
 color_dict = {  "black":1,
                 "blue":6,
                 "red":13,
                 "green":14,
                 "white":16,
                 "yellow":17}
-                
+
+    
 def line(e, s=(0,0,0), c=None):
     
     crv = pm.curve(d=1, p=[s, e])
@@ -36,7 +39,3 @@ def point(p, r=.25, c=None):
         sp.overrideColor.set(color)
 
     pm.select(deselect=True)
-    
-
-#line((10,10,10), c='yellow')
-#point((10,10,10), c='yellow')

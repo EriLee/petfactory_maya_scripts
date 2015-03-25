@@ -116,3 +116,23 @@ def to_pynode(node_name):
     except pm.MayaNodeError as e:
         pm.warning('Could not create PyNode. {0}'.format(e))
         return None
+
+def get_nodetype(node):
+    
+    if isinstance(node, pm.nodetypes.Transform):
+        
+        try:
+            shape = node.getShape()
+            
+            if shape:
+                return(type(shape))
+                
+            # since the Joint class getShape method returns nothing we do this
+            else:
+                return(type(node))
+                
+        except AttributeError as e:
+            return(type(node))
+
+    else:
+        return(type(node))
