@@ -4,7 +4,7 @@ import petfactory.util.verify as pet_verify
 
 def del_transform(exclude_list=[]):
     
-    ''' delets all transforms in the scene, except for the cameras. Additional nodes can be
+    '''delets all transforms in the scene, except for the cameras. Additional nodes can be
     excluded by adding the node type to be excluded to the exclude list
     
     usage:
@@ -24,10 +24,13 @@ color_dict = {  "black":1,
                 "yellow":17}
 
     
-def line(e, s=(0,0,0), c=None):
+def line(e, s=[0,0,0], c=None, n=None):
     
     crv = pm.curve(d=1, p=[s, e])
     crv_shape = crv.getShape()
+
+    if n is not None:
+        crv.rename(n)
     
     color = color_dict.get(c) 
     if c is not None and color is not None:
@@ -36,11 +39,14 @@ def line(e, s=(0,0,0), c=None):
 
     pm.select(deselect=True)
 
-def point(p, r=.25, c=None):
+def point(p, r=.25, c=None, n=None):
     
     sp = pm.createNode('renderSphere')
     sp.getParent().translate.set(p)
     sp.radius.set(r)
+
+    if n is not None:
+        sp.getParent().rename(n)
     
     color = color_dict.get(c) 
     if c is not None and color is not None:
