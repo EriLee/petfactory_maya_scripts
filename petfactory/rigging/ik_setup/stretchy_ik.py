@@ -3,8 +3,16 @@ pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/spring_jnt
 mel.eval('ikSpringSolver')
 
 name = 'cable_rig'
-ik_jnt_list = [pm.PyNode('joint{0}'.format(j+1)) for j in range(5)]
 
+ik_jnt_list = [pm.PyNode('joint{0}'.format(j+1)) for j in range(5)]
+stretch_jnt_list = ik_jnt_list[1:]
+
+# get the total length of the joint chain
+total_jnt_length = 0
+for jnt in stretch_jnt_list:
+    total_jnt_length += jnt.tx.get()
+    
+    
 ik_handle, ik_effector = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikSpringSolver')
 
 start_ctrl = pm.circle(n='start', ch=False)[0]
