@@ -1,10 +1,19 @@
 import pymel.core as pm
 
-def del_transform():
-	t_list = pm.ls(type='transform')
-	del_list = [ x for x in t_list if not isinstance(x.getShape(), pm.nodetypes.Camera)]
-	pm.delete(del_list)
+import petfactory.util.verify as pet_verify
 
+def del_transform(exclude_list=[]):
+    
+    ''' delets all transforms in the scene, except for the cameras. Additional nodes can be
+    excluded by adding the node type to be excluded to the exclude list
+    
+    usage:
+        del_transform(exclude_list=[pm.nodetypes.Joint])'''
+    
+    exclude_list.append(pm.nodetypes.Camera)    
+    t_list = pm.ls(type='transform')    
+    del_list = [ t for t in t_list if pet_verify.get_nodetype(t) not in exclude_list]
+    pm.delete(del_list)
 
 
 color_dict = {  "black":1,
