@@ -17,7 +17,25 @@ TODO
 > There is a problem that the bind crv does not stick to the end ctrl when stretched...
 
 '''
+def set_curve_skin_percent(crv, jnt_list, skin_cluster, num_div):
 
+    num_jnt = len(jnt_list)
+    cv_index = 0
+    u_inc = 1.0 / (num_div + 1)
+    for index in range(num_jnt-1):
+        
+        start = jnt_list[index]
+        end = jnt_list[index+1]
+
+        for n in range(num_div+1):
+            u = u_inc * n
+            pm.skinPercent(skin_cluster, '{0}.cv[{1}]'.format(crv, cv_index), transformValue=('{0}'.format(start), 1.0-u))
+            pm.skinPercent(skin_cluster, '{0}.cv[{1}]'.format(crv, cv_index), transformValue=('{0}'.format(end), u))
+            
+            cv_index +=1
+            
+    pm.skinPercent(skin_cluster, '{0}.cv[{1}]'.format(crv, cv_index), transformValue=('{0}'.format(jnt_list[-1]), 1.0))
+    
 def validate_cv_num(num_joints, cv_num):
     
     def find_lt(a, x):
@@ -239,11 +257,14 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     # set the blendshape weight to 1 (weighted to the linear crv) when we bind the crv
     # this will ensure that we get the correct deformation when the crv is stretched
     # if we do not do this the cvs will be slighlty off (maya bug?)
-    #blendshape_linear.linear_curve_bs.set(1.0)
-    blendshape_linear.weight[0].set(1.0)
+    # blendshape_linear.linear_curve_bs.set(1.0)
+    # blendshape_linear.weight[0].set(1.0)
 
     
-    pm.skinCluster(ik_jnt_list[0], crv)
+    skin_cluster = pm.skinCluster(ik_jnt_list[0], crv)
+    
+    set_curve_skin_percent(crv=crv, jnt_list=ik_jnt_list, skin_cluster=skin_cluster, num_div=num_linear_crv_div)
+        
     #pm.skinCluster(ik_jnt_list, crv, toSelectedBones=True)
     
     # connect the remap out value to control the blendshape
