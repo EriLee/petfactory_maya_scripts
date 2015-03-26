@@ -9,7 +9,7 @@ end_ctrl = pm.circle(n='{0}_end_ctrl'.format(name), ch=False)[0]
 
     
     
-def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=True):
+def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, solver, name, move_ctrl=True):
     
     ret_dict = {}
     
@@ -25,7 +25,7 @@ def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=
     stretch_jnt_list = ik_jnt_list[1:]
     
     # add ik handle    
-    ik_handle, ik_effector = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikSpringSolver')
+    ik_handle, ik_effector = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver=solver)
     
     ik_jnt_grp = pm.group(em=True, parent=start_ctrl, n='{0}_ik_jnt_grp'.format(name))
     start_ctrl_hidden_grp = pm.group(em=True, parent=start_ctrl, n='{0}_start_ctrl_hidden_grp'.format(name))
@@ -117,4 +117,4 @@ def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=
     return ret_dict
 
 
-create_stretch_ik_spring(ik_jnt_list=ik_jnt_list, start_ctrl=start_ctrl, end_ctrl=end_ctrl, name=name)
+create_stretch_ik_spring(ik_jnt_list=ik_jnt_list, start_ctrl=start_ctrl, end_ctrl=end_ctrl, solver='ikSpringSolver', name=name)
