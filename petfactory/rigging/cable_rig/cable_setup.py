@@ -13,6 +13,8 @@ reload(stretchy_ik)
 '''
 TODO
 
+> set wigths of the nhair blendshape
+> There is a problem that the bind crv does not stick to the end ctrl when stretched...
 
 '''
 
@@ -242,6 +244,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
 
     
     pm.skinCluster(ik_jnt_list[0], crv)
+    #pm.skinCluster(ik_jnt_list, crv, toSelectedBones=True)
     
     # connect the remap out value to control the blendshape
     #linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
@@ -265,7 +268,6 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     
     bind_geo_grp.overrideEnabled.set(1)
     bind_geo_grp.overrideDisplayType.set(2)
-    
     
     # make the curves dynamic    
     nhair_dict = nhair_dynamics.make_curve_dynamic(crv, delete_out_curve_parent=True)
@@ -662,15 +664,15 @@ def setup_crv_list( crv_list,
                             
 
 
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
 
 
 crv_1 = pm.PyNode('curve1')
-#crv_2 = pm.PyNode('curve2')
-#crv_3 = pm.PyNode('curve3')
-#crv_list = [crv_1, crv_2, crv_3]
-crv_list = [crv_1]
+crv_2 = pm.PyNode('curve2')
+crv_3 = pm.PyNode('curve3')
+crv_list = [crv_1, crv_2, crv_3]
+#crv_list = [crv_1]
 
 
 rig_name = 'cable_rig_name'
@@ -691,7 +693,7 @@ share_hairsystem = True
 #existing_hairsystem = None
 existing_hairsystem = pm.PyNode('hairSystem1')
 
-'''
+
 setup_crv_list( crv_list,
                 rig_name,
                 name_start_index,
@@ -706,8 +708,8 @@ setup_crv_list( crv_list,
                 use_existing_hairsystem,
                 share_hairsystem,
                 existing_hairsystem)
-'''
+
 
 #cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsystem=None):
-cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
+#cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
     
