@@ -1,14 +1,6 @@
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/spring_jnts.mb', f=True)
+import pymel.core as pm
+import maya.mel as mel
 
-name = 'cable_rig'
-ik_jnt_list = [pm.PyNode('joint{0}'.format(j+1)) for j in range(5)]
-
-# create the ctrl
-start_ctrl = pm.circle(n='{0}_start_ctrl'.format(name), ch=False)[0]
-end_ctrl = pm.circle(n='{0}_end_ctrl'.format(name), ch=False)[0]
-
-    
-    
 def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, solver, name, move_ctrl=True):
     
     ret_dict = {}
@@ -116,5 +108,20 @@ def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, solver, name, mo
     
     return ret_dict
 
+'''
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/spring_jnts.mb', f=True)
 
-create_stretch_ik_spring(ik_jnt_list=ik_jnt_list, start_ctrl=start_ctrl, end_ctrl=end_ctrl, solver='ikSpringSolver', name=name)
+name = 'cable_rig'
+ik_jnt_list = [pm.PyNode('joint{0}'.format(j+1)) for j in range(5)]
+
+# create the ctrl
+start_ctrl = pm.circle(n='{0}_start_ctrl'.format(name), ch=False)[0]
+end_ctrl = pm.circle(n='{0}_end_ctrl'.format(name), ch=False)[0]
+
+
+create_stretch_ik_spring(   ik_jnt_list=ik_jnt_list,
+                            start_ctrl=start_ctrl,
+                            end_ctrl=end_ctrl,
+                            solver='ikSpringSolver',
+                            name=name)
+'''
