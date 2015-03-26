@@ -77,6 +77,25 @@ for jnt in stretch_jnt_list:
     jnt_choice.output >> jnt.tx
 
 
+# add polevector
+vec_prod = pm.createNode('vectorProduct', n='{0}_polevec_vp'.format(name))
+# the pole vector expects a vector, so we set the operation to vector matrix product
+vec_prod.operation.set(3)
+start_ctrl.worldMatrix[0] >> vec_prod.matrix
+vec_prod.input1.set(0,0,1)
+vec_prod.output >> ik_handle.poleVector
+
+pm.addAttr(start_ctrl, ln='ik_twist', at='double', k=True, defaultValue=0)
+pm.addAttr(start_ctrl, ln='ik_twist_offset', at='double', k=False, defaultValue=-90)
+
+
+# create a ik twist ctrl
+ik_twist_pma = pm.createNode('plusMinusAverage', n='{0}_ik_twist_pma'.format(name))
+start_ctrl.ik_twist_offset >> ik_twist_pma.input1D[0]
+start_ctrl.ik_twist >> ik_twist_pma.input1D[1]
+ik_twist_pma.output1D >> ik_handle.twist
+
+
 pm.parent(ik_jnt_list[0], ik_jnt_grp)
 pm.setAttr(start_ctrl_hidden_grp.v, 0, lock=True)
 pm.setAttr(end_ctrl_hidden_grp.v, 0, lock=True)
