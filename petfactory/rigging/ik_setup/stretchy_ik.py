@@ -1,7 +1,7 @@
 import pymel.core as pm
 import maya.mel as mel
 
-def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, solver, name, move_ctrl=True):
+def create_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=True):
     
     ret_dict = {}
     
@@ -17,7 +17,7 @@ def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, solver, name, mo
     stretch_jnt_list = ik_jnt_list[1:]
     
     # add ik handle    
-    ik_handle, ik_effector = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver=solver)
+    ik_handle, ik_effector = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikSpringSolver')
     
     ik_jnt_grp = pm.group(em=True, parent=start_ctrl, n='{0}_ik_jnt_grp'.format(name))
     start_ctrl_hidden_grp = pm.group(em=True, parent=start_ctrl, n='{0}_start_ctrl_hidden_grp'.format(name))
@@ -107,7 +107,6 @@ def create_stretch_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, solver, name, mo
     ret_dict['end_ctrl_hidden_grp'] = end_ctrl_hidden_grp
     
     return ret_dict
-
 '''
 pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/spring_jnts.mb', f=True)
 
@@ -119,9 +118,8 @@ start_ctrl = pm.circle(n='{0}_start_ctrl'.format(name), ch=False)[0]
 end_ctrl = pm.circle(n='{0}_end_ctrl'.format(name), ch=False)[0]
 
 
-create_stretch_ik_spring(   ik_jnt_list=ik_jnt_list,
-                            start_ctrl=start_ctrl,
-                            end_ctrl=end_ctrl,
-                            solver='ikSpringSolver',
-                            name=name)
+create_ik_spring(   ik_jnt_list=ik_jnt_list,
+                    start_ctrl=start_ctrl,
+                    end_ctrl=end_ctrl,
+                    name=name)
 '''
