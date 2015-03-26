@@ -1,14 +1,18 @@
 import pymel.core as pm
+import maya.mel as mel
+
 from bisect import bisect_left, bisect_right
 import petfactory.util.vector as pet_vector
 import petfactory.rigging.ctrl.ctrl as pet_ctrl
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 
+import petfactory.rigging.ik_setup.stretchy_ik as stretchy_ik
+reload(stretchy_ik)
+
 '''
 TODO
 
-add objects to sets
 
 '''
 
@@ -163,8 +167,8 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     ctrl_grp = pm.group(em=True, parent=main_grp, n='{0}_ctrl_grp'.format(name))
     bind_geo_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_geo_grp'.format(name))
     hidden_grp = pm.group(em=True, parent=main_grp, n='{0}_hidden_grp'.format(name))
-    start_ctrl_hidden_grp = pm.group(em=True, n='{0}_start_ctrl_hidden_grp'.format(name))
-    end_ctrl_hidden_grp = pm.group(em=True, n='{0}_end_ctrl_hidden_grp'.format(name))
+    #start_ctrl_hidden_grp = pm.group(em=True, n='{0}_start_ctrl_hidden_grp'.format(name))
+    #end_ctrl_hidden_grp = pm.group(em=True, n='{0}_end_ctrl_hidden_grp'.format(name))
     no_inherit_trans_grp = pm.group(em=True, parent=hidden_grp, n='{0}_no_inherit_trans_grp'.format(name))
     no_inherit_trans_grp.inheritsTransform.set(0)
     
@@ -191,40 +195,34 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     # build the linear blendshape crv    
     crv_linear = pm.curve(d=3, p=pos_list, n='{0}_linear_crv'.format(name))
 
-    # get the position of the second joint, we use this later to se how to set up the twist offset of the pole vec const
-    jnt_pos_before_ik = ik_jnt_list[1].getTranslation(space='world')
+    #create_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=True)
+    stretchy_ik_dict = stretchy_ik.create_ik_spring(    ik_jnt_list=ik_jnt_list,
+                                                        start_ctrl=ctrl_start,
+                                                        end_ctrl=ctrl_end,
+                                                        name=name,
+                                                        move_ctrl=False)
+                                                        
+    stretch_condition = stretchy_ik_dict['stretch_condition']
+    stretch_distance_shape = stretchy_ik_dict['distance_shape']
+    stretch_ik_jnt_grp = stretchy_ik_dict['ik_jnt_grp']
+    start_ctrl_hidden_grp = stretchy_ik_dict['start_ctrl_hidden_grp']
+    end_ctrl_hidden_grp = stretchy_ik_dict['end_ctrl_hidden_grp']
+    jont_chain_length = stretchy_ik_dict['total_jnt_length']
     
-    # bind, add ik handle  
-    ik_handle_unicode, ik_effector_unicode = pm.ikHandle(sj=ik_jnt_list[0], ee=ik_jnt_list[-1], n='{0}_ikh'.format(name), solver='ikRPsolver')
-    # since tpm.ikHandle returns unicode and not a PyNode, we need to construct one here
-    ik_handle = pm.PyNode('|{0}'.format(ik_handle_unicode))
-    ik_effector = pm.PyNode('{0}'.format(ik_effector_unicode))
+    pm.addAttr(ctrl_start, longName='show_ik_joints', at="enum", en="off:on", keyable=True)
+    ctrl_start.show_ik_joints >> stretch_ik_jnt_grp.v
+    
+    stretch_ik_jnt_grp.overrideEnabled.set(1)
+    stretch_ik_jnt_grp.overrideDisplayType.set(2)
     
     
-    
-    
-    dist = pm.distanceDimension(sp=ik_jnt_list[0].getTranslation(space='world'), ep=ik_jnt_list[-1].getTranslation(space='world'))
-    dist_transform = dist.getParent()
-    dist_transform.rename('{0}_dist'.format(name))
-    start_loc = pm.listConnections( '{0}.startPoint'.format(dist))[0]
-    start_loc.rename('start_loc')
-    end_loc = pm.listConnections( '{0}.endPoint'.format(dist))[0]
-    end_loc.rename('end_loc')
-    
-    
+    # TEMP FIX THE IK TWIST FLIP
+    ctrl_start.ik_twist_offset.set(90)
     
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
-    
     crv_length = pm.arclen(crv)
     
-    # get the length of the joint chain by getting the tx of the second to last jnt
-    # I slice the ik_jnt_list to skip the first jnt
-    jont_chain_length = 0  
-    for jnt in ik_jnt_list[1:]:
-        jont_chain_length += jnt.tx.get()
-        
-        
-    dist.distance >> linear_blendshape_RMV.inputValue
+    stretch_distance_shape.distance >> linear_blendshape_RMV.inputValue
     
     # set the min to 90 percent of the crv length, max to crv length
     linear_blendshape_RMV.inputMin.set(jont_chain_length*.8)
@@ -232,30 +230,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     
     # set the first value point to use a spline interpolation
     linear_blendshape_RMV.value[0].value_Interp.set(3)
-    
         
-    
-    # set up the condition node
-    jnt_cable_rig_stretch_CND = pm.createNode('condition', name='jnt_cable_rig_stretch_CND')
-    jnt_cable_rig_stretch_MD = pm.createNode('multiplyDivide', name='jnt_cable_rig_stretch_MD')
-    
-    dist.distance >> jnt_cable_rig_stretch_MD.input1X
-    jnt_cable_rig_stretch_MD.input2X.set(jont_chain_length)
-    jnt_cable_rig_stretch_MD.operation.set(2)
-    
-    jnt_cable_rig_stretch_MD.outputX >> jnt_cable_rig_stretch_CND.colorIfTrueR
-    
-    dist.distance >> jnt_cable_rig_stretch_CND.firstTerm
-    jnt_cable_rig_stretch_CND.operation.set(2)
-    jnt_cable_rig_stretch_CND.secondTerm.set(jont_chain_length)
-    
-    jnt_cable_rig_stretch_CND.colorIfFalseR.set(1)
-    
-    # hook up stretch scaling of the jnts
-    for jnt in ik_jnt_list[:-1]:
-        jnt_cable_rig_stretch_CND.outColorR >> jnt.scaleX
-
-    
     # create the blendshape
     blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
     
@@ -272,47 +247,24 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     #linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
     linear_blendshape_RMV.outValue >> blendshape_linear.weight[0]
     
-    # pole vector
-    pole_vector_target = pm.spaceLocator()
-    
-    pole_vector_target_grp = pm.group(em=True, n='polevector_target_grp')    
-    pm.parent(pole_vector_target, pole_vector_target_grp)
-    pole_vector_target.rename('pv_target_loc')
-
-    
-    pole_vector_target_grp.setMatrix(ik_jnt_list[0].getMatrix(worldSpace=True))
-    pole_vector_target.tz.set(10)
-        
-    polevector_const = pm.poleVectorConstraint(pole_vector_target, ik_handle)
-    ik_handle.twist.set(90)
-    
-    # if the jont pos shifted more with a length greater then 1 we flip the twist of the pole vector const
-    if (jnt_pos_before_ik - ik_jnt_list[1].getTranslation(space='world')).length() > 1:
-        ik_handle.twist.set(-90)
-    
 
     # organize
     pm.parent(ctrl_start, ctrl_end, ctrl_grp)
-    pm.parent(dist_transform, pole_vector_target_grp, crv_linear, hidden_grp)
+    pm.parent(crv_linear, hidden_grp)
     pm.parent(crv, bind_geo_grp)
-    
-    pm.parent(start_ctrl_hidden_grp, ctrl_start)
-    pm.parent(end_ctrl_hidden_grp, ctrl_end)
-    
-    pm.parent(start_loc, ik_jnt_list[0], start_ctrl_hidden_grp)
-    pm.parent(ik_handle, end_loc, end_ctrl_hidden_grp)
-    
-    
+        
     # uncheck inherit transform on cubic crv
     crv.inheritsTransform.set(0)
     
     # hide grp
     pm.setAttr(hidden_grp.v, 0, lock=True)
-    pm.setAttr(start_ctrl_hidden_grp.v, 0, lock=True)
-    pm.setAttr(end_ctrl_hidden_grp.v, 0, lock=True)
     
     crv_shape.overrideEnabled.set(1)
     crv_shape.overrideDisplayType.set(2)
+    
+    
+    bind_geo_grp.overrideEnabled.set(1)
+    bind_geo_grp.overrideDisplayType.set(2)
     
     
     # make the curves dynamic    
@@ -369,16 +321,13 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     #nhair_blendshape.inputTarget[0].baseWeights[num_nhair_bs_weights-1].set(0)
     #nhair_blendshape.inputTarget[0].baseWeights[num_nhair_bs_weights-2].set(0)
     
-    
-    
+ 
     
     pm.parent(result_crv, output_curve, no_inherit_trans_grp)
     
     ret_dict = {}
     ret_dict['start_ctrl'] = ctrl_start
     ret_dict['end_ctrl'] = ctrl_end
-    #ret_dict['curve_cubic'] = crv
-    #ret_dict['curve_cubic'] = output_curve
     ret_dict['curve_cubic'] = result_crv
     ret_dict['curve_linear'] = crv_linear
     ret_dict['remap_value'] = linear_blendshape_RMV
@@ -712,14 +661,16 @@ def setup_crv_list( crv_list,
         end_ctrl_set.add(cable_dict['end_ctrl'])
                             
 
-'''
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
+
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
 
 
 crv_1 = pm.PyNode('curve1')
-crv_2 = pm.PyNode('curve2')
-crv_3 = pm.PyNode('curve3')
-crv_list = [crv_1, crv_2, crv_3]
+#crv_2 = pm.PyNode('curve2')
+#crv_3 = pm.PyNode('curve3')
+#crv_list = [crv_1, crv_2, crv_3]
+crv_list = [crv_1]
 
 
 rig_name = 'cable_rig_name'
@@ -740,7 +691,7 @@ share_hairsystem = True
 #existing_hairsystem = None
 existing_hairsystem = pm.PyNode('hairSystem1')
 
-
+'''
 setup_crv_list( crv_list,
                 rig_name,
                 name_start_index,
@@ -756,3 +707,7 @@ setup_crv_list( crv_list,
                 share_hairsystem,
                 existing_hairsystem)
 '''
+
+#cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsystem=None):
+cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
+    
