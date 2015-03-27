@@ -17,17 +17,22 @@ sprink_ik_dict = stretchy_ik.create_ik_spring(  ik_jnt_list=ik_jnt_list,
                                                 end_ctrl=end_ctrl,
                                                 name=name)
 
-
-
 dist = sprink_ik_dict['distance_shape']
 total_jnt_length = sprink_ik_dict['total_jnt_length']
 stretch_per_jnt_md = sprink_ik_dict['stretch_per_jnt_md']
 stretch_condition = sprink_ik_dict['stretch_condition']
 
-num_div = 1
 
-crv_lin = pm.curve(d=1, p=[(0,0,0), (0,0,0), (0,0,0)])
+
+
+num_div = 2
+num_jnt = len(ik_jnt_list)
+num_cvs = num_jnt + (num_jnt-1)*num_div
+
+crv_lin_pos = [(j,0,0) for j in range(num_cvs)]
+crv_lin = pm.curve(d=1, p=crv_lin_pos)
 crv_lin_shape = crv_lin.getShape()
+pm.toggle(crv_lin_shape, cv=True)
 
 stretch_per_cv_md = pm.createNode('multiplyDivide', n='stretch_per_cv_md')
 stretch_per_cv_md.operation.set(2)
@@ -35,6 +40,22 @@ stretch_per_jnt_md.outputX >> stretch_per_cv_md.input1X
 stretch_per_cv_md.input2X.set(num_div+1)
 
 
+
+jnt_index = 0
+for cv in range(num_cvs):
+    cv_index = cv % (num_div+1)
+    
+    if cv_index is 0:
+        curr_jnt = ik_jnt_list[jnt_index]
+        print(curr_jnt, cv, 'first', cv_index)
+        jnt_index += 1
+        
+    else:
+        print(curr_jnt, cv, '     after', cv_index)
+
+
+
+'''
 # calculate the ditsnace between the jnts
 dist_btw_jnt = (ik_jnt_list[0].getTranslation(ws=True) - ik_jnt_list[1].getTranslation(ws=True)).length()
 
@@ -59,11 +80,4 @@ cv_dist_cho.output >> cv_pos_vec_prod.input1X
 ik_jnt_list[0].worldMatrix[0] >> cv_pos_vec_prod.matrix
 
 cv_pos_vec_prod.output >> crv_lin_shape.controlPoints[0]
-
-'''
-cho = pm.PyNode('choice1')
-cho.input[1].set(3.5355)
-                                                
-pma = pm.PyNode('plusMinusAverage1')
-pma.input1D[1].set(3.5355)
 '''
