@@ -26,12 +26,16 @@ def interpolate_positions(pos_list, num_divisions=1):
 def set_curve_skin_percent(crv, jnt_list, skin_cluster, num_div):
     
     crv_shape = crv.getShape()
+    num_jnt = len(jnt_list)
     
+    if crv_shape.numCVs() is not (num_jnt + (num_jnt-1)*num_div):
+        pm.warning('The number of CVs is not valid')
+        return None
+        
     # Turn off skinweight normalization and reset skinweights
     skin_cluster.setNormalizeWeights(0)
     pm.skinPercent(skin_cluster, crv_shape, nrm=False, prw=100)
-    
-    num_jnt = len(jnt_list)
+     
     cv_index = 0
     u_inc = 1.0 / (num_div + 1)
     
@@ -58,7 +62,7 @@ ik_jnt_list = [pm.PyNode('joint{0}'.format(j+1)) for j in range(5)]
 
 jnt_pos_list  = [j.getTranslation(ws=True) for j in ik_jnt_list]
 
-num_div = 20
+num_div = 3
 
 pos_list = interpolate_positions(pos_list=jnt_pos_list, num_divisions=num_div)
 
