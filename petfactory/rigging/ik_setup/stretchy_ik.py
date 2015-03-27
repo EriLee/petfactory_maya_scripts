@@ -105,6 +105,7 @@ def create_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=True):
     ret_dict['ik_jnt_grp'] = ik_jnt_grp
     ret_dict['start_ctrl_hidden_grp'] = start_ctrl_hidden_grp
     ret_dict['end_ctrl_hidden_grp'] = end_ctrl_hidden_grp
+    ret_dict['stretch_per_jnt_md'] = stretch_per_jnt_md
     
     return ret_dict
 '''
