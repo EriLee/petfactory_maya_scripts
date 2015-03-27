@@ -1,5 +1,29 @@
 import pymel.core as pm
 
+def interpolate_positions(pos_list, num_divisions=1):
+    
+    u_inc = 1.0 / (num_divisions+1)
+    last_index = len(pos_list)-1
+    
+    ret_pos_list = []
+    for index, pos in enumerate(pos_list):
+        
+        if index < last_index:
+            
+            dx = pos_list[index+1][0] - pos_list[index][0]
+            dy = pos_list[index+1][1] - pos_list[index][1]
+            dz = pos_list[index+1][2] - pos_list[index][2]
+            
+            for u in range(num_divisions+1):
+                ret_pos_list.append((   pos_list[index][0] + dx*u*u_inc,
+                                        pos_list[index][1] + dy*u*u_inc,
+                                        pos_list[index][2] + dz*u*u_inc))
+    
+        else:
+            ret_pos_list.append(pos_list[-1])
+    
+    return ret_pos_list
+
 def viz_vec_3(end, start=(0,0,0), name='curve', color_index=16):
                    
     pos = ([end[0], end[1], end[2]], [start[0], start[1], start[2]])        
