@@ -1,12 +1,20 @@
-def set_curve_skin_percent(crv, jnt_list, skin_cluster, num_div):
+def set_curve_skin_percent(crv, jnt_list, skin_cluster):
     
     crv_shape = crv.getShape()
     num_jnt = len(jnt_list)
-    
-    if crv_shape.numCVs() is not (num_jnt + (num_jnt-1)*num_div):
-        pm.warning('The number of CVs is not valid')
-        return None
+    num_cvs = crv_shape.numCVs() 
         
+    cvs_per_bone = float(num_cvs - num_jnt) / (num_jnt-1)
+    
+    # check if we have a valid number of cvs
+    if cvs_per_bone % 1 == 0:
+        
+        num_div = int(cvs_per_bone)    
+    
+    else:
+        pm.warning('The number of cvs are not valid!')
+        return None
+
     # Turn off skinweight normalization and reset skinweights
     skin_cluster.setNormalizeWeights(0)
     pm.skinPercent(skin_cluster, crv_shape, nrm=False, prw=100)
@@ -28,3 +36,4 @@ def set_curve_skin_percent(crv, jnt_list, skin_cluster, num_div):
             cv_index +=1
             
     pm.skinPercent(skin_cluster, '{0}.cv[{1}]'.format(crv, cv_index), transformValue=('{0}'.format(jnt_list[-1]), 1.0))
+    
