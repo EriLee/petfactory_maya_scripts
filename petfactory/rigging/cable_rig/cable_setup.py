@@ -327,19 +327,14 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     pm.addAttr(ctrl_start, longName='use_nhair_sim', keyable=True, min=0, max=1, defaultValue=0)
     ctrl_start.use_nhair_sim >> nhair_blendshape.weight[0]
     
-    
-    # set the (0, 1, -2, -1) weights of the nhair blendshape to 0
-    #nhair_bs_weights = nhair_blendshape.inputTarget[0].baseWeights.get()
-    #num_nhair_bs_weights = len(nhair_bs_weights)
-    #print(nhair_bs_weights)
 
-    #nhair_blendshape.inputTarget[0].baseWeights[0].set(0)
-    #nhair_blendshape.inputTarget[0].baseWeights[1].set(0)
+    # set the nhair blendshape weight of the two first and last cvs to 0
+    nhair_blendshape.inputTarget[0].baseWeights[0].set(0)
+    nhair_blendshape.inputTarget[0].baseWeights[1].set(0)
     
-    #nhair_blendshape.inputTarget[0].baseWeights[num_nhair_bs_weights-1].set(0)
-    #nhair_blendshape.inputTarget[0].baseWeights[num_nhair_bs_weights-2].set(0)
+    nhair_blendshape.inputTarget[0].baseWeights[num_cvs-1].set(0)
+    nhair_blendshape.inputTarget[0].baseWeights[num_cvs-2].set(0)
     
- 
     
     pm.parent(result_crv, output_curve, no_inherit_trans_grp)
     
@@ -684,7 +679,6 @@ share_hairsystem = True
 #existing_hairsystem = None
 existing_hairsystem = pm.PyNode('hairSystem1')
 
-'''
 setup_crv_list( crv_list,
                 rig_name,
                 name_start_index,
@@ -700,8 +694,8 @@ setup_crv_list( crv_list,
                 share_hairsystem,
                 existing_hairsystem)
 
-'''
+
 #cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsystem=None):
-cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
+#cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
 
 pm.delete(crv_list)   
