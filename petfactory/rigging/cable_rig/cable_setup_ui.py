@@ -362,7 +362,7 @@ def show():
     
 
 
-
+'''
 try:
     win.close()
     
@@ -374,7 +374,7 @@ win.show()
 
 
 win.move(100,150)
-
+'''
 
 
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple.mb', f=True)
