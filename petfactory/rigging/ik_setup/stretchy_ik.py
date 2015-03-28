@@ -84,7 +84,7 @@ def create_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=True):
     vec_prod.output >> ik_handle.poleVector
     
     pm.addAttr(start_ctrl, ln='ik_twist', at='double', k=True, defaultValue=0)
-    pm.addAttr(start_ctrl, ln='ik_twist_offset', at='double', k=False, defaultValue=-90)
+    pm.addAttr(start_ctrl, ln='ik_twist_offset', at='double', k=False, defaultValue=0)
     
     
     # create a ik twist ctrl

@@ -196,6 +196,10 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     jnt_pos_list = [ jnt.getTranslation(space='world') for jnt in ik_jnt_list ]
     pos_list = pet_vector.interpolate_positions(pos_list=jnt_pos_list, num_divisions=int(cvs_per_bone))
     
+    
+    # bind the skin
+    skin_cluster_cubic = pm.skinCluster(ik_jnt_list[0], crv)
+    
     # create an stretchy ik spring rig
     stretchy_ik_dict = stretchy_ik.create_ik_spring(    ik_jnt_list=ik_jnt_list,
                                                         start_ctrl=ctrl_start,
@@ -232,7 +236,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     stretch_ik_jnt_grp.overrideDisplayType.set(2)
     
     # bind the skin
-    skin_cluster_cubic = pm.skinCluster(ik_jnt_list[0], crv)
+    #skin_cluster_cubic = pm.skinCluster(ik_jnt_list[0], crv)
 
 
     
@@ -647,11 +651,11 @@ def setup_crv_list( crv_list,
         end_ctrl_set.add(cable_dict['end_ctrl'])
                             
 
-'''
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
+
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
 #pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
 
-
+'''
 crv_1 = pm.PyNode('curve1')
 crv_2 = pm.PyNode('curve2')
 crv_3 = pm.PyNode('curve3')
@@ -691,8 +695,10 @@ setup_crv_list( crv_list,
                 use_existing_hairsystem,
                 share_hairsystem,
                 existing_hairsystem)
-
 '''
+
 #cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsystem=None):
 #cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
+#cable_base_ik(crv=crv_1, num_joints=6, name='curve_rig', up_axis=2, existing_hairsystem=None)
 #pm.delete(crv_list)
+#create_joints_on_curve(crv=crv_1, num_joints=6, up_axis=2, parent_joints=True, show_lra=True, name='test_jnt')
