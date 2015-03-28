@@ -3,6 +3,8 @@ import maya.mel as mel
 
 from bisect import bisect_left, bisect_right
 import petfactory.util.vector as pet_vector
+reload(pet_vector)
+
 import petfactory.rigging.ctrl.ctrl as pet_ctrl
 import petfactory.modelling.mesh.extrude_profile as pet_extrude
 import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
@@ -10,32 +12,17 @@ import petfactory.rigging.nhair.nhair_dynamics as nhair_dynamics
 import petfactory.rigging.ik_setup.stretchy_ik as stretchy_ik
 reload(stretchy_ik)
 
+import petfactory.rigging.skinning.curve_skinweight as curve_skinweight
+reload(curve_skinweight)
+
+
 '''
 TODO
 
 > set wigths of the nhair blendshape
-> There is a problem that the bind crv does not stick to the end ctrl when stretched...
 
 '''
-def set_curve_skin_percent(crv, jnt_list, skin_cluster, num_div):
-
-    num_jnt = len(jnt_list)
-    cv_index = 0
-    u_inc = 1.0 / (num_div + 1)
-    for index in range(num_jnt-1):
-        
-        start = jnt_list[index]
-        end = jnt_list[index+1]
-
-        for n in range(num_div+1):
-            u = u_inc * n
-            pm.skinPercent(skin_cluster, '{0}.cv[{1}]'.format(crv, cv_index), transformValue=('{0}'.format(start), 1.0-u))
-            pm.skinPercent(skin_cluster, '{0}.cv[{1}]'.format(crv, cv_index), transformValue=('{0}'.format(end), u))
-            
-            cv_index +=1
-            
-    pm.skinPercent(skin_cluster, '{0}.cv[{1}]'.format(crv, cv_index), transformValue=('{0}'.format(jnt_list[-1]), 1.0))
-    
+  
 def validate_cv_num(num_joints, cv_num):
     
     def find_lt(a, x):
@@ -153,7 +140,7 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
 
     cvs_per_bone = float(num_cvs - num_joints) / (num_joints-1)
     min_cv_count = num_joints + (num_joints-1)
-    
+        
     # check if the number of cvs are valid
     if num_cvs >= min_cv_count and cvs_per_bone % 1 == 0:
         print('Start rigging the cable...')
@@ -169,8 +156,10 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     pm.makeIdentity(crv, apply=True)
     crv_shape = crv.getShape() 
     
+    # display the cvs
+    pm.toggle(crv_shape, cv=True, hull=True)
           
-    num_linear_crv_div = (num_cvs - 3) / 2    
+    #num_linear_crv_div = (num_cvs - 3) / 2    
     min_u, max_u = crv_shape.getKnotDomain()
     
     # get the up axis from the crv matrix, used to create a transform matrix for the start / end ctrl
@@ -187,11 +176,8 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     ctrl_grp = pm.group(em=True, parent=main_grp, n='{0}_ctrl_grp'.format(name))
     bind_geo_grp = pm.group(em=True, parent=main_grp, n='{0}_bind_geo_grp'.format(name))
     hidden_grp = pm.group(em=True, parent=main_grp, n='{0}_hidden_grp'.format(name))
-    #start_ctrl_hidden_grp = pm.group(em=True, n='{0}_start_ctrl_hidden_grp'.format(name))
-    #end_ctrl_hidden_grp = pm.group(em=True, n='{0}_end_ctrl_hidden_grp'.format(name))
     no_inherit_trans_grp = pm.group(em=True, parent=hidden_grp, n='{0}_no_inherit_trans_grp'.format(name))
     no_inherit_trans_grp.inheritsTransform.set(0)
-    
 
     # create the ik joints
     ik_jnt_list = create_joints_on_curve(crv=crv, num_joints=num_joints, up_axis=2, parent_joints=True, show_lra=True, name='{0}_base_ik'.format(name))
@@ -209,19 +195,16 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
    
     # build the linear curve 
     jnt_pos_list = [ jnt.getTranslation(space='world') for jnt in ik_jnt_list ]
-    pos_list = interpolate_positions(pos_list=jnt_pos_list, num_divisions=int(cvs_per_bone))
+    pos_list = pet_vector.interpolate_positions(pos_list=jnt_pos_list, num_divisions=int(cvs_per_bone))
     
-    
-    # build the linear blendshape crv    
-    crv_linear = pm.curve(d=3, p=pos_list, n='{0}_linear_crv'.format(name))
-
-    #create_ik_spring(ik_jnt_list, start_ctrl, end_ctrl, name, move_ctrl=True)
+    # create an stretchy ik spring rig
     stretchy_ik_dict = stretchy_ik.create_ik_spring(    ik_jnt_list=ik_jnt_list,
                                                         start_ctrl=ctrl_start,
                                                         end_ctrl=ctrl_end,
                                                         name=name,
                                                         move_ctrl=False)
-                                                        
+    
+    # get some info from the strechy spring rig
     stretch_condition = stretchy_ik_dict['stretch_condition']
     stretch_distance_shape = stretchy_ik_dict['distance_shape']
     stretch_ik_jnt_grp = stretchy_ik_dict['ik_jnt_grp']
@@ -229,16 +212,31 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     end_ctrl_hidden_grp = stretchy_ik_dict['end_ctrl_hidden_grp']
     jont_chain_length = stretchy_ik_dict['total_jnt_length']
     
+    
+    # add the linear crv
+    stretchy_lin_crv_dict = stretchy_ik.add_linear_stretch_crv( ik_jnt_list=ik_jnt_list,
+                                                                spring_ik_dict=stretchy_ik_dict,
+                                                                num_div=int(cvs_per_bone),
+                                                                name=name)
+       
+    
+    # get info from the linear crv
+    crv_linear = stretchy_lin_crv_dict['crv_linear']
+    
+    
     pm.addAttr(ctrl_start, longName='show_ik_joints', at="enum", en="off:on", keyable=True)
     ctrl_start.show_ik_joints >> stretch_ik_jnt_grp.v
     
     stretch_ik_jnt_grp.overrideEnabled.set(1)
     stretch_ik_jnt_grp.overrideDisplayType.set(2)
     
+    # bind the skin
+    skin_cluster_cubic = pm.skinCluster(ik_jnt_list[0], crv)
     
-    # TEMP FIX THE IK TWIST FLIP
-    ctrl_start.ik_twist_offset.set(90)
+    # create the blendshape
+    blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
     
+
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
     crv_length = pm.arclen(crv)
     
@@ -251,30 +249,26 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     # set the first value point to use a spline interpolation
     linear_blendshape_RMV.value[0].value_Interp.set(3)
         
-    # create the blendshape
-    blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
+    
     
     # set the blendshape weight to 1 (weighted to the linear crv) when we bind the crv
     # this will ensure that we get the correct deformation when the crv is stretched
     # if we do not do this the cvs will be slighlty off (maya bug?)
     # blendshape_linear.linear_curve_bs.set(1.0)
-    # blendshape_linear.weight[0].set(1.0)
+    blendshape_linear.weight[0].set(1.0)
 
-    
-    skin_cluster = pm.skinCluster(ik_jnt_list[0], crv)
-    
-    set_curve_skin_percent(crv=crv, jnt_list=ik_jnt_list, skin_cluster=skin_cluster, num_div=num_linear_crv_div)
         
-    #pm.skinCluster(ik_jnt_list, crv, toSelectedBones=True)
-    
     # connect the remap out value to control the blendshape
     #linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
     linear_blendshape_RMV.outValue >> blendshape_linear.weight[0]
+        
     
 
+    return
+    
     # organize
     pm.parent(ctrl_start, ctrl_end, ctrl_grp)
-    pm.parent(crv_linear, hidden_grp)
+    pm.parent(crv_linear, no_inherit_trans_grp)
     pm.parent(crv, bind_geo_grp)
         
     # uncheck inherit transform on cubic crv
@@ -419,32 +413,7 @@ def mesh_from_start_end(start_joint, end_joint, length_divisions=10, cable_radiu
 
     return pm_mesh
     
-    
-def interpolate_positions(pos_list, num_divisions=1):
-    
-    u_inc = 1.0 / (num_divisions+1)
-    last_index = len(pos_list)-1
-    
-    ret_pos_list = []
-    for index, pos in enumerate(pos_list):
         
-        if index < last_index:
-            
-            dx = pos_list[index+1][0] - pos_list[index][0]
-            dy = pos_list[index+1][1] - pos_list[index][1]
-            dz = pos_list[index+1][2] - pos_list[index][2]
-            
-            for u in range(num_divisions+1):
-                ret_pos_list.append((   pos_list[index][0] + dx*u*u_inc,
-                                        pos_list[index][1] + dy*u*u_inc,
-                                        pos_list[index][2] + dz*u*u_inc))
-    
-        else:
-            ret_pos_list.append(pos_list[-1])
-    
-    return ret_pos_list
-    
-
 def ctrl_joint_position_blend(ctrl, ctrl_local_position, point_on_crv_info, attr_name):
     
     # get a reference to the attr to control the blend color node
@@ -685,15 +654,15 @@ def setup_crv_list( crv_list,
                             
 
 
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
 
 
 crv_1 = pm.PyNode('curve1')
-crv_2 = pm.PyNode('curve2')
-crv_3 = pm.PyNode('curve3')
-crv_list = [crv_1, crv_2, crv_3]
-#crv_list = [crv_1]
+#crv_2 = pm.PyNode('curve2')
+#crv_3 = pm.PyNode('curve3')
+#crv_list = [crv_1, crv_2, crv_3]
+crv_list = [crv_1]
 
 
 rig_name = 'cable_rig_name'
@@ -714,7 +683,7 @@ share_hairsystem = True
 #existing_hairsystem = None
 existing_hairsystem = pm.PyNode('hairSystem1')
 
-
+'''
 setup_crv_list( crv_list,
                 rig_name,
                 name_start_index,
@@ -730,7 +699,8 @@ setup_crv_list( crv_list,
                 share_hairsystem,
                 existing_hairsystem)
 
-
+'''
 #cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsystem=None):
-#cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
-    
+cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
+
+pm.delete(crv_list)   
