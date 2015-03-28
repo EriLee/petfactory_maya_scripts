@@ -19,8 +19,6 @@ reload(curve_skinweight)
 '''
 TODO
 
-> set wigths of the nhair blendshape
-
 '''
   
 def validate_cv_num(num_joints, cv_num):
@@ -649,16 +647,16 @@ def setup_crv_list( crv_list,
         end_ctrl_set.add(cable_dict['end_ctrl'])
                             
 
-
-#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
-pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
+'''
+pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_tripple_nhair.mb', f=True)
+#pm.system.openFile('/Users/johan/Documents/Projects/python_dev/scenes/cable_crv_10_cvs_single_nhair.mb', f=True)
 
 
 crv_1 = pm.PyNode('curve1')
-#crv_2 = pm.PyNode('curve2')
-#crv_3 = pm.PyNode('curve3')
-#crv_list = [crv_1, crv_2, crv_3]
-crv_list = [crv_1]
+crv_2 = pm.PyNode('curve2')
+crv_3 = pm.PyNode('curve3')
+crv_list = [crv_1, crv_2, crv_3]
+#crv_list = [crv_1]
 
 
 rig_name = 'cable_rig_name'
@@ -694,8 +692,7 @@ setup_crv_list( crv_list,
                 share_hairsystem,
                 existing_hairsystem)
 
-
+'''
 #cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsystem=None):
 #cable_base_ik(crv=crv_1, num_joints=num_ik_joints, name='curve_rig', up_axis=2, existing_hairsystem=existing_hairsystem)
-
-pm.delete(crv_list)   
+#pm.delete(crv_list)
