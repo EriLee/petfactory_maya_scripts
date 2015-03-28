@@ -125,14 +125,13 @@ create_ik_spring(   ik_jnt_list=ik_jnt_list,
                     name=name)
 '''
 
-def add_linear_stretch_crv(ik_jnt_list, sprink_ik_dict, name):
+def add_linear_stretch_crv(ik_jnt_list, spring_ik_dict, num_div, name):
     
     #dist = sprink_ik_dict['distance_shape']
     #total_jnt_length = sprink_ik_dict['total_jnt_length']
-    stretch_btw_jnt_md = sprink_ik_dict['stretch_per_jnt_md']
-    stretch_condition = sprink_ik_dict['stretch_condition']
+    stretch_btw_jnt_md = spring_ik_dict['stretch_per_jnt_md']
+    stretch_condition = spring_ik_dict['stretch_condition']
     
-    num_div = 2
     num_jnt = len(ik_jnt_list)
     num_cvs = num_jnt + (num_jnt-1)*num_div
     
