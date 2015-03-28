@@ -154,10 +154,11 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     # duplicate the crv, freeze transform, keep the position
     crv = pm.duplicate(crv, n='{0}_cubic_crv'.format(name))[0]
     pm.makeIdentity(crv, apply=True)
-    crv_shape = crv.getShape() 
+    crv_shape = crv.getShape()
+    crv_length = pm.arclen(crv)
     
     # display the cvs
-    pm.toggle(crv_shape, cv=True, hull=True)
+    #pm.toggle(crv_shape, cv=True, hull=True)
           
     #num_linear_crv_div = (num_cvs - 3) / 2    
     min_u, max_u = crv_shape.getKnotDomain()
@@ -225,6 +226,8 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     
     
     pm.addAttr(ctrl_start, longName='show_ik_joints', at="enum", en="off:on", keyable=True)
+
+    
     ctrl_start.show_ik_joints >> stretch_ik_jnt_grp.v
     
     stretch_ik_jnt_grp.overrideEnabled.set(1)
@@ -232,40 +235,38 @@ def cable_base_ik(crv, num_joints, name='curve_rig', up_axis=2, existing_hairsys
     
     # bind the skin
     skin_cluster_cubic = pm.skinCluster(ik_jnt_list[0], crv)
+
+
     
     # create the blendshape
     blendshape_linear = pm.blendShape(crv_linear, crv, origin='local')[0]
     
-
     linear_blendshape_RMV = pm.createNode('remapValue', name='linear_blendshape_RMV')
-    crv_length = pm.arclen(crv)
+    
     
     stretch_distance_shape.distance >> linear_blendshape_RMV.inputValue
     
-    # set the min to 90 percent of the crv length, max to crv length
-    linear_blendshape_RMV.inputMin.set(jont_chain_length*.8)
-    linear_blendshape_RMV.inputMax.set(crv_length)
+    # set the min to 90 percent of the crv length, max to crv length    
+    pm.addAttr(ctrl_start, ln='blendshape_min', at='double', k=False, defaultValue=jont_chain_length*.8)
+    pm.addAttr(ctrl_start, ln='blendshape_max', at='double', k=False, defaultValue=crv_length*.9)
+    
+    ctrl_start.blendshape_min >> linear_blendshape_RMV.inputMin
+    ctrl_start.blendshape_max >> linear_blendshape_RMV.inputMax
     
     # set the first value point to use a spline interpolation
     linear_blendshape_RMV.value[0].value_Interp.set(3)
-        
-    
     
     # set the blendshape weight to 1 (weighted to the linear crv) when we bind the crv
     # this will ensure that we get the correct deformation when the crv is stretched
     # if we do not do this the cvs will be slighlty off (maya bug?)
     # blendshape_linear.linear_curve_bs.set(1.0)
     blendshape_linear.weight[0].set(1.0)
-
-        
+       
     # connect the remap out value to control the blendshape
     #linear_blendshape_RMV.outValue >> blendshape_linear.linear_curve_bs
     linear_blendshape_RMV.outValue >> blendshape_linear.weight[0]
-        
-    
 
-    return
-    
+
     # organize
     pm.parent(ctrl_start, ctrl_end, ctrl_grp)
     pm.parent(crv_linear, no_inherit_trans_grp)
